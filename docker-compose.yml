@@ -1,0 +1,13 @@
+
+services:
+  backend:
+    build: 
+      context: ./backend
+    container_name: tacs-backend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Sincroniza tu código local con el contenedor para que tsx aplique los cambios en vivo
+      - ./backend:/app
+      # Evita que tu carpeta node_modules local pise la del contenedor
+      - /app/node_modules
