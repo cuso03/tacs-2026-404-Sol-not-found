@@ -24,7 +24,13 @@ export function createActividadesController(service: ActividadesService) {
       return;
     }
 
-    const result = await service.configurarReglasClima(req.params.id, parsed.data, req.userId!);
+    const actividadId = req.params.id;
+    if (typeof actividadId !== 'string') {
+      res.status(404).json({ error: 'Actividad no encontrada' });
+      return;
+    }
+
+    const result = await service.configurarReglasClima(actividadId, parsed.data, req.userId!);
     if (result.status === 'not_found') {
       res.status(404).json({ error: 'Actividad no encontrada' });
       return;
