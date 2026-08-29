@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+/frontend/node_modules/
+/backend/node_modules/
+
+# Archivos de entorno (Variables de entorno y Keys)
+.env
+.env.local
+.env.*.local
+
+# Builds y compilados
+dist/
+build/
+/frontend/dist/
+/backend/dist/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Archivos del sistema operativo y editores
+.DS_Store
+.vscode/
+.idea/
