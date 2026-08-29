@@ -4,7 +4,7 @@ import { NotificacionesMockController } from '../controllers/NotificacionesMockC
 const router = Router();
 const notificacionesController = new NotificacionesMockController();
 
-// Ruta mock requerida para simular inicio y gatillar notificaciones[cite: 2]
+// Con bind, estamos diciendo: “cuando llames a este método, usa notificacionesController como this”.
 router.post('/simular-inicio', notificacionesController.simularMonitoreo.bind(notificacionesController));
 
 export default router;

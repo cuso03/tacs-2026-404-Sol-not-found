@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ClimaMonitorService } from '../cronJobs/ClimaMonitorService';
+import { ClimaMonitorService } from '../services/clima/ClimaMonitorService';
 import { MockWeatherService } from '../services/weather/MockWeatherService';
 import { MockTelegramService } from '../services/notifications/MockTelegramService';
 import { ClimaEvaluatorService } from '../services/clima/ClimaEvaluatorService';

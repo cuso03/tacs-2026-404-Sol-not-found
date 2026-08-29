@@ -1,8 +1,8 @@
-import { Actividad } from '../domain/models/actividad';
-import { IWeatherProvider } from '../interfaces/services/weather/IWeatherProvider';
-import { INotifier } from '../interfaces/services/notifications/INotifier';
-import { ClimaEvaluatorService } from '../services/clima/ClimaEvaluatorService';
-import { EstadisticasStore } from '../utils/EstadisticasStore';
+import { Actividad } from '../../domain/models/actividad';
+import { IWeatherProvider } from '../../interfaces/services/weather/IWeatherProvider';
+import { INotifier } from '../../interfaces/services/notifications/INotifier';
+import { ClimaEvaluatorService } from './ClimaEvaluatorService';
+import { EstadisticasStore } from '../../utils/EstadisticasStore';
 
 export class ClimaMonitorService {
   private weatherProvider: IWeatherProvider;
@@ -38,8 +38,8 @@ export class ClimaMonitorService {
 
       // 3. Reaccionamos al resultado
       if (!climaFavorable) {
-        // Acá tu compañero de la Feature 6 pasaría el estado a EN_VOTACION.
-        // Como tu responsabilidad es notificar, disparamos la alerta[cite: 2]:
+        // Acá se pasaría el estado a EN_VOTACION proveniente de la Feature 6
+        // Como tenemos que notificar, disparamos la alerta:
         const mensaje = `ALERTA: El pronóstico para "${actividad.titulo}" no cumple las condiciones (Condición: ${pronostico.condicion}). Se abrirá una votación para reprogramar.`;
         
         await this.notifier.notify(actividad.participantes, mensaje);

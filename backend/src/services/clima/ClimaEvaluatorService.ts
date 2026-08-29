@@ -16,12 +16,12 @@ export class ClimaEvaluatorService {
       return false;
     }
 
-    // Evaluación de viento[cite: 2]
+    // Evaluación de viento
     if (pronostico.viento > reglas.viento_max) {
       return false;
     }
 
-    // Evaluación de rangos de temperatura[cite: 2]
+    // Evaluación de rangos de temperatura
     if (pronostico.temperatura < reglas.temperatura_min || pronostico.temperatura > reglas.temperatura_max) {
       return false;
     }

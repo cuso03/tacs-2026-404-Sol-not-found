@@ -1,3 +1,4 @@
+// Singleton para almacenar estadísticas de métricas
 export class EstadisticasStore {
   private static instance: EstadisticasStore;
   private contadores: Record<string, number> = {};
