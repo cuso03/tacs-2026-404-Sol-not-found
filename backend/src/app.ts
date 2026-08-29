@@ -1,5 +1,6 @@
 import express from 'express';
 import actividadesRoutes from './routes/actividadesRoutes';
+import notificacionesRoutes from './routes/notificacionesRoutes';
 
 const app = express();
 const PORT = 3000;
@@ -14,3 +15,5 @@ app.use('/api/actividades', actividadesRoutes);
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+
+app.use('/api/actividades', notificacionesRoutes);
