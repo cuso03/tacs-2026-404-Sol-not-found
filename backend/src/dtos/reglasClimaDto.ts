@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const horarioSchema = z.string().regex(/^([01]\\d|2[0-3]):[0-5]\\d$/, 'Debe tener formato HH:mm');
+const horarioSchema = z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/, 'Debe tener formato HH:mm');
 
 /** Valida las reglas climáticas y de reprogramación de una actividad. */
 export const reglasClimaSchema = z.object({
