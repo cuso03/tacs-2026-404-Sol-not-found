@@ -28,6 +28,17 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/actividades/{id}/clima': {
+      get: {
+        summary: 'Consulta el clima actual y pronóstico para una actividad',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'Clima obtenido', content: { 'application/json': { schema: { $ref: '#/components/schemas/WeatherForecast' } } } },
+          '404': { description: 'Actividad inexistente' },
+          '503': { description: 'Servicio de clima no disponible' },
+        },
+      },
+    },
     '/api/actividades/{id}/participantes': {
       post: {
         summary: 'Inscribe al usuario en una actividad',
@@ -91,6 +102,18 @@ export const openApiDocument = {
       UbicacionCiudad: {
         type: 'object', required: ['tipo', 'ciudad', 'pais'], properties: {
           tipo: { type: 'string', enum: ['ciudad'] }, ciudad: { type: 'string', example: 'Buenos Aires' }, pais: { type: 'string', example: 'AR' },
+        },
+      },
+      WeatherForecast: {
+        type: 'object',
+        required: ['ubicacion', 'fecha_horario', 'probabilidad_lluvia', 'temperatura', 'viento', 'condicion'],
+        properties: {
+          ubicacion: { type: 'string', example: 'Buenos Aires' },
+          fecha_horario: { type: 'string', format: 'date-time', example: '2026-09-05T13:00:00' },
+          probabilidad_lluvia: { type: 'number', minimum: 0, maximum: 100, example: 70 },
+          temperatura: { type: 'number', example: 16 },
+          viento: { type: 'number', example: 22 },
+          condicion: { type: 'string', enum: ['SOLEADO', 'NUBLADO', 'PARCIALMENTE_NUBLADO', 'LLUVIA', 'TORMENTA'], example: 'LLUVIA' },
         },
       },
     },
