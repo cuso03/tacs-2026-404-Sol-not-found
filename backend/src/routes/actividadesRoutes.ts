@@ -9,7 +9,7 @@ export function createActividadesRoutes(repository: ActividadRepository): Router
   const router = Router();
   const controller = createActividadesController(new ActividadesService(repository));
 
-  router.get('/', controller.getActividades);
+  router.get('/', controller.search);
   router.post('/', requireAuthenticatedUser, controller.create);
   router.post('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
   router.post('/:id/participantes', requireAuthenticatedUser, controller.addParticipant);
