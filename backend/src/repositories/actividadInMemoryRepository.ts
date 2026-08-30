@@ -11,7 +11,14 @@ export class ActividadInMemoryRepository implements ActividadRepository {
 
   /** Genera el id y guarda una nueva actividad usando ese id como clave. */
   async create(actividad: NuevaActividad): Promise<Actividad> {
-    const persisted = this.copy({ ...actividad, id: randomUUID() });
+    const nueva: Actividad = {
+      ...actividad,
+      id: randomUUID(),
+      estado: 'programada',
+      participantes: [],
+      votaciones: [],
+    };
+    const persisted = this.copy(nueva);
     this.actividades.set(persisted.id, persisted);
     return this.copy(persisted);
   }
@@ -32,8 +39,18 @@ export class ActividadInMemoryRepository implements ActividadRepository {
 
   /** Crea una copia profunda de los objetos anidados mutables de la actividad. */
   private copy(actividad: Actividad): Actividad {
-    return actividad.reglasClima
-      ? { ...actividad, reglasClima: { ...actividad.reglasClima, rango_horario: { ...actividad.reglasClima.rango_horario } } }
-      : { ...actividad };
+    const copy: Actividad = {
+      ...actividad,
+      participantes: [...actividad.participantes],
+      votaciones: actividad.votaciones.map((v) => ({
+        ...v,
+        alternativas: v.alternativas.map((a) => ({ ...a })),
+        votos: { ...v.votos },
+      })),
+    };
+    if (copy.reglasClima) {
+      copy.reglasClima = { ...copy.reglasClima, rango_horario: { ...copy.reglasClima.rango_horario } };
+    }
+    return copy;
   }
 }

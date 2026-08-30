@@ -1,3 +1,9 @@
+import { Votacion } from './votacion';
+
+/** Estados posibles de una actividad a lo largo de su ciclo de vida. */
+export const ESTADOS_ACTIVIDAD = ['programada', 'en_votacion', 'confirmada', 'cancelada'] as const;
+export type EstadoActividad = (typeof ESTADOS_ACTIVIDAD)[number];
+
 /** Valores permitidos para el entorno físico de una actividad. */
 export const TIPOS_ACTIVIDAD = ['aire_libre', 'techada', 'mixta'] as const;
 export type TipoActividad = (typeof TIPOS_ACTIVIDAD)[number];
@@ -50,7 +56,13 @@ export interface Actividad {
   creadorId: string;
   creadaEn: string;
   reglasClima?: ReglasClima;
+  /** Estado actual de la actividad en su ciclo de vida. */
+  estado: EstadoActividad;
+  /** UserIds de los participantes inscritos en la actividad. */
+  participantes: string[];
+  /** Historial de votaciones de reprogramación de la actividad. */
+  votaciones: Votacion[];
 }
 
 /** Datos de negocio para crear una actividad, antes de ser persistida. */
-export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima'>;
+export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima' | 'votaciones' | 'estado' | 'participantes'>;
