@@ -65,7 +65,7 @@ export interface Actividad {
 }
 
 /** Datos de negocio para crear una actividad, antes de ser persistida. */
-export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima' | 'votaciones' | 'estado'>;
+export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima' | 'votaciones'>;
 
 /** Datos puros ingresados por el usuario desde el controlador */
-export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'participantes'>;
+export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'participantes' | 'estado'>;

@@ -26,6 +26,7 @@ export class ActividadesService {
       ...datos,
       creadorId,
       creadaEn: new Date().toISOString(),
+      estado: 'PROPUESTA',
       participantes: [creadorId],
     };
 

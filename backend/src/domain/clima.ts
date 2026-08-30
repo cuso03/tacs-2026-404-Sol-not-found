@@ -1,9 +1,15 @@
 import { ReglasClima } from '../interfaces/models/actividad';
 import { PronosticoHora } from '../interfaces/models/pronostico';
 
+/** Tipo mínimo con las métricas climáticas necesarias para evaluar reglas. */
+interface CondicionesClimaticas {
+  probabilidad_lluvia: number;
+  temperatura: number;
+  viento: number;
+}
 
-/** Evalúa si un pronóstico horario cumple las reglas climáticas de una actividad. */
-export function pronosticoEsAdecuado(pronostico: PronosticoHora, reglas: ReglasClima): boolean {
+/** Evalúa si un pronóstico cumple las reglas climáticas de una actividad. */
+export function pronosticoEsAdecuado(pronostico: CondicionesClimaticas, reglas: ReglasClima): boolean {
   return (
     pronostico.probabilidad_lluvia <= reglas.probabilidad_lluvia_max &&
     pronostico.temperatura >= reglas.temperatura_min &&

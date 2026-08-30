@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { ClimaMonitorService } from '../services/clima/ClimaMonitorService';
 import { MockWeatherService } from '../services/mockWeatherService';
 import { MockTelegramService } from '../services/notifications/MockTelegramService';
-import { ClimaEvaluatorService } from '../services/clima/ClimaEvaluatorService';
 import { Actividad } from '../interfaces/models/actividad';
 
 export class NotificacionesMockController {
@@ -11,9 +10,8 @@ export class NotificacionesMockController {
     try {
       const weatherService = new MockWeatherService();
       const notifierService = new MockTelegramService();
-      const evaluatorService = new ClimaEvaluatorService();
 
-      const monitor = new ClimaMonitorService(weatherService, notifierService, evaluatorService);
+      const monitor = new ClimaMonitorService(weatherService, notifierService);
 
       const actividadMock: Actividad = {
         id: 'uuid-1234',
