@@ -33,35 +33,23 @@ describe('GET /api/actividades/:id/clima', () => {
     expect(response.body).toEqual({ error: 'Actividad no encontrada' });
   });
 
-  it('retorna formato esperado con ubicacion, fecha_horario, clima_actual y pronostico_actividad', async () => {
+  it('retorna formato esperado con ubicacion, fecha_horario, probabilidad_lluvia, temperatura, viento y condicion', async () => {
     const { app, id, created } = await createActividadConClima(validPayloadCoordenadas);
     expect(created.status).toBe(201);
 
     const response = await request(app).get(`/api/actividades/${id}/clima`);
     expect(response.status).toBe(200);
-    // El formato debe incluir esos cuatro campos
-    expect(response.body).toHaveProperty('ubicacion');
-    expect(response.body).toHaveProperty('fecha_horario');
-    expect(response.body).toHaveProperty('clima_actual');
-    expect(response.body).toHaveProperty('pronostico_actividad');
-    expect(response.body.clima_actual).toMatchObject({
-      temperatura: expect.any(Number),
-      condicion: expect.stringMatching(/^(SOLEADO|NUBLADO|PARCIALMENTE_NUBLADO|LLUVIA|TORMENTA)$/),
-      viento: expect.any(Number),
-      humedad: expect.any(Number),
-    });
-    expect(response.body.pronostico_actividad).toMatchObject({
+    expect(response.body).toMatchObject({
+      ubicacion: expect.any(String),
+      fecha_horario: expect.any(String),
       probabilidad_lluvia: expect.any(Number),
       temperatura: expect.any(Number),
       viento: expect.any(Number),
       condicion: expect.stringMatching(/^(SOLEADO|NUBLADO|PARCIALMENTE_NUBLADO|LLUVIA|TORMENTA)$/),
     });
-    expect(response.body.pronostico_actividad.probabilidad_lluvia).toBeGreaterThanOrEqual(0);
-    expect(response.body.pronostico_actividad.probabilidad_lluvia).toBeLessThanOrEqual(100);
-    // la ubicación se entrega como texto
+    expect(response.body.probabilidad_lluvia).toBeGreaterThanOrEqual(0);
+    expect(response.body.probabilidad_lluvia).toBeLessThanOrEqual(100);
     expect(typeof response.body.ubicacion).toBe('string');
-    // el pronóstico no incluye humedad, solo probabilidad de lluvia
-    expect(response.body.pronostico_actividad).not.toHaveProperty('humedad');
   });
 
   it('retorna clima para ubicación por ciudad', async () => {
@@ -94,6 +82,7 @@ describe('GET /api/actividades/:id/clima', () => {
           pronostico_actividad: { probabilidad_lluvia: 70, temperatura: 16, viento: 22, condicion: 'LLUVIA' },
         };
       },
+      getForecastRange: async () => [],
     };
     const repository = new ActividadInMemoryRepository();
     const app = createApp(repository, fakeProvider);
@@ -101,8 +90,8 @@ describe('GET /api/actividades/:id/clima', () => {
     const response = await request(app).get(`/api/actividades/${created.body.id}/clima`);
     expect(response.status).toBe(200);
     expect(fueInvocado).toBe(true);
-    expect(response.body.clima_actual.temperatura).toBe(18);
-    // Sin usuario debe funcionar igual (consulta solo por ID)
+    expect(response.body.temperatura).toBe(16);
+    expect(response.body.condicion).toBe('LLUVIA');
     const responseSinAuth = await request(app).get(`/api/actividades/${created.body.id}/clima`);
     expect(responseSinAuth.status).toBe(200);
   });

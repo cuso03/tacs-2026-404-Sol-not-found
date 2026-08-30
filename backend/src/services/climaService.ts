@@ -1,12 +1,23 @@
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
-import { ClimaResponseDto as ClimaResponse, climaResponseSchema } from '../dtos/climaDto';
+import { ClimaResponseDto, WeatherForecastDto, climaResponseSchema, weatherForecastSchema } from '../dtos/climaDto';
 import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 
 /** Resultado de la consulta de clima para una actividad. */
 export type ConsultarClimaResult =
   | { status: 'not_found' }
   | { status: 'weather_unavailable' }
-  | { status: 'ok'; data: ClimaResponse };
+  | { status: 'ok'; data: WeatherForecastDto };
+
+function aPlano(nested: ClimaResponseDto): WeatherForecastDto {
+  return {
+    ubicacion: nested.ubicacion,
+    fecha_horario: nested.fecha_horario,
+    probabilidad_lluvia: nested.pronostico_actividad.probabilidad_lluvia,
+    temperatura: nested.pronostico_actividad.temperatura,
+    viento: nested.pronostico_actividad.viento,
+    condicion: nested.pronostico_actividad.condicion,
+  };
+}
 
 /**
  * Consulta de clima para una actividad — verifica que exista y obtiene clima actual y pronóstico.
@@ -28,8 +39,10 @@ export class ClimaService {
 
     try {
       const raw = await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
-      // Valida que la respuesta tenga el formato esperado — ubicación, fecha, clima actual y pronóstico.
-      const parsed = climaResponseSchema.safeParse(raw);
+      const parsedAnidado = climaResponseSchema.safeParse(raw);
+      if (!parsedAnidado.success) return { status: 'weather_unavailable' };
+      const plano = aPlano(parsedAnidado.data);
+      const parsed = weatherForecastSchema.safeParse(plano);
       if (!parsed.success) return { status: 'weather_unavailable' };
       return { status: 'ok', data: parsed.data };
     } catch {
