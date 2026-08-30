@@ -1,9 +1,28 @@
 import { Router } from 'express';
-import { getActividades } from '../controllers/actividadesController';
+import { createActividadesController } from '../interfaces/controllers/actividadesController';
+import { createClimaController } from '../interfaces/controllers/climaController';
+import { requireAuthenticatedUser } from '../middleware/authenticatedUser';
+import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
+import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
+import { ActividadesService } from '../services/actividadesService';
+import { ClimaService } from '../services/climaService';
+import { MockWeatherService } from '../services/mockWeatherService';
 
-const router = Router();
+/** Registra las rutas de actividades usando el repositorio y proveedor de clima indicados. */
+export function createActividadesRoutes(
+  repository: ActividadRepository,
+  weatherProvider: IWeatherProvider = new MockWeatherService(),
+): Router {
+  const router = Router();
+  const controller = createActividadesController(new ActividadesService(repository));
+  const climaController = createClimaController(new ClimaService(repository, weatherProvider));
 
-// Esta ruta responderá cuando hagamos GET a la ruta base de actividades
-router.get('/', getActividades);
+  router.get('/', controller.search);
+  router.post('/', requireAuthenticatedUser, controller.create);
+  router.post('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
+  router.get('/:id/clima', climaController.getClima);
+  router.post('/:id/participantes', requireAuthenticatedUser, controller.addParticipant);
+  router.delete('/:id/participantes/me', requireAuthenticatedUser, controller.removeParticipant);
 
-export default router;
+  return router;
+}
