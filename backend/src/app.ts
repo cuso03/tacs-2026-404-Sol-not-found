@@ -1,4 +1,6 @@
 import express from 'express';
+import actividadesRoutes from './routes/actividadesRoutes';
+import notificacionesRoutes from './routes/notificacionesRoutes';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './openapi';
 import { ActividadInMemoryRepository } from './repositories/actividadInMemoryRepository';
@@ -21,6 +23,14 @@ export function createApp(
   app.use('/api/actividades', createActividadesRoutes(repository, weatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService));
 
+
+// Iniciamos el servidor
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
+
+app.use('/api/actividades', notificacionesRoutes);
+
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
   return app;
@@ -30,3 +40,4 @@ if (require.main === module) {
   const port = Number(process.env.PORT ?? 3000);
   createApp().listen(port, () => console.log(`Servidor corriendo en http://localhost:${port}`));
 }
+
