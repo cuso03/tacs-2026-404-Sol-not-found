@@ -12,6 +12,8 @@ export function createActividadesRoutes(repository: ActividadRepository): Router
   router.get('/', controller.getActividades);
   router.post('/', requireAuthenticatedUser, controller.create);
   router.post('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
+  router.post('/:id/participantes', requireAuthenticatedUser, controller.addParticipant);
+  router.delete('/:id/participantes/me', requireAuthenticatedUser, controller.removeParticipant);
 
   return router;
 }

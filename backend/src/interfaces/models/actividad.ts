@@ -49,6 +49,7 @@ export interface Actividad {
   max_participantes: number;
   creadorId: string;
   creadaEn: string;
+  participantes: string[];
   reglasClima?: ReglasClima;
 }
 

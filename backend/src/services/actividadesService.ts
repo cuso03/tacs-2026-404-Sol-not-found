@@ -1,5 +1,9 @@
 import { Actividad, NuevaActividad, ReglasClima } from '../interfaces/models/actividad';
-import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
+import {
+  ActividadRepository,
+  InscribirParticipanteResult,
+  RemoverParticipanteResult,
+} from '../interfaces/repositories/actividadRepository';
 
 /** Resultado posible al intentar configurar reglas para una actividad. */
 export type ConfigurarReglasResult =
@@ -16,8 +20,8 @@ export class ActividadesService {
   constructor(private readonly repository: ActividadRepository) {}
 
   /** Crea una actividad y delega la generación de su id al repositorio. */
-  async crearActividad(datos: Omit<NuevaActividad, 'creadorId' | 'creadaEn'>, creadorId: string): Promise<Actividad> {
-    return this.repository.create({ ...datos, creadorId, creadaEn: new Date().toISOString() });
+  async crearActividad(datos: Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'participantes'>, creadorId: string): Promise<Actividad> {
+    return this.repository.create({ ...datos, creadorId, creadaEn: new Date().toISOString(), participantes: [creadorId] });
   }
 
   /**
@@ -31,5 +35,13 @@ export class ActividadesService {
 
     const updated = await this.repository.update({ ...actividad, reglasClima });
     return updated ? { status: 'updated', actividad: updated } : { status: 'not_found' };
+  }
+
+  async inscribirParticipante(actividadId: string, userId: string): Promise<InscribirParticipanteResult> {
+    return this.repository.addParticipant(actividadId, userId);
+  }
+
+  async removerParticipante(actividadId: string, userId: string): Promise<RemoverParticipanteResult> {
+    return this.repository.removeParticipant(actividadId, userId);
   }
 }

@@ -13,6 +13,11 @@ La especificación está disponible en `/openapi.json` y la interfaz Swagger en
 `POST /api/actividades/{id}/reglas` configura las condiciones climáticas y de
 reprogramación. Solo acepta al mismo `X-User-Id` que creó la actividad.
 
+`POST /api/actividades/{id}/participantes` inscribe al usuario autenticado si hay
+cupo. `DELETE /api/actividades/{id}/participantes/me` elimina su inscripción. El
+organizador se incluye al crear la actividad, ocupa un cupo y no puede darse de
+baja mediante este endpoint.
+
 El campo `tipo` acepta `aire_libre`, `techada` o `mixta`. Para `ubicacion` se
 acepta una ciudad con país, o coordenadas. Se recomienda coordenadas porque son
 exactas y permiten consultar un servicio de clima sin una geocodificación previa.
