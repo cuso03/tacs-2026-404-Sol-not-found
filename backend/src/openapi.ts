@@ -39,6 +39,36 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/actividades/{id}/participantes': {
+      post: {
+        summary: 'Inscribe al usuario en una actividad',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '201': { description: 'Participante inscripto', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '400': { description: 'Usuario ya inscripto o actividad sin cupo' },
+          '401': { description: 'Usuario no autenticado' },
+          '404': { description: 'Actividad inexistente' },
+        },
+      },
+    },
+    '/api/actividades/{id}/participantes/me': {
+      delete: {
+        summary: 'Da de baja al usuario de una actividad',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': { description: 'Participante dado de baja', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '400': { description: 'Usuario no inscripto o baja del organizador' },
+          '401': { description: 'Usuario no autenticado' },
+          '404': { description: 'Actividad inexistente' },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -52,7 +82,7 @@ export const openApiDocument = {
           min_participantes: { type: 'integer', minimum: 1, example: 4 }, max_participantes: { type: 'integer', minimum: 1, example: 12 },
         },
       },
-      Actividad: { allOf: [{ $ref: '#/components/schemas/CrearActividad' }], type: 'object', required: ['id', 'creadorId', 'creadaEn'], properties: { id: { type: 'string', format: 'uuid' }, creadorId: { type: 'string' }, creadaEn: { type: 'string', format: 'date-time' }, reglasClima: { $ref: '#/components/schemas/ReglasClima' } } },
+      Actividad: { allOf: [{ $ref: '#/components/schemas/CrearActividad' }], type: 'object', required: ['id', 'creadorId', 'creadaEn', 'participantes'], properties: { id: { type: 'string', format: 'uuid' }, creadorId: { type: 'string' }, creadaEn: { type: 'string', format: 'date-time' }, participantes: { type: 'array', uniqueItems: true, items: { type: 'string' } }, reglasClima: { $ref: '#/components/schemas/ReglasClima' } } },
       ReglasClima: {
         type: 'object', required: ['probabilidad_lluvia_max', 'temperatura_min', 'temperatura_max', 'viento_max', 'horas_anticipacion', 'dias_max_reprogramacion', 'rango_horario'],
         properties: {

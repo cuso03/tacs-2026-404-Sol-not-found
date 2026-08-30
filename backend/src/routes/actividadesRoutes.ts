@@ -17,10 +17,12 @@ export function createActividadesRoutes(
   const controller = createActividadesController(new ActividadesService(repository));
   const climaController = createClimaController(new ClimaService(repository, weatherProvider));
 
-  router.get('/', controller.getActividades);
+  router.get('/', controller.search);
   router.post('/', requireAuthenticatedUser, controller.create);
   router.post('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
   router.get('/:id/clima', climaController.getClima);
+  router.post('/:id/participantes', requireAuthenticatedUser, controller.addParticipant);
+  router.delete('/:id/participantes/me', requireAuthenticatedUser, controller.removeParticipant);
 
   return router;
 }
