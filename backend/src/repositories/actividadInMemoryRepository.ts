@@ -19,8 +19,7 @@ export class ActividadInMemoryRepository implements ActividadRepository {
     const nueva: Actividad = {
       ...actividad,
       id: randomUUID(),
-      estado: 'programada',
-      participantes: [],
+      estado: 'PROPUESTA',
       votaciones: [],
     };
     const persisted = this.copy(nueva);

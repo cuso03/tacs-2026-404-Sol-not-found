@@ -72,7 +72,7 @@ describe('POST /api/actividades/:id/votaciones', () => {
       });
 
     expect(response.status).toBe(201);
-    expect(response.body.estado).toBe('en_votacion');
+    expect(response.body.estado).toBe('EN_VOTACION');
     expect(response.body.votaciones).toHaveLength(1);
     expect(response.body.votaciones[0].automatica).toBe(false);
     expect(response.body.votaciones[0].alternativas).toHaveLength(2);
@@ -88,7 +88,7 @@ describe('POST /api/actividades/:id/votaciones', () => {
       .send({ duracion_horas: 24 });
 
     expect(response.status).toBe(201);
-    expect(response.body.estado).toBe('en_votacion');
+    expect(response.body.estado).toBe('EN_VOTACION');
     expect(response.body.votaciones[0].automatica).toBe(true);
     expect(response.body.votaciones[0].alternativas.length).toBeGreaterThan(0);
   });

@@ -1,5 +1,5 @@
 import { INotifier } from '../../interfaces/services/notifications/INotifier';
-import { Actividad } from '../../domain/models/actividad';
+import { Actividad } from '../../interfaces/models/actividad';
 
 export class ActividadEventNotifier {
   private notifier: INotifier;

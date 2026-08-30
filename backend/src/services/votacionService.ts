@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Actividad } from '../interfaces/models/actividad';
 import { Alternativa, Votacion } from '../interfaces/models/votacion';
 import { PronosticoHora } from '../interfaces/models/pronostico';
-import { WeatherService } from '../interfaces/services/weatherService';
+import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { IVotingJobQueue } from '../interfaces/services/votingJobQueue';
 import { filtrarHorasAdecuadas } from '../domain/clima';
@@ -46,7 +46,7 @@ export interface AbrirVotacionDto {
 export class VotacionService {
   constructor(
     private readonly repository: ActividadRepository,
-    private readonly weatherService: WeatherService,
+    private readonly weatherService: IWeatherProvider,
     private readonly jobQueue: IVotingJobQueue,
   ) {}
 
@@ -98,7 +98,7 @@ export class VotacionService {
     const actividad = await this.repository.findById(actividadId);
     if (!actividad) return { status: 'not_found' };
     if (actividad.creadorId !== organizadorId) return { status: 'forbidden' };
-    if (actividad.estado === 'en_votacion') return { status: 'already_voting' };
+    if (actividad.estado === 'EN_VOTACION') return { status: 'already_voting' };
     if (!actividad.reglasClima) return { status: 'no_rules' };
 
     let alternativas: Alternativa[];
@@ -129,7 +129,7 @@ export class VotacionService {
 
     const updated = await this.repository.update({
       ...actividad,
-      estado: 'en_votacion',
+      estado: 'EN_VOTACION',
       votaciones,
     });
 
@@ -158,7 +158,7 @@ export class VotacionService {
 
     const ahora = new Date();
     if (new Date(votacion.cierraEn) <= ahora) return { status: 'voting_closed' };
-    if (actividad.estado !== 'en_votacion') return { status: 'voting_closed' };
+    if (actividad.estado !== 'EN_VOTACION') return { status: 'voting_closed' };
     if (!actividad.participantes.includes(userId)) return { status: 'not_participant' };
 
     const alternativaExiste = votacion.alternativas.some((a) => a.id === alternativaId);
@@ -209,7 +209,7 @@ export class VotacionService {
    */
   async cerrarVotacion(actividadId: string, votacionId: string): Promise<void> {
     const actividad = await this.repository.findById(actividadId);
-    if (!actividad || actividad.estado !== 'en_votacion') return;
+    if (!actividad || actividad.estado !== 'EN_VOTACION') return;
 
     const votacion = this.buscarVotacion(actividad, votacionId);
     if (!votacion) return;
@@ -238,13 +238,13 @@ export class VotacionService {
     if (ganadora && maxVotos > 0 && totalVotos >= actividad.min_participantes) {
       await this.repository.update({
         ...actividad,
-        estado: 'programada',
+        estado: 'CONFIRMADA',
         fecha_horario: ganadora.fecha_horario,
       });
     } else {
       await this.repository.update({
         ...actividad,
-        estado: 'cancelada',
+        estado: 'CANCELADA',
       });
     }
   }

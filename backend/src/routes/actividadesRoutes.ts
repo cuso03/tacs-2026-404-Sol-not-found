@@ -10,14 +10,15 @@ import { VotacionService } from '../services/votacionService';
 import { ClimaService } from '../services/climaService';
 import { MockWeatherService } from '../services/mockWeatherService';
 
-/** Registra las rutas de actividades usando el repositorio y proveedor de clima indicados. */
+/** Registra las rutas de actividades usando el servicio y proveedor de clima indicados. */
 export function createActividadesRoutes(
   repository: ActividadRepository,
+  actividadesService: ActividadesService,
   votacionService: VotacionService,
   weatherProvider: IWeatherProvider = new MockWeatherService(),
 ): Router {
   const router = Router();
-  const controller = createActividadesController(new ActividadesService(repository));
+  const controller = createActividadesController(actividadesService);
   const votacionController = createVotacionesController(votacionService);
   const climaController = createClimaController(new ClimaService(repository, weatherProvider));
 

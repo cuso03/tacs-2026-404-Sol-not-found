@@ -1,5 +1,4 @@
 import express from 'express';
-import actividadesRoutes from './routes/actividadesRoutes';
 import notificacionesRoutes from './routes/notificacionesRoutes';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './openapi';
@@ -9,7 +8,6 @@ import { createActividadesRoutes } from './routes/actividadesRoutes';
 import { VotacionService } from './services/votacionService';
 import { MockWeatherService } from './services/mockWeatherService';
 import { InMemoryVotingJobQueue } from './services/inMemoryVotingJobQueue';
-import { WeatherService } from './interfaces/services/weatherService';
 import { IVotingJobQueue } from './interfaces/services/votingJobQueue';
 import { createUsuariosRoutes } from './routes/usuariosRoutes';
 import { ActividadesService } from './services/actividadesService';
@@ -17,10 +15,10 @@ import { ActividadesService } from './services/actividadesService';
 /** Construye la aplicación HTTP sin abrir un puerto, para uso productivo y tests. */
 export function createApp(
   repository = new ActividadInMemoryRepository(),
-  weatherService: WeatherService = new MockWeatherService(),
+  weatherProvider: IWeatherProvider = new MockWeatherService(),
   jobQueue: IVotingJobQueue = new InMemoryVotingJobQueue(),
 ) {
-  const votacionService = new VotacionService(repository, weatherService, jobQueue);
+  const votacionService = new VotacionService(repository, weatherProvider, jobQueue);
 
   if (jobQueue instanceof InMemoryVotingJobQueue) {
     jobQueue.setVotacionService(votacionService);
@@ -31,9 +29,9 @@ export function createApp(
 
   const actividadesService = new ActividadesService(repository);
 
-  app.use('/api/actividades', createActividadesRoutes(repository, votacionService, weatherService));
+  app.use('/api/actividades', createActividadesRoutes(repository, actividadesService, votacionService, weatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService));
-  app.use('/api/actividades', notificacionesRoutes);
+  app.use('/api/notificaciones', notificacionesRoutes);
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));

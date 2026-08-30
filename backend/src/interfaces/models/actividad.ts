@@ -60,13 +60,12 @@ export interface Actividad {
   estado: EstadoActividad;
   /** UserIds de los participantes inscritos en la actividad. */
   participantes: string[];
-  votacionAbierta?: boolean;
   /** Historial de votaciones de reprogramación de la actividad. */
   votaciones: Votacion[];
 }
 
 /** Datos de negocio para crear una actividad, antes de ser persistida. */
-export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima' | 'votaciones' | 'estado' | 'participantes'>;
+export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima' | 'votaciones' | 'estado'>;
 
 /** Datos puros ingresados por el usuario desde el controlador */
-export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'votacionAbierta'>;
+export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'participantes'>;

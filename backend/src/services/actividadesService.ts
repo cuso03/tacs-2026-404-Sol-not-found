@@ -26,7 +26,6 @@ export class ActividadesService {
       ...datos,
       creadorId,
       creadaEn: new Date().toISOString(),
-      estado: 'PROPUESTA',
       participantes: [creadorId],
     };
 
@@ -47,7 +46,7 @@ export class ActividadesService {
       fecha_horario: a.fecha_horario,
       rol: a.creadorId === userId ? 'organizador' : 'participante',
       estado: a.estado,
-      votacion_abierta: a.estado === 'EN_VOTACION' || !!a.votacionAbierta
+      votacion_abierta: a.estado === 'EN_VOTACION'
     }));
   }
 
