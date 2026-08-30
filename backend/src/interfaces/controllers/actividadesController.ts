@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { crearActividadSchema } from '../../dtos/actividadDto';
 import { reglasClimaSchema } from '../../dtos/reglasClimaDto';
 import { ActividadesService } from '../../services/actividadesService';
+import { buscarActividadesSchema } from '../../dtos/busquedaDto';
 
 /** Construye los controladores HTTP de actividades con sus dependencias. */
 export function createActividadesController(service: ActividadesService) {
@@ -43,9 +44,15 @@ export function createActividadesController(service: ActividadesService) {
   }
 
   /** Endpoint diagnóstico conservado para consultar el estado de la API. */
-  function getActividades(_req: Request, res: Response): void {
-    res.status(200).json({ mensaje: '¡El backend de TACS está funcionando perfectamente!', actividades: [] });
+  async function search(req: Request, res: Response): Promise<void> {
+    const parsed = buscarActividadesSchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Parámetros de búsqueda inválidos', details: parsed.error.issues });
+      return;
+    }
+    const resultados = await service.buscarActividades(parsed.data);
+    res.status(200).json(resultados);
   }
 
-  return { create, configureRules, getActividades };
+  return { create, configureRules, search };
 }

@@ -2,6 +2,9 @@
 export const TIPOS_ACTIVIDAD = ['aire_libre', 'techada', 'mixta'] as const;
 export type TipoActividad = (typeof TIPOS_ACTIVIDAD)[number];
 
+export const ESTADOS_ACTIVIDAD = ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'] as const;
+export type EstadoActividad = typeof ESTADOS_ACTIVIDAD[number];
+
 /** Ubicación identificada por ciudad y país para una consulta climática general. */
 export interface UbicacionCiudad {
   tipo: 'ciudad';
@@ -50,7 +53,14 @@ export interface Actividad {
   creadorId: string;
   creadaEn: string;
   reglasClima?: ReglasClima;
+  
+  estado: EstadoActividad;
+  participantes: string[]; // Lista de userIds inscriptos
+  votacionAbierta?: boolean; // Flag para el dashboard
 }
 
-/** Datos de negocio para crear una actividad, antes de ser persistida. */
+/** Datos completos para que el repositorio persista la actividad (incluye valores por defecto) */
 export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima'>;
+
+/** Datos puros ingresados por el usuario desde el controlador */
+export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'estado' | 'participantes' | 'votacionAbierta'>;
