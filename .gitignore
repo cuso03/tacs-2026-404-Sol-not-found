@@ -23,16 +23,3 @@ npm-debug.log*
 .DS_Store
 .vscode/
 .idea/
-
-# Configuración y estado de agentes (no va al repo)
-.kilo/
-AGENTS.md
-.opencode/
-opencode.jsonc
-.template-upstream/
-
-# Artefactos de análisis generados por el agente (no son del proyecto)
-analisis-feature5-diferencias.html
-comparativa-f5-f7-firma.html
-plan-fix-f5-contrato-plano.html
-backend-patterns-review.html
