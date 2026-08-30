@@ -28,6 +28,17 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/actividades/{id}/clima': {
+      get: {
+        summary: 'Consulta el clima actual y pronóstico para una actividad',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'Clima obtenido', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClimaResponse' } } } },
+          '404': { description: 'Actividad inexistente' },
+          '503': { description: 'Servicio de clima no disponible' },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -61,6 +72,24 @@ export const openApiDocument = {
       UbicacionCiudad: {
         type: 'object', required: ['tipo', 'ciudad', 'pais'], properties: {
           tipo: { type: 'string', enum: ['ciudad'] }, ciudad: { type: 'string', example: 'Buenos Aires' }, pais: { type: 'string', example: 'AR' },
+        },
+      },
+      ClimaActual: {
+        type: 'object', required: ['temperatura', 'condicion', 'viento', 'humedad'], properties: {
+          temperatura: { type: 'number', example: 18 }, condicion: { type: 'string', enum: ['SOLEADO', 'NUBLADO', 'PARCIALMENTE_NUBLADO', 'LLUVIA', 'TORMENTA'], example: 'NUBLADO' },
+          viento: { type: 'number', example: 14 }, humedad: { type: 'number', example: 62 },
+        },
+      },
+      PronosticoActividad: {
+        type: 'object', required: ['probabilidad_lluvia', 'temperatura', 'viento', 'condicion'], properties: {
+          probabilidad_lluvia: { type: 'number', minimum: 0, maximum: 100, example: 70 }, temperatura: { type: 'number', example: 16 },
+          viento: { type: 'number', example: 22 }, condicion: { type: 'string', enum: ['SOLEADO', 'NUBLADO', 'PARCIALMENTE_NUBLADO', 'LLUVIA', 'TORMENTA'], example: 'LLUVIA' },
+        },
+      },
+      ClimaResponse: {
+        type: 'object', required: ['ubicacion', 'fecha_horario', 'clima_actual', 'pronostico_actividad'], properties: {
+          ubicacion: { type: 'string', example: 'Buenos Aires' }, fecha_horario: { type: 'string', format: 'date-time', example: '2026-09-05T13:00:00' },
+          clima_actual: { $ref: '#/components/schemas/ClimaActual' }, pronostico_actividad: { $ref: '#/components/schemas/PronosticoActividad' },
         },
       },
     },
