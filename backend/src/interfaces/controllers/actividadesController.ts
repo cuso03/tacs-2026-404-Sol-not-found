@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { crearActividadSchema } from '../../dtos/actividadDto';
 import { reglasClimaSchema } from '../../dtos/reglasClimaDto';
 import { ActividadesService } from '../../services/actividadesService';
+import { buscarActividadesSchema } from '../../dtos/busquedaDto';
 
 /** Construye los controladores HTTP de actividades con sus dependencias. */
 export function createActividadesController(service: ActividadesService) {
@@ -42,10 +43,62 @@ export function createActividadesController(service: ActividadesService) {
     res.status(200).json(result.actividad);
   }
 
-  /** Endpoint diagnóstico conservado para consultar el estado de la API. */
-  function getActividades(_req: Request, res: Response): void {
-    res.status(200).json({ mensaje: '¡El backend de TACS está funcionando perfectamente!', actividades: [] });
+  async function addParticipant(req: Request, res: Response): Promise<void> {
+    const actividadId = req.params.id;
+    if (typeof actividadId !== 'string') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+
+    const result = await service.inscribirParticipante(actividadId, req.userId!);
+    if (result.status === 'not_found') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+    if (result.status === 'already_participating') {
+      res.status(400).json({ error: 'ALREADY_PARTICIPATING', message: 'El usuario ya participa en la actividad.' });
+      return;
+    }
+    if (result.status === 'full') {
+      res.status(400).json({ error: 'ACTIVITY_FULL', message: 'La actividad alcanzó su cupo máximo.' });
+      return;
+    }
+    res.status(201).json(result.actividad);
   }
 
-  return { create, configureRules, getActividades };
+  async function removeParticipant(req: Request, res: Response): Promise<void> {
+    const actividadId = req.params.id;
+    if (typeof actividadId !== 'string') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+
+    const result = await service.removerParticipante(actividadId, req.userId!);
+    if (result.status === 'not_found') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+    if (result.status === 'not_participating') {
+      res.status(400).json({ error: 'NOT_PARTICIPATING', message: 'El usuario no participa en la actividad.' });
+      return;
+    }
+    if (result.status === 'organizer_cannot_leave') {
+      res.status(400).json({ error: 'ORGANIZER_CANNOT_LEAVE', message: 'El organizador no puede darse de baja.' });
+      return;
+    }
+    res.status(200).json(result.actividad);
+  }
+
+  /** Endpoint diagnóstico conservado para consultar el estado de la API. */
+  async function search(req: Request, res: Response): Promise<void> {
+    const parsed = buscarActividadesSchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Parámetros de búsqueda inválidos', details: parsed.error.issues });
+      return;
+    }
+    const resultados = await service.buscarActividades(parsed.data);
+    res.status(200).json(resultados);
+  }
+
+  return { create, configureRules, addParticipant, removeParticipant, search };
 }

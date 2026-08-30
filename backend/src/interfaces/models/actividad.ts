@@ -1,8 +1,8 @@
 import { Votacion } from './votacion';
 
 /** Estados posibles de una actividad a lo largo de su ciclo de vida. */
-export const ESTADOS_ACTIVIDAD = ['programada', 'en_votacion', 'confirmada', 'cancelada'] as const;
-export type EstadoActividad = (typeof ESTADOS_ACTIVIDAD)[number];
+export const ESTADOS_ACTIVIDAD = ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'] as const;
+export type EstadoActividad = typeof ESTADOS_ACTIVIDAD[number];
 
 /** Valores permitidos para el entorno físico de una actividad. */
 export const TIPOS_ACTIVIDAD = ['aire_libre', 'techada', 'mixta'] as const;
@@ -60,9 +60,13 @@ export interface Actividad {
   estado: EstadoActividad;
   /** UserIds de los participantes inscritos en la actividad. */
   participantes: string[];
+  votacionAbierta?: boolean;
   /** Historial de votaciones de reprogramación de la actividad. */
   votaciones: Votacion[];
 }
 
 /** Datos de negocio para crear una actividad, antes de ser persistida. */
 export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima' | 'votaciones' | 'estado' | 'participantes'>;
+
+/** Datos puros ingresados por el usuario desde el controlador */
+export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'votacionAbierta'>;

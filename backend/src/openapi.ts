@@ -28,6 +28,47 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/actividades/{id}/clima': {
+      get: {
+        summary: 'Consulta el clima actual y pronóstico para una actividad',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        responses: {
+          '200': { description: 'Clima obtenido', content: { 'application/json': { schema: { $ref: '#/components/schemas/WeatherForecast' } } } },
+          '404': { description: 'Actividad inexistente' },
+          '503': { description: 'Servicio de clima no disponible' },
+        },
+      },
+    },
+    '/api/actividades/{id}/participantes': {
+      post: {
+        summary: 'Inscribe al usuario en una actividad',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '201': { description: 'Participante inscripto', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '400': { description: 'Usuario ya inscripto o actividad sin cupo' },
+          '401': { description: 'Usuario no autenticado' },
+          '404': { description: 'Actividad inexistente' },
+        },
+      },
+    },
+    '/api/actividades/{id}/participantes/me': {
+      delete: {
+        summary: 'Da de baja al usuario de una actividad',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': { description: 'Participante dado de baja', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '400': { description: 'Usuario no inscripto o baja del organizador' },
+          '401': { description: 'Usuario no autenticado' },
+          '404': { description: 'Actividad inexistente' },
+        },
+      },
+    },
     '/api/actividades/{id}/fechas-disponibles': {
       get: {
         summary: 'Obtiene fechas con clima adecuado para reprogramación',
@@ -63,22 +104,6 @@ export const openApiDocument = {
           '403': { description: 'El usuario no es el organizador' },
           '404': { description: 'Actividad inexistente' },
           '409': { description: 'Ya existe una votación activa' },
-        },
-      },
-      get: {
-        summary: 'Resultados parciales de la votación',
-        parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
-        ],
-        responses: {
-          '200': {
-            description: 'Resultados parciales',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/ResultadosVotacion' } } },
-          },
-          '400': { description: 'No hay votación activa' },
-          '401': { description: 'Usuario no autenticado' },
-          '404': { description: 'Actividad inexistente' },
         },
       },
     },
@@ -141,8 +166,8 @@ export const openApiDocument = {
           id: { type: 'string', format: 'uuid' },
           creadorId: { type: 'string' },
           creadaEn: { type: 'string', format: 'date-time' },
-          estado: { type: 'string', enum: ['programada', 'en_votacion', 'confirmada', 'cancelada'], example: 'programada' },
-          participantes: { type: 'array', items: { type: 'string' }, example: ['auth0|user-1', 'auth0|user-2'] },
+          estado: { type: 'string', enum: ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'], example: 'PROPUESTA' },
+          participantes: { type: 'array', uniqueItems: true, items: { type: 'string' }, example: ['auth0|user-1', 'auth0|user-2'] },
           reglasClima: { $ref: '#/components/schemas/ReglasClima' },
           votaciones: { type: 'array', items: { $ref: '#/components/schemas/Votacion' }, description: 'Historial de votaciones de reprogramación' },
         },
@@ -207,6 +232,18 @@ export const openApiDocument = {
       UbicacionCiudad: {
         type: 'object', required: ['tipo', 'ciudad', 'pais'], properties: {
           tipo: { type: 'string', enum: ['ciudad'] }, ciudad: { type: 'string', example: 'Buenos Aires' }, pais: { type: 'string', example: 'AR' },
+        },
+      },
+      WeatherForecast: {
+        type: 'object',
+        required: ['ubicacion', 'fecha_horario', 'probabilidad_lluvia', 'temperatura', 'viento', 'condicion'],
+        properties: {
+          ubicacion: { type: 'string', example: 'Buenos Aires' },
+          fecha_horario: { type: 'string', format: 'date-time', example: '2026-09-05T13:00:00' },
+          probabilidad_lluvia: { type: 'number', minimum: 0, maximum: 100, example: 70 },
+          temperatura: { type: 'number', example: 16 },
+          viento: { type: 'number', example: 22 },
+          condicion: { type: 'string', enum: ['SOLEADO', 'NUBLADO', 'PARCIALMENTE_NUBLADO', 'LLUVIA', 'TORMENTA'], example: 'LLUVIA' },
         },
       },
     },
