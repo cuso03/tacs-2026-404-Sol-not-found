@@ -22,14 +22,7 @@ export function createApp(
 
   app.use('/api/actividades', createActividadesRoutes(repository, weatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService));
-
-
-// Iniciamos el servidor
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
-});
-
-app.use('/api/actividades', notificacionesRoutes);
+  app.use('/api/actividades', notificacionesRoutes);
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
