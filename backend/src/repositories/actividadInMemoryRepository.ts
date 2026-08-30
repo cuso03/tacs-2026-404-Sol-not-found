@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { Actividad, NuevaActividad } from '../interfaces/models/actividad';
-import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
+import {
+  ActividadRepository,
+  InscribirParticipanteResult,
+  RemoverParticipanteResult,
+} from '../interfaces/repositories/actividadRepository';
 import { BuscarActividadesDto } from '../dtos/busquedaDto';
 
 /**
@@ -29,12 +33,12 @@ export class ActividadInMemoryRepository implements ActividadRepository {
     if (filtros.tipo) {
       resultados = resultados.filter(a => a.tipo === filtros.tipo);
     }
-    
+
     if (filtros.fecha_desde) {
       const fechaFiltro = new Date(filtros.fecha_desde).getTime();
       resultados = resultados.filter(a => new Date(a.fecha_horario).getTime() >= fechaFiltro);
     }
-    
+
     if (filtros.ubicacion) {
       const query = filtros.ubicacion.toLowerCase();
       resultados = resultados.filter(a => {
@@ -71,10 +75,36 @@ export class ActividadInMemoryRepository implements ActividadRepository {
     return this.copy(persisted);
   }
 
+  async addParticipant(id: string, userId: string): Promise<InscribirParticipanteResult> {
+    const actividad = this.actividades.get(id);
+    if (!actividad) return { status: 'not_found' };
+    if (actividad.participantes.includes(userId)) return { status: 'already_participating' };
+    if (actividad.participantes.length >= actividad.max_participantes) return { status: 'full' };
+
+    const updated = this.copy({ ...actividad, participantes: [...actividad.participantes, userId] });
+    this.actividades.set(id, updated);
+    return { status: 'created', actividad: this.copy(updated) };
+  }
+
+  async removeParticipant(id: string, userId: string): Promise<RemoverParticipanteResult> {
+    const actividad = this.actividades.get(id);
+    if (!actividad) return { status: 'not_found' };
+    if (actividad.creadorId === userId) return { status: 'organizer_cannot_leave' };
+    if (!actividad.participantes.includes(userId)) return { status: 'not_participating' };
+
+    const updated = this.copy({
+      ...actividad,
+      participantes: actividad.participantes.filter((participante) => participante !== userId),
+    });
+    this.actividades.set(id, updated);
+    return { status: 'removed', actividad: this.copy(updated) };
+  }
+
   /** Crea una copia profunda de los objetos anidados mutables de la actividad. */
   private copy(actividad: Actividad): Actividad {
+    const copied = { ...actividad, participantes: [...actividad.participantes] };
     return actividad.reglasClima
-      ? { ...actividad, reglasClima: { ...actividad.reglasClima, rango_horario: { ...actividad.reglasClima.rango_horario } } }
-      : { ...actividad };
+      ? { ...copied, reglasClima: { ...actividad.reglasClima, rango_horario: { ...actividad.reglasClima.rango_horario } } }
+      : copied;
   }
 }

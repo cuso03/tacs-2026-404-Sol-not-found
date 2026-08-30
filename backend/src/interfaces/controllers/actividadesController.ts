@@ -43,6 +43,52 @@ export function createActividadesController(service: ActividadesService) {
     res.status(200).json(result.actividad);
   }
 
+  async function addParticipant(req: Request, res: Response): Promise<void> {
+    const actividadId = req.params.id;
+    if (typeof actividadId !== 'string') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+
+    const result = await service.inscribirParticipante(actividadId, req.userId!);
+    if (result.status === 'not_found') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+    if (result.status === 'already_participating') {
+      res.status(400).json({ error: 'ALREADY_PARTICIPATING', message: 'El usuario ya participa en la actividad.' });
+      return;
+    }
+    if (result.status === 'full') {
+      res.status(400).json({ error: 'ACTIVITY_FULL', message: 'La actividad alcanzó su cupo máximo.' });
+      return;
+    }
+    res.status(201).json(result.actividad);
+  }
+
+  async function removeParticipant(req: Request, res: Response): Promise<void> {
+    const actividadId = req.params.id;
+    if (typeof actividadId !== 'string') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+
+    const result = await service.removerParticipante(actividadId, req.userId!);
+    if (result.status === 'not_found') {
+      res.status(404).json({ error: 'ACTIVITY_NOT_FOUND', message: 'Actividad no encontrada.' });
+      return;
+    }
+    if (result.status === 'not_participating') {
+      res.status(400).json({ error: 'NOT_PARTICIPATING', message: 'El usuario no participa en la actividad.' });
+      return;
+    }
+    if (result.status === 'organizer_cannot_leave') {
+      res.status(400).json({ error: 'ORGANIZER_CANNOT_LEAVE', message: 'El organizador no puede darse de baja.' });
+      return;
+    }
+    res.status(200).json(result.actividad);
+  }
+
   /** Endpoint diagnóstico conservado para consultar el estado de la API. */
   async function search(req: Request, res: Response): Promise<void> {
     const parsed = buscarActividadesSchema.safeParse(req.query);
@@ -54,5 +100,5 @@ export function createActividadesController(service: ActividadesService) {
     res.status(200).json(resultados);
   }
 
-  return { create, configureRules, search };
+  return { create, configureRules, addParticipant, removeParticipant, search };
 }

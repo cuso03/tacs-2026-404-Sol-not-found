@@ -53,10 +53,9 @@ export interface Actividad {
   creadorId: string;
   creadaEn: string;
   reglasClima?: ReglasClima;
-  
   estado: EstadoActividad;
-  participantes: string[]; // Lista de userIds inscriptos
-  votacionAbierta?: boolean; // Flag para el dashboard
+  participantes: string[];
+  votacionAbierta?: boolean;
 }
 
 /** Datos completos para que el repositorio persista la actividad (incluye valores por defecto) */

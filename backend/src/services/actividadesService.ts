@@ -1,5 +1,9 @@
 import { Actividad, NuevaActividad, ReglasClima, DatosCreacionActividad } from '../interfaces/models/actividad';
-import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
+import {
+  ActividadRepository,
+  InscribirParticipanteResult,
+  RemoverParticipanteResult,
+} from '../interfaces/repositories/actividadRepository';
 import { BuscarActividadesDto } from '../dtos/busquedaDto';
 
 /** Resultado posible al intentar configurar reglas para una actividad. */
@@ -18,13 +22,12 @@ export class ActividadesService {
 
   /** Crea una actividad y delega la generación de su id al repositorio. */
   async crearActividad(datos: DatosCreacionActividad, creadorId: string): Promise<Actividad> {
-    // Ensamblamos el objeto con los valores por defecto requeridos por el repositorio
-    const actividadParaGuardar: NuevaActividad = { 
-      ...datos, 
-      creadorId, 
+    const actividadParaGuardar: NuevaActividad = {
+      ...datos,
+      creadorId,
       creadaEn: new Date().toISOString(),
-      estado: 'PROPUESTA', // Estado inicial según el ciclo de vida de la actividad
-      participantes: [] 
+      estado: 'PROPUESTA',
+      participantes: [creadorId],
     };
 
     return this.repository.create(actividadParaGuardar);
@@ -36,7 +39,7 @@ export class ActividadesService {
 
   async obtenerDashboardUsuario(userId: string) {
     const actividades = await this.repository.findDashboardByUser(userId);
-    
+
     // Mapeo DTO específico para el Dashboard
     return actividades.map(a => ({
       id: a.id,
@@ -59,5 +62,13 @@ export class ActividadesService {
 
     const updated = await this.repository.update({ ...actividad, reglasClima });
     return updated ? { status: 'updated', actividad: updated } : { status: 'not_found' };
+  }
+
+  async inscribirParticipante(actividadId: string, userId: string): Promise<InscribirParticipanteResult> {
+    return this.repository.addParticipant(actividadId, userId);
+  }
+
+  async removerParticipante(actividadId: string, userId: string): Promise<RemoverParticipanteResult> {
+    return this.repository.removeParticipant(actividadId, userId);
   }
 }
