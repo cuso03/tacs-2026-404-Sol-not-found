@@ -3,6 +3,7 @@ import { ClimaMonitorService } from '../services/clima/ClimaMonitorService';
 import { MockWeatherService } from '../services/mockWeatherService';
 import { MockTelegramService } from '../services/notifications/MockTelegramService';
 import { Actividad } from '../interfaces/models/actividad';
+import {InMemoryEstadisticasStore} from "../utils/InMemmoryEstadisticasStore";
 
 export class NotificacionesMockController {
 
@@ -10,8 +11,9 @@ export class NotificacionesMockController {
     try {
       const weatherService = new MockWeatherService();
       const notifierService = new MockTelegramService();
+      const statsStore = new InMemoryEstadisticasStore()
 
-      const monitor = new ClimaMonitorService(weatherService, notifierService);
+      const monitor = new ClimaMonitorService(weatherService, notifierService, statsStore);
 
       const actividadMock: Actividad = {
         id: 'uuid-1234',
