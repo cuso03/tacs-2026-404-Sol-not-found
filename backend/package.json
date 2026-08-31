@@ -30,7 +30,9 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
+    "bullmq": "^6.3.2",
     "express": "^5.2.1",
+    "ioredis": "^6.0.0",
     "node-cron": "^4.6.0",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.3.5"

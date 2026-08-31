@@ -1,12 +1,12 @@
 import { Ubicacion } from '../interfaces/models/actividad';
-import { ClimaResponseDto as ClimaResponse } from '../dtos/climaDto';
+import { PronosticoHora } from '../interfaces/models/pronostico';
+import { ClimaResponseDto } from '../dtos/climaDto';
 import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 
 const normalizarUbicacion = (ubicacion: Ubicacion): string =>
   ubicacion.tipo === 'ciudad' ? `${ubicacion.ciudad}, ${ubicacion.pais}` : (ubicacion.direccion ?? `${ubicacion.latitud},${ubicacion.longitud}`);
 
-// 5 climas hardcodeados — sin generación, solo selección determinística
-const CLIMAS: ReadonlyArray<Omit<ClimaResponse, 'ubicacion' | 'fecha_horario'>> = [
+const CLIMAS: ReadonlyArray<Omit<ClimaResponseDto, 'ubicacion' | 'fecha_horario'>> = [
   {
     clima_actual: { temperatura: 22, condicion: 'SOLEADO', viento: 10, humedad: 55 },
     pronostico_actividad: { probabilidad_lluvia: 10, temperatura: 24, viento: 12, condicion: 'SOLEADO' },
@@ -29,7 +29,6 @@ const CLIMAS: ReadonlyArray<Omit<ClimaResponse, 'ubicacion' | 'fecha_horario'>> 
   },
 ] as const;
 
-// Selección determinística simple: misma ubicación+fecha -> mismo índice, distintas -> distinto (sin Math.random)
 const elegirIndice = (ubicacionStr: string, fecha_horario: string): number => {
   const raw = `${ubicacionStr}|${fecha_horario}`;
   let hash = 0;
@@ -45,7 +44,7 @@ const elegirIndice = (ubicacionStr: string, fecha_horario: string): number => {
 export class MockWeatherService implements IWeatherProvider {
   constructor(private readonly forcedIndex?: number) {}
 
-  async getClima(ubicacion: Ubicacion, fecha_horario: string): Promise<ClimaResponse> {
+  async getClima(ubicacion: Ubicacion, fecha_horario: string): Promise<ClimaResponseDto> {
     const ubicacionStr = normalizarUbicacion(ubicacion);
     const idx = this.forcedIndex ?? elegirIndice(ubicacionStr, fecha_horario);
     const base = CLIMAS[idx]!;
@@ -57,23 +56,27 @@ export class MockWeatherService implements IWeatherProvider {
     };
   }
 
-  async getForecastRange(ubicacion: Ubicacion, desde: string, hasta: string): Promise<ClimaResponse[]> {
-    const ubicacionStr = normalizarUbicacion(ubicacion);
-    const start = new Date(desde);
-    const end = new Date(hasta);
-    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return [];
+  async obtenerPronostico(_ubicacion: Ubicacion, fechaDesde: string, dias: number): Promise<PronosticoHora[]> {
+    const pronosticos: PronosticoHora[] = [];
+    const inicio = new Date(fechaDesde);
 
-    const results: ClimaResponse[] = [];
-    for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
-      const fecha_horario = cur.toISOString();
-      const idx = this.forcedIndex ?? elegirIndice(ubicacionStr, fecha_horario);
-      const base = CLIMAS[idx]!;
-      results.push({
-        ubicacion: ubicacionStr,
-        fecha_horario,
-        ...base,
-      });
+    for (let dia = 0; dia < dias; dia++) {
+      const fechaDia = new Date(inicio);
+      fechaDia.setDate(fechaDia.getDate() + dia + 1);
+
+      for (let hora = 8; hora <= 20; hora++) {
+        const fechaHora = new Date(fechaDia);
+        fechaHora.setHours(hora, 0, 0, 0);
+
+        pronosticos.push({
+          fecha: fechaHora.toISOString(),
+          probabilidad_lluvia: 10,
+          temperatura: 22,
+          viento: 15,
+        });
+      }
     }
-    return results;
+
+    return pronosticos;
   }
 }

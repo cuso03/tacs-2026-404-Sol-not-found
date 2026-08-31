@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { ClimaMonitorService } from '../services/clima/ClimaMonitorService';
-import { Actividad } from '../domain/models/actividad';
+import { Actividad } from '../interfaces/models/actividad';
 
 export class CronSetup {
   private monitorService: ClimaMonitorService;

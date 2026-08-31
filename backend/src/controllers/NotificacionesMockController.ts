@@ -1,36 +1,37 @@
 import { Request, Response } from 'express';
 import { ClimaMonitorService } from '../services/clima/ClimaMonitorService';
-import { MockWeatherService } from '../services/weather/MockWeatherService';
+import { MockWeatherService } from '../services/mockWeatherService';
 import { MockTelegramService } from '../services/notifications/MockTelegramService';
-import { ClimaEvaluatorService } from '../services/clima/ClimaEvaluatorService';
-import { Actividad } from '../domain/models/actividad';
+import { Actividad } from '../interfaces/models/actividad';
 
 export class NotificacionesMockController {
-  
+
   public async simularMonitoreo(req: Request, res: Response): Promise<void> {
     try {
       const weatherService = new MockWeatherService();
       const notifierService = new MockTelegramService();
-      const evaluatorService = new ClimaEvaluatorService();
-      
-      const monitor = new ClimaMonitorService(weatherService, notifierService, evaluatorService);
+
+      const monitor = new ClimaMonitorService(weatherService, notifierService);
 
       const actividadMock: Actividad = {
         id: 'uuid-1234',
         titulo: 'Partido de Futbol 5',
-        tipo: 'AIRE_LIBRE',
-        ubicacion: 'Buenos Aires',
+        descripcion: 'Partido amistoso en cancha 5',
+        tipo: 'aire_libre',
+        ubicacion: { tipo: 'ciudad', ciudad: 'Buenos Aires', pais: 'AR' },
         fecha_horario: '2026-10-15T19:00:00Z',
         min_participantes: 10,
         max_participantes: 10,
         creadorId: 'user-admin',
+        creadaEn: new Date().toISOString(),
         estado: 'CONFIRMADA',
         participantes: ['user-1', 'user-2', 'user-3'],
-        reglas_clima: {
-          probabilidad_lluvia_max: 20, 
+        votaciones: [],
+        reglasClima: {
+          probabilidad_lluvia_max: 20,
           temperatura_min: 10,
           temperatura_max: 30,
-          viento_max: 15, 
+          viento_max: 15,
           horas_anticipacion: 24,
           dias_max_reprogramacion: 3,
           rango_horario: { horario_min: '18:00', horario_max: '23:00' }
