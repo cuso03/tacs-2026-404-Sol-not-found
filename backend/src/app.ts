@@ -31,7 +31,12 @@ export function createApp(
 
   app.use('/api/actividades', createActividadesRoutes(repository, actividadesService, votacionService, weatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService));
+
   app.use('/api/notificaciones', notificacionesRoutes);
+
+
+app.use('/api/actividades', notificacionesRoutes);
+
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
