@@ -1,7 +1,7 @@
 
 services:
   backend:
-    build: 
+    build:
       context: ./backend
     container_name: tacs-backend
     ports:
@@ -13,3 +13,13 @@ services:
       - /app/node_modules
     env_file:
       - ./backend/.env
+    environment:
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+    depends_on:
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # Puerto principal de comunicación
+      - "15672:15672" # Puerto del panel de administración UI
