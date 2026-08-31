@@ -1,26 +1,23 @@
 import cron from 'node-cron';
 import { ClimaMonitorService } from '../services/clima/ClimaMonitorService';
-import { Actividad } from '../interfaces/models/actividad';
+import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 
 export class CronSetup {
-  private monitorService: ClimaMonitorService;
+  constructor(
+    private monitorService: ClimaMonitorService,
+    private repository: ActividadRepository
+  ) {}
 
-  constructor(monitorService: ClimaMonitorService) {
-    this.monitorService = monitorService;
-  }
-
-  public iniciarTareasProgramadas(actividadesEnMemoria: Actividad[]): void {
-    // Configura el cron para que se ejecute cada 1 hora (minuto 0 de cada hora)
+  public iniciarTareasProgramadas(): void {
     cron.schedule('0 * * * *', async () => {
       console.log('\n[CronJob] Iniciando evaluación periódica de clima...');
       
-      // Filtramos solo las actividades que están pendientes de realizarse
-      const actividadesAEvaluar = actividadesEnMemoria.filter(
+      const todasLasActividades = await this.repository.findAll({});
+      const actividadesAEvaluar = todasLasActividades.filter(
         (a) => a.estado === 'PROPUESTA' || a.estado === 'CONFIRMADA'
       );
 
       for (const actividad of actividadesAEvaluar) {
-        // Acá reutilizamos el motor que ya validamos que funciona
         await this.monitorService.checkActividadWeather(actividad);
       }
       

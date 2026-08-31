@@ -6,6 +6,7 @@ import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { IVotingJobQueue } from '../interfaces/services/votingJobQueue';
 import { filtrarHorasAdecuadas } from '../domain/clima';
+import { ActividadEventNotifier } from './notifications/ActividadEventNotifier';
 
 /** Resultado de obtener fechas disponibles. */
 export type FechasDisponiblesResult =
@@ -48,6 +49,7 @@ export class VotacionService {
     private readonly repository: ActividadRepository,
     private readonly weatherService: IWeatherProvider,
     private readonly jobQueue: IVotingJobQueue,
+    private readonly eventNotifier: ActividadEventNotifier
   ) {}
 
   /**
@@ -215,13 +217,9 @@ export class VotacionService {
     if (!votacion) return;
 
     const conteo: Record<string, number> = {};
-    for (const alt of votacion.alternativas) {
-      conteo[alt.id] = 0;
-    }
+    for (const alt of votacion.alternativas) conteo[alt.id] = 0;
     for (const altId of Object.values(votacion.votos)) {
-      if (conteo[altId] !== undefined) {
-        conteo[altId]++;
-      }
+      if (conteo[altId] !== undefined) conteo[altId]++;
     }
 
     let ganadora: Alternativa | null = null;
@@ -235,17 +233,22 @@ export class VotacionService {
 
     const totalVotos = Object.keys(votacion.votos).length;
 
+    // Resolución y Notificación Síncrona
     if (ganadora && maxVotos > 0 && totalVotos >= actividad.min_participantes) {
       await this.repository.update({
         ...actividad,
         estado: 'CONFIRMADA',
         fecha_horario: ganadora.fecha_horario,
       });
+      // US 13: Disparar alerta de reprogramación
+      await this.eventNotifier.notificarReprogramacion(actividad, ganadora.fecha_horario);
     } else {
       await this.repository.update({
         ...actividad,
         estado: 'CANCELADA',
       });
+      // US 13: Disparar alerta de cancelación
+      await this.eventNotifier.notificarCancelacion(actividad);
     }
   }
 
