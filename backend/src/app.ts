@@ -11,8 +11,8 @@ import { InMemoryVotingJobQueue } from './services/inMemoryVotingJobQueue';
 import { IVotingJobQueue } from './interfaces/services/votingJobQueue';
 import { createUsuariosRoutes } from './routes/usuariosRoutes';
 import { ActividadesService } from './services/actividadesService';
+import { TelegramService } from './services/notifications/TelegramService';
 
-// Importaciones de la Feature 7
 import { MockTelegramService } from './services/notifications/MockTelegramService';
 import { ActividadEventNotifier } from './services/notifications/ActividadEventNotifier';
 import { ClimaMonitorService } from './services/clima/ClimaMonitorService';
@@ -24,7 +24,7 @@ export function createApp(
   jobQueue: IVotingJobQueue = new InMemoryVotingJobQueue(),
 ) {
   // 1. Instanciar Servicios de Notificación y Clima (Feature 7)
-  const notifierService = new MockTelegramService();
+  const notifierService = new TelegramService();
   const eventNotifier = new ActividadEventNotifier(notifierService);
   const climaMonitor = new ClimaMonitorService(weatherProvider, notifierService);
 
