@@ -3,7 +3,7 @@ import { ClimaMonitorService } from '../services/clima/ClimaMonitorService';
 import { MockWeatherService } from '../services/mockWeatherService';
 import { MockTelegramService } from '../services/notifications/MockTelegramService';
 import { Actividad } from '../interfaces/models/actividad';
-import {InMemoryEstadisticasStore} from "../utils/InMemmoryEstadisticasStore";
+import {InMemoryEstadisticasStore} from "../utils/InMemoryEstadisticasStore";
 
 export class NotificacionesMockController {
 
