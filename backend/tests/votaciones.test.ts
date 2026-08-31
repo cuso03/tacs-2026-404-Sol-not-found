@@ -255,3 +255,75 @@ describe('GET /api/actividades/:id/votaciones/:votacionId', () => {
     expect(response.status).toBe(404);
   });
 });
+
+describe('DELETE /api/actividades/:id/votaciones/:votacionId', () => {
+  async function setupWithVoting() {
+    const repository = new ActividadInMemoryRepository();
+    const app = createApp(repository);
+    const id = await createActivityWithRules(app);
+
+    await request(app)
+      .post(`/api/actividades/${id}/votaciones`)
+      .set('X-User-Id', 'auth0|organizador-1')
+      .send({ alternativas: [{ fecha_horario: '2026-09-12T14:00:00-03:00' }, { fecha_horario: '2026-09-13T14:00:00-03:00' }] });
+
+    const actividad = await repository.findById(id);
+    const votacion = actividad!.votaciones[0];
+
+    await repository.update({ ...actividad!, participantes: ['auth0|user-1', 'auth0|user-2'] });
+
+    return { repository, app, id, votacion };
+  }
+
+  it('cierra manualmente la votación como organizador', async () => {
+    const { app, id, votacion } = await setupWithVoting();
+
+    const response = await request(app)
+      .delete(`/api/actividades/${id}/votaciones/${votacion.id}`)
+      .set('X-User-Id', 'auth0|organizador-1');
+
+    expect(response.status).toBe(200);
+    expect(response.body.estado).toMatch(/CONFIRMADA|CANCELADA/);
+  });
+
+  it('rechaza si el usuario no es el organizador', async () => {
+    const { app, id, votacion } = await setupWithVoting();
+
+    const response = await request(app)
+      .delete(`/api/actividades/${id}/votaciones/${votacion.id}`)
+      .set('X-User-Id', 'auth0|user-1');
+
+    expect(response.status).toBe(403);
+  });
+
+  it('retorna 404 si la actividad no existe', async () => {
+    const response = await request(createApp())
+      .delete('/api/actividades/id-inexistente/votaciones/votacion-inexistente')
+      .set('X-User-Id', 'auth0|organizador-1');
+    expect(response.status).toBe(404);
+  });
+
+  it('retorna 404 si la votación no existe', async () => {
+    const app = createApp();
+    const id = await createActivityWithRules(app);
+
+    const response = await request(app)
+      .delete(`/api/actividades/${id}/votaciones/votacion-inexistente`)
+      .set('X-User-Id', 'auth0|organizador-1');
+    expect(response.status).toBe(404);
+  });
+
+  it('retorna 409 si la votación ya está cerrada', async () => {
+    const { app, id, votacion } = await setupWithVoting();
+
+    await request(app)
+      .delete(`/api/actividades/${id}/votaciones/${votacion.id}`)
+      .set('X-User-Id', 'auth0|organizador-1');
+
+    const response = await request(app)
+      .delete(`/api/actividades/${id}/votaciones/${votacion.id}`)
+      .set('X-User-Id', 'auth0|organizador-1');
+
+    expect(response.status).toBe(409);
+  });
+});

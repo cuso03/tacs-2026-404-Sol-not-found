@@ -37,6 +37,14 @@ export type ResultadosVotacionResult =
   | { status: 'voting_not_found' }
   | { status: 'ok'; votacion: Votacion; conteo: Record<string, number>; totalVotos: number };
 
+/** Resultado de cerrar manualmente una votación. */
+export type CerrarVotacionResult =
+  | { status: 'not_found' }
+  | { status: 'voting_not_found' }
+  | { status: 'forbidden' }
+  | { status: 'voting_closed' }
+  | { status: 'closed'; actividad: Actividad };
+
 /** Datos para abrir una votación. */
 export interface AbrirVotacionDto {
   alternativas?: Array<{ fecha_horario: string }>;
@@ -202,6 +210,28 @@ export class VotacionService {
     const totalVotos = Object.keys(votacion.votos).length;
 
     return { status: 'ok', votacion, conteo, totalVotos };
+  }
+
+  /**
+   * Cierra manualmente una votación de reprogramación.
+   * Solo el organizador puede ejecutar esta acción.
+   */
+  async cerrarVotacionManual(actividadId: string, votacionId: string, userId: string): Promise<CerrarVotacionResult> {
+    const actividad = await this.repository.findById(actividadId);
+    if (!actividad) return { status: 'not_found' };
+    if (actividad.creadorId !== userId) return { status: 'forbidden' };
+
+    const votacion = this.buscarVotacion(actividad, votacionId);
+    if (!votacion) return { status: 'voting_not_found' };
+
+    const ahora = new Date();
+    if (new Date(votacion.cierraEn) <= ahora) return { status: 'voting_closed' };
+    if (actividad.estado !== 'EN_VOTACION') return { status: 'voting_closed' };
+
+    await this.cerrarVotacion(actividadId, votacionId);
+
+    const actividadActualizada = await this.repository.findById(actividadId);
+    return { status: 'closed', actividad: actividadActualizada! };
   }
 
   /**
