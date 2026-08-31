@@ -144,6 +144,22 @@ export const openApiDocument = {
           '404': { description: 'Actividad o votación inexistente' },
         },
       },
+      delete: {
+        summary: 'Cierra manualmente una votación de reprogramación',
+        description: 'Solo el organizador puede cerrar la votación. Se resuelve la reprogramación según los votos recibidos.',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'votacionId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': { description: 'Votación cerrada', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '401': { description: 'Usuario no autenticado' },
+          '403': { description: 'El usuario no es el organizador' },
+          '404': { description: 'Actividad o votación inexistente' },
+          '409': { description: 'La votación ya está cerrada' },
+        },
+      },
     },
   },
   components: {

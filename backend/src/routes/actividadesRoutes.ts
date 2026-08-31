@@ -33,6 +33,7 @@ export function createActividadesRoutes(
   router.post('/:id/votaciones', requireAuthenticatedUser, votacionController.abrirVotacion);
   router.post('/:id/votaciones/:votacionId/alternativas/:alternativaId/votar', requireAuthenticatedUser, votacionController.votar);
   router.get('/:id/votaciones/:votacionId', requireAuthenticatedUser, votacionController.getResultados);
+  router.delete('/:id/votaciones/:votacionId', requireAuthenticatedUser, votacionController.cerrarVotacion);
 
   return router;
 }

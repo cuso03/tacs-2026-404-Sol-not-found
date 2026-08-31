@@ -98,6 +98,37 @@ export function createVotacionesController(service: VotacionService) {
     res.status(200).json(result.votacion);
   }
 
+  /** Cierra manualmente una votación de reprogramación. Solo el organizador puede hacerlo. */
+  async function cerrarVotacion(req: Request, res: Response): Promise<void> {
+    const actividadId = req.params.id;
+    const votacionId = req.params.votacionId;
+    if (typeof actividadId !== 'string' || typeof votacionId !== 'string') {
+      res.status(404).json({ error: 'Actividad no encontrada' });
+      return;
+    }
+
+    const result = await service.cerrarVotacionManual(actividadId, votacionId, req.userId!);
+
+    if (result.status === 'not_found') {
+      res.status(404).json({ error: 'Actividad no encontrada' });
+      return;
+    }
+    if (result.status === 'voting_not_found') {
+      res.status(404).json({ error: 'Votación no encontrada' });
+      return;
+    }
+    if (result.status === 'forbidden') {
+      res.status(403).json({ error: 'Solo el organizador puede cerrar la votación' });
+      return;
+    }
+    if (result.status === 'voting_closed') {
+      res.status(409).json({ error: 'La votación ya está cerrada' });
+      return;
+    }
+
+    res.status(200).json(result.actividad);
+  }
+
   /** Retorna los resultados parciales de la votación indicada. */
   async function getResultados(req: Request, res: Response): Promise<void> {
     const actividadId = req.params.id;
@@ -125,5 +156,5 @@ export function createVotacionesController(service: VotacionService) {
     });
   }
 
-  return { getFechasDisponibles, abrirVotacion, votar, getResultados };
+  return { getFechasDisponibles, abrirVotacion, votar, cerrarVotacion, getResultados };
 }
