@@ -1,9 +1,12 @@
+import { Votacion } from './votacion';
+
+/** Estados posibles de una actividad a lo largo de su ciclo de vida. */
+export const ESTADOS_ACTIVIDAD = ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'] as const;
+export type EstadoActividad = typeof ESTADOS_ACTIVIDAD[number];
+
 /** Valores permitidos para el entorno físico de una actividad. */
 export const TIPOS_ACTIVIDAD = ['aire_libre', 'techada', 'mixta'] as const;
 export type TipoActividad = (typeof TIPOS_ACTIVIDAD)[number];
-
-export const ESTADOS_ACTIVIDAD = ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'] as const;
-export type EstadoActividad = typeof ESTADOS_ACTIVIDAD[number];
 
 /** Ubicación identificada por ciudad y país para una consulta climática general. */
 export interface UbicacionCiudad {
@@ -53,13 +56,16 @@ export interface Actividad {
   creadorId: string;
   creadaEn: string;
   reglasClima?: ReglasClima;
+  /** Estado actual de la actividad en su ciclo de vida. */
   estado: EstadoActividad;
+  /** UserIds de los participantes inscritos en la actividad. */
   participantes: string[];
-  votacionAbierta?: boolean;
+  /** Historial de votaciones de reprogramación de la actividad. */
+  votaciones: Votacion[];
 }
 
-/** Datos completos para que el repositorio persista la actividad (incluye valores por defecto) */
-export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima'>;
+/** Datos de negocio para crear una actividad, antes de ser persistida. */
+export type NuevaActividad = Omit<Actividad, 'id' | 'reglasClima' | 'votaciones'>;
 
 /** Datos puros ingresados por el usuario desde el controlador */
-export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'estado' | 'participantes' | 'votacionAbierta'>;
+export type DatosCreacionActividad = Omit<NuevaActividad, 'creadorId' | 'creadaEn' | 'participantes' | 'estado'>;
