@@ -12,8 +12,9 @@ import { IVotingJobQueue } from './interfaces/services/votingJobQueue';
 import { createUsuariosRoutes } from './routes/usuariosRoutes';
 import { ActividadesService } from './services/actividadesService';
 
-// Importaciones de la Feature 7
-import { MockTelegramService } from './services/notifications/MockTelegramService';
+import { RabbitMQNotifier } from './services/notifications/RabbitMQNotifier';
+import { NotificationWorker } from './services/notifications/NotificationWorker';
+import { TelegramService } from './services/notifications/TelegramService';
 import { ActividadEventNotifier } from './services/notifications/ActividadEventNotifier';
 import { ClimaMonitorService } from './services/clima/ClimaMonitorService';
 import { CronSetup } from './cronJobs/CronSetup';
@@ -23,10 +24,15 @@ export function createApp(
   weatherProvider: IWeatherProvider = new MockWeatherService(),
   jobQueue: IVotingJobQueue = new InMemoryVotingJobQueue(),
 ) {
-  // 1. Instanciar Servicios de Notificación y Clima (Feature 7)
-  const notifierService = new MockTelegramService();
-  const eventNotifier = new ActividadEventNotifier(notifierService);
-  const climaMonitor = new ClimaMonitorService(weatherProvider, notifierService);
+  // 1. Feature 7
+  const rabbitNotifier = new RabbitMQNotifier(); // El orquestador usa la cola
+  const telegramService = new TelegramService(); // El worker usa Telegram
+
+  const eventNotifier = new ActividadEventNotifier(rabbitNotifier);
+  const climaMonitor = new ClimaMonitorService(weatherProvider, rabbitNotifier);
+
+  const notificationWorker = new NotificationWorker(telegramService);
+  notificationWorker.iniciar();
 
   // 2. Instanciar VotacionService inyectando el Notificador
   const votacionService = new VotacionService(repository, weatherProvider, jobQueue, eventNotifier);
@@ -48,7 +54,6 @@ export function createApp(
   app.use('/api/actividades', createActividadesRoutes(repository, actividadesService, votacionService, weatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService));
   
-  // Se corrigió el duplicado: notificacionesRoutes contiene tu endpoint mock
   app.use('/api/actividades', notificacionesRoutes);
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
