@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createUsuariosController } from '../interfaces/controllers/usuariosController';
+import { createUsuariosController } from '../controllers/usuariosController';
 import { requireAuthenticatedUser } from '../middleware/authenticatedUser';
 import { ActividadesService } from '../services/actividadesService';
 

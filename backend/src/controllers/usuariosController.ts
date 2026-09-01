@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { ActividadesService } from '../../services/actividadesService';
-import { paginacionSchema } from '../../dtos/busquedaDto';
+import { ActividadesService } from '../services/actividadesService';
+import { paginacionSchema } from '../dtos/busquedaDto';
 
 export function createUsuariosController(service: ActividadesService) {
   async function getDashboard(req: Request, res: Response): Promise<void> {

@@ -7,6 +7,7 @@ import { ActividadRepository } from '../interfaces/repositories/actividadReposit
 import { IVotingJobQueue } from '../interfaces/services/votingJobQueue';
 import { filtrarHorasAdecuadas } from '../domain/clima';
 import { ActividadEventNotifier } from './notifications/ActividadEventNotifier';
+import {IEstadisticasStore} from "../utils/IEstadisticasStore";
 
 /** Resultado de obtener fechas disponibles. */
 export type FechasDisponiblesResult =
@@ -57,7 +58,9 @@ export class VotacionService {
     private readonly repository: ActividadRepository,
     private readonly weatherService: IWeatherProvider,
     private readonly jobQueue: IVotingJobQueue,
-    private readonly eventNotifier: ActividadEventNotifier
+    private readonly eventNotifier: ActividadEventNotifier,
+    private statsStore: IEstadisticasStore
+
   ) {}
 
   /**
@@ -279,6 +282,9 @@ export class VotacionService {
       });
       // US 13: Disparar alerta de cancelación
       await this.eventNotifier.notificarCancelacion(actividad);
+
+      //US 14: guardar Estadistica
+      await this.statsStore.incrementar('Actividad_Reprogramada');
     }
   }
 

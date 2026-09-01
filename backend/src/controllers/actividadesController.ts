@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { crearActividadSchema } from '../../dtos/actividadDto';
-import { reglasClimaSchema } from '../../dtos/reglasClimaDto';
-import { ActividadesService } from '../../services/actividadesService';
-import { buscarActividadesSchema } from '../../dtos/busquedaDto';
+import { crearActividadSchema } from '../dtos/actividadDto';
+import { reglasClimaSchema } from '../dtos/reglasClimaDto';
+import { ActividadesService } from '../services/actividadesService';
+import { buscarActividadesSchema } from '../dtos/busquedaDto';
 
 /** Construye los controladores HTTP de actividades con sus dependencias. */
 export function createActividadesController(service: ActividadesService) {

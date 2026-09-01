@@ -39,13 +39,13 @@ export function createApp(
   const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier, estadisticas);
 
   // 2. Instanciar VotacionService inyectando el Notificador
-  const votacionService = new VotacionService(repository, weatherProvider, jobQueue, eventNotifier);
+  const votacionService = new VotacionService(repository, weatherProvider, jobQueue, eventNotifier, estadisticas);
 
   if (jobQueue instanceof InMemoryVotingJobQueue) {
     jobQueue.setVotacionService(votacionService);
   }
 
-  const actividadesService = new ActividadesService(repository);
+  const actividadesService = new ActividadesService(repository, estadisticas);
   const estadisticasStoreService = new EstadisticasStoreService(estadisticas)
 
   if (process.env.NODE_ENV !== 'test') { // si ejecutamos tests, no usamos ni cron ni nos conectamos con telegram.

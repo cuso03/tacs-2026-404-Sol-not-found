@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { ClimaService } from '../../services/climaService';
+import { ClimaService } from '../services/climaService';
 
 /** Crea el controlador de consulta de clima por ID de actividad. */
 export function createClimaController(service: ClimaService) {

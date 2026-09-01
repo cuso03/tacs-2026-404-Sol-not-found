@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { abrirVotacionSchema } from '../../dtos/votacionDto';
-import { VotacionService } from '../../services/votacionService';
+import { abrirVotacionSchema } from '../dtos/votacionDto';
+import { VotacionService } from '../services/votacionService';
 
 /** Construye los controladores HTTP de votaciones con sus dependencias. */
 export function createVotacionesController(service: VotacionService) {

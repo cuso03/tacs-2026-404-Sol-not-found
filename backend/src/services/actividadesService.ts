@@ -5,6 +5,7 @@ import {
   RemoverParticipanteResult,
 } from '../interfaces/repositories/actividadRepository';
 import { BuscarActividadesDto, PaginacionDto } from '../dtos/busquedaDto';
+import {IEstadisticasStore} from "../utils/IEstadisticasStore";
 
 export type ConfigurarReglasResult =
   | { status: 'not_found' }
@@ -12,7 +13,7 @@ export type ConfigurarReglasResult =
   | { status: 'updated'; actividad: Actividad };
 
 export class ActividadesService {
-  constructor(private readonly repository: ActividadRepository) {}
+  constructor(private readonly repository: ActividadRepository, private statsStore: IEstadisticasStore) {}
 
   async crearActividad(datos: DatosCreacionActividad, creadorId: string): Promise<Actividad> {
     const actividadParaGuardar: NuevaActividad = {
@@ -22,7 +23,7 @@ export class ActividadesService {
       estado: 'PROPUESTA',
       participantes: [creadorId],
     };
-
+    await this.statsStore.incrementar('Actividad_Creada');
     return this.repository.create(actividadParaGuardar);
   }
 

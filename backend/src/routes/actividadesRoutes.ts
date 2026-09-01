@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { createActividadesController } from '../interfaces/controllers/actividadesController';
-import { createVotacionesController } from '../interfaces/controllers/votacionesController';
-import { createClimaController } from '../interfaces/controllers/climaController';
+import { createActividadesController } from '../controllers/actividadesController';
+import { createVotacionesController } from '../controllers/votacionesController';
+import { createClimaController } from '../controllers/climaController';
 import { requireAuthenticatedUser } from '../middleware/authenticatedUser';
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
