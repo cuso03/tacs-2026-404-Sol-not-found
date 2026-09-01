@@ -32,18 +32,16 @@ export class ActividadInMemoryRepository implements ActividadRepository {
     return actividad ? this.copy(actividad) : undefined;
   }
 
-  async findAll(filtros: BuscarActividadesDto): Promise<Actividad[]> {
+  async findAll(filtros: BuscarActividadesDto): Promise<{ data: Actividad[], total: number }> {
     let resultados = Array.from(this.actividades.values());
 
     if (filtros.tipo) {
       resultados = resultados.filter(a => a.tipo === filtros.tipo);
     }
-
     if (filtros.fecha_desde) {
       const fechaFiltro = new Date(filtros.fecha_desde).getTime();
       resultados = resultados.filter(a => new Date(a.fecha_horario).getTime() >= fechaFiltro);
     }
-
     if (filtros.ubicacion) {
       const query = filtros.ubicacion.toLowerCase();
       resultados = resultados.filter(a => {
@@ -57,19 +55,27 @@ export class ActividadInMemoryRepository implements ActividadRepository {
       });
     }
 
-    // Filtrar cupos disponibles (Preparación para Feature 4)
     resultados = resultados.filter(a => a.participantes.length < a.max_participantes);
 
-    return resultados.map(a => this.copy(a));
+    const total = resultados.length;
+    const startIndex = (filtros.page - 1) * filtros.limit;
+    const paginated = resultados.slice(startIndex, startIndex + filtros.limit);
+
+    return { data: paginated.map(a => this.copy(a)), total };
   }
 
-  async findDashboardByUser(userId: string): Promise<Actividad[]> {
+  async findDashboardByUser(userId: string, paginacion: import('../dtos/busquedaDto').PaginacionDto): Promise<{ data: Actividad[], total: number }> {
     const resultados = Array.from(this.actividades.values()).filter(a => {
       const esCreador = a.creadorId === userId;
       const esParticipante = a.participantes.includes(userId);
       return esCreador || esParticipante;
     });
-    return resultados.map(a => this.copy(a));
+
+    const total = resultados.length;
+    const startIndex = (paginacion.page - 1) * paginacion.limit;
+    const paginated = resultados.slice(startIndex, startIndex + paginacion.limit);
+
+    return { data: paginated.map(a => this.copy(a)), total };
   }
 
   /** Reemplaza una actividad existente y devuelve una copia del nuevo estado. */

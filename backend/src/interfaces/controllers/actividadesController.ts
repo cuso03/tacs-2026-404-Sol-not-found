@@ -96,8 +96,19 @@ export function createActividadesController(service: ActividadesService) {
       res.status(400).json({ error: 'Parámetros de búsqueda inválidos', details: parsed.error.issues });
       return;
     }
-    const resultados = await service.buscarActividades(parsed.data);
-    res.status(200).json(resultados);
+    
+    // El servicio ahora debe retornar { data, total }
+    const { data, total } = await service.buscarActividades(parsed.data);
+    
+    res.status(200).json({
+      data,
+      meta: {
+        total,
+        page: parsed.data.page,
+        limit: parsed.data.limit,
+        totalPages: Math.ceil(total / parsed.data.limit)
+      }
+    });
   }
 
   return { create, configureRules, addParticipant, removeParticipant, search };

@@ -13,7 +13,8 @@ export class CronSetup {
     cron.schedule('* * * * *', async () => {
       console.log('\n[CronJob] Iniciando evaluación periódica de clima...');
       
-      const todasLasActividades = await this.repository.findAll({});
+      const { data: todasLasActividades } = await this.repository.findAll({ page: 1, limit: 10000 });
+      
       const actividadesAEvaluar = todasLasActividades.filter(
         (a) => a.estado === 'PROPUESTA' || a.estado === 'CONFIRMADA'
       );

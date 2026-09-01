@@ -1,6 +1,6 @@
 import { Actividad, NuevaActividad } from '../models/actividad';
 import { Repository } from './repository';
-import { BuscarActividadesDto } from '../../dtos/busquedaDto';
+import { BuscarActividadesDto, PaginacionDto } from '../../dtos/busquedaDto';
 
 export type InscribirParticipanteResult =
   | { status: 'created'; actividad: Actividad }
@@ -18,6 +18,6 @@ export type RemoverParticipanteResult =
 export interface ActividadRepository extends Repository<Actividad, NuevaActividad> {
   addParticipant(id: string, userId: string): Promise<InscribirParticipanteResult>;
   removeParticipant(id: string, userId: string): Promise<RemoverParticipanteResult>;
-  findAll(filtros: BuscarActividadesDto): Promise<Actividad[]>;
-  findDashboardByUser(userId: string): Promise<Actividad[]>;
+  findAll(filtros: BuscarActividadesDto): Promise<{ data: Actividad[], total: number }>;
+  findDashboardByUser(userId: string, paginacion: PaginacionDto): Promise<{ data: Actividad[], total: number }>;
 }

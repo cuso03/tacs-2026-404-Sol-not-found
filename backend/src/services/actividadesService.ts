@@ -4,23 +4,16 @@ import {
   InscribirParticipanteResult,
   RemoverParticipanteResult,
 } from '../interfaces/repositories/actividadRepository';
-import { BuscarActividadesDto } from '../dtos/busquedaDto';
+import { BuscarActividadesDto, PaginacionDto } from '../dtos/busquedaDto';
 
-/** Resultado posible al intentar configurar reglas para una actividad. */
 export type ConfigurarReglasResult =
   | { status: 'not_found' }
   | { status: 'forbidden' }
   | { status: 'updated'; actividad: Actividad };
 
-/**
- * Contiene los casos de uso de actividades independientes del protocolo HTTP.
- * Se inyecta un repositorio, por lo que sus métodos se prueban sin Express ni
- * una fuente de persistencia externa.
- */
 export class ActividadesService {
   constructor(private readonly repository: ActividadRepository) {}
 
-  /** Crea una actividad y delega la generación de su id al repositorio. */
   async crearActividad(datos: DatosCreacionActividad, creadorId: string): Promise<Actividad> {
     const actividadParaGuardar: NuevaActividad = {
       ...datos,
@@ -33,15 +26,16 @@ export class ActividadesService {
     return this.repository.create(actividadParaGuardar);
   }
 
-  async buscarActividades(filtros: BuscarActividadesDto): Promise<Actividad[]> {
+  // Ahora retorna directamente la promesa con { data, total }
+  async buscarActividades(filtros: BuscarActividadesDto): Promise<{ data: Actividad[], total: number }> {
     return this.repository.findAll(filtros);
   }
 
-  async obtenerDashboardUsuario(userId: string) {
-    const actividades = await this.repository.findDashboardByUser(userId);
+  // Recibe la paginación, busca, extrae el total, y solo mapea el array "data"
+  async obtenerDashboardUsuario(userId: string, paginacion: PaginacionDto) {
+    const result = await this.repository.findDashboardByUser(userId, paginacion);
 
-    // Mapeo DTO específico para el Dashboard
-    return actividades.map(a => ({
+    const mappedData = result.data.map(a => ({
       id: a.id,
       titulo: a.titulo,
       fecha_horario: a.fecha_horario,
@@ -49,12 +43,10 @@ export class ActividadesService {
       estado: a.estado,
       votacion_abierta: a.estado === 'EN_VOTACION'
     }));
+
+    return { data: mappedData, total: result.total };
   }
 
-  /**
-   * Asocia reglas climáticas a una actividad si el solicitante es su organizador.
-   * La autorización se mantiene aquí para que no dependa del adaptador HTTP.
-   */
   async configurarReglasClima(actividadId: string, reglasClima: ReglasClima, solicitanteId: string): Promise<ConfigurarReglasResult> {
     const actividad = await this.repository.findById(actividadId);
     if (!actividad) return { status: 'not_found' };
