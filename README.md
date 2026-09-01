@@ -74,6 +74,17 @@ cp .env.example .env
 npm run dev
 ```
 
+### Ejecutar los tests
+
+Los tests del backend utilizan Vitest. Desde la raíz del proyecto:
+
+```bash
+cd backend
+npm test
+```
+
+El script `npm test` ejecuta internamente `vitest run`. También puede invocarse de forma directa con `npx vitest run`.
+
 ### Estructura del proyecto
 
 ```
@@ -88,3 +99,19 @@ npm run dev
 ├── docker-compose.yml
 └── README.md
 ```
+
+## Uso de inteligencia artificial
+
+El setup de IA incluyó dos agentes de programación con acceso al repositorio y a la terminal: **Codex de OpenAI** y **OpenCode**. Estas herramientas cumplen la función de harness al conectar los modelos con el código y las herramientas de desarrollo. Codex se utilizó con el modelo **GPT-5.6 Sol** y OpenCode con **Xiaomi MiMo-V2.5**.
+
+Además, se utilizó **Gemini desde su interfaz web** para obtener propuestas de código que luego fueron revisadas y adaptadas antes de incorporarlas al proyecto; no se registró el modelo específico empleado en esa interfaz.
+
+Estas herramientas se emplearon para analizar requerimientos, explorar alternativas de diseño, asistir en la implementación y los tests, revisar código y redactar documentación.
+
+Los prompts describen la tarea, sus criterios de aceptación y las restricciones técnicas. Por ejemplo: analizar una historia de usuario antes de implementarla, proponer una solución compatible con la arquitectura existente o revisar una funcionalidad junto con sus tests.
+
+Las propuestas generadas se revisan y validan por el equipo.
+
+### Decisiones de arquitectura
+
+Las decisiones de arquitectura relevantes y su justificación se registran como ADR en [`docs/adr`](docs/adr/). Los ADR no forman parte del harness: conservan el contexto y el motivo de las decisiones tomadas por el equipo.
