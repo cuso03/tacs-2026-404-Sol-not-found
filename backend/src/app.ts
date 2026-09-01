@@ -9,6 +9,8 @@ import { VotacionService } from './services/votacionService';
 import { MockWeatherService } from './services/mockWeatherService';
 import { InMemoryVotingJobQueue } from './services/inMemoryVotingJobQueue';
 import { IVotingJobQueue } from './interfaces/services/votingJobQueue';
+import { Redis } from 'ioredis';
+import { BullMQVotingJobQueue, createVotingWorker } from './infrastructure/bullmq/votingJobQueue';
 import { createUsuariosRoutes } from './routes/usuariosRoutes';
 import { ActividadesService } from './services/actividadesService';
 import {createEstadisticasRouter} from "./routes/estadisticasRoutes";
@@ -22,10 +24,19 @@ import { ActividadEventNotifier } from './services/notifications/ActividadEventN
 import { ClimaMonitorService } from './services/clima/ClimaMonitorService';
 import { CronSetup } from './cronJobs/CronSetup';
 
+function createJobQueue(): IVotingJobQueue {
+  const useBullMq = process.env.USE_BULLMQ === 'true' && process.env.NODE_ENV !== 'test';
+  if (useBullMq) {
+    const connection = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
+    return new BullMQVotingJobQueue(connection);
+  }
+  return new InMemoryVotingJobQueue();
+}
+
 export function createApp(
   repository = new ActividadInMemoryRepository(),
   weatherProvider: IWeatherProvider = new MockWeatherService(),
-  jobQueue: IVotingJobQueue = new InMemoryVotingJobQueue(),
+  jobQueue: IVotingJobQueue = createJobQueue(),
   estadisticas = new InMemoryEstadisticasStore(),
 ) {
   // 1. Feature 7
@@ -51,6 +62,14 @@ export function createApp(
   if (process.env.NODE_ENV !== 'test') { // si ejecutamos tests, no usamos ni cron ni nos conectamos con telegram.
     const notificationWorker = new NotificationWorker(telegramService);
     notificationWorker.iniciar();
+
+    if (process.env.USE_BULLMQ === 'true') {
+      const redisConnection = new Redis(process.env.REDIS_URL ?? 'redis://redis:6379');
+      createVotingWorker(
+        (actividadId, votacionId) => votacionService.cerrarVotacion(actividadId, votacionId),
+        redisConnection,
+      );
+    }
 
     // 3. Inicializar Cronjobs en el arranque
     const cronSetup = new CronSetup(climaMonitor, repository);
