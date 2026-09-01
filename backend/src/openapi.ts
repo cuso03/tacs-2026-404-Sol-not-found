@@ -3,6 +3,16 @@ export const openApiDocument = {
   openapi: '3.0.3', info: { title: 'TACS API', version: '1.0.0' },
   paths: {
     '/api/actividades': {
+      get: {
+        summary: 'Busca actividades',
+        parameters: [
+          { name: 'page', in: 'query', required: false, schema: { type: 'integer', minimum: 1, default: 1 } },
+          { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, default: 10 } },
+        ],
+        responses: {
+          '200': { description: 'Lista de actividades' },
+        },
+      },
       post: {
         summary: 'Crea una actividad',
         parameters: [{ name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } }],
@@ -161,12 +171,16 @@ export const openApiDocument = {
         },
       },
     },
-    '/api/estadisticas': {
+    '/api/admin/estadisticas': {
       get: {
 
         summary: 'Obtiene las estadísticas del sistema',
 
         description: 'Devuelve todas las métricas registradas en el sistema. Requiere permisos de administrador.',
+
+        parameters: [
+          { name: 'X-User-Role', in: 'header', required: true, schema: { type: 'string' } },
+        ],
 
         responses: {
 
