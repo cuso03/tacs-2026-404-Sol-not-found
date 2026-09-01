@@ -24,9 +24,9 @@ import { CronSetup } from './cronJobs/CronSetup';
 
 export function createApp(
   repository = new ActividadInMemoryRepository(),
-  estadisticas = new InMemoryEstadisticasStore(),
   weatherProvider: IWeatherProvider = new MockWeatherService(),
   jobQueue: IVotingJobQueue = new InMemoryVotingJobQueue(),
+  estadisticas = new InMemoryEstadisticasStore(),
 ) {
   // 1. Feature 7
   //const rabbitNotifier = new RabbitMQNotifier(); // El orquestador usa la cola
@@ -36,7 +36,7 @@ export function createApp(
   const telegramService = new TelegramService(); // El worker usa Telegram
 
   const eventNotifier = new ActividadEventNotifier(baseNotifier);
-  const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier);
+  const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier, estadisticas);
 
   // 2. Instanciar VotacionService inyectando el Notificador
   const votacionService = new VotacionService(repository, weatherProvider, jobQueue, eventNotifier);
@@ -46,6 +46,7 @@ export function createApp(
   }
 
   const actividadesService = new ActividadesService(repository);
+  const estadisticasStoreService = new EstadisticasStoreService(estadisticas)
 
   if (process.env.NODE_ENV !== 'test') { // si ejecutamos tests, no usamos ni cron ni nos conectamos con telegram.
     const notificationWorker = new NotificationWorker(telegramService);
@@ -58,9 +59,6 @@ export function createApp(
 
   const app = express();
   app.use(express.json({ limit: '100kb' }));
-
-  const actividadesService = new ActividadesService(repository);
-  const estadisticasStoreService = new EstadisticasStoreService(estadisticas)
 
   // 4. Configurar Rutas
   app.use('/api/actividades', createActividadesRoutes(repository, actividadesService, votacionService, weatherProvider));
