@@ -18,3 +18,11 @@ export function requireAuthenticatedUser(req: Request, res: Response, next: Next
   req.userId = userId;
   next();
 }
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (req.headers['x-user-role'] !== 'admin') {
+    res.status(403).json({ error: 'Requiere rol admin' });
+    return;
+  }
+  next();
+}
