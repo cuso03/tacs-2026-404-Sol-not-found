@@ -170,6 +170,18 @@ describe('OpenAPI de participantes', () => {
   });
 });
 
+describe('OpenAPI de rutas incorporadas recientemente', () => {
+  it('documenta búsqueda, dashboard, estadísticas y simulación de notificaciones', () => {
+    const paths = openApiDocument.paths;
+
+    expect(paths['/api/actividades'].get.parameters).toContainEqual(expect.objectContaining({ name: 'page', in: 'query' }));
+    expect(paths['/api/actividades'].get.responses).toHaveProperty('200');
+    expect(paths['/api/usuarios/me/actividades'].get.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Id', required: true }));
+    expect(paths['/api/admin/estadisticas'].get.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Role', required: true }));
+    expect(paths['/api/notificaciones/simular-inicio'].post.responses).toHaveProperty('200');
+  });
+});
+
 describe('POST /api/actividades/:id/reglas', () => {
   async function createActivity() {
     const app = createApp();

@@ -3,6 +3,20 @@ export const openApiDocument = {
   openapi: '3.0.3', info: { title: 'TACS API', version: '1.0.0' },
   paths: {
     '/api/actividades': {
+      get: {
+        summary: 'Lista actividades con filtros y paginación',
+        parameters: [
+          { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 } },
+          { name: 'tipo', in: 'query', schema: { type: 'string', enum: ['aire_libre', 'techada', 'mixta'] } },
+          { name: 'fecha_desde', in: 'query', schema: { type: 'string', format: 'date-time' } },
+          { name: 'ubicacion', in: 'query', schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': { description: 'Página de actividades', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaginaActividades' } } } },
+          '400': { description: 'Parámetros de búsqueda inválidos' },
+        },
+      },
       post: {
         summary: 'Crea una actividad',
         parameters: [{ name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } }],
@@ -161,6 +175,41 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/usuarios/me/actividades': {
+      get: {
+        summary: 'Obtiene el dashboard de actividades del usuario autenticado',
+        parameters: [
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+          { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, default: 1 } },
+          { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 } },
+        ],
+        responses: {
+          '200': { description: 'Página del dashboard', content: { 'application/json': { schema: { $ref: '#/components/schemas/PaginaDashboardUsuario' } } } },
+          '400': { description: 'Parámetros de paginación inválidos' },
+          '401': { description: 'Usuario no autenticado' },
+        },
+      },
+    },
+    '/api/admin/estadisticas': {
+      get: {
+        summary: 'Consulta métricas acumuladas de la aplicación',
+        parameters: [{ name: 'X-User-Role', in: 'header', required: true, schema: { type: 'string', enum: ['admin'] } }],
+        responses: {
+          '200': { description: 'Métricas disponibles', content: { 'application/json': { schema: { $ref: '#/components/schemas/Estadisticas' } } } },
+          '403': { description: 'Se requiere rol administrador' },
+          '500': { description: 'Error al obtener las estadísticas' },
+        },
+      },
+    },
+    '/api/notificaciones/simular-inicio': {
+      post: {
+        summary: 'Ejecuta una simulación del monitoreo climático y notificaciones',
+        responses: {
+          '200': { description: 'Simulación ejecutada', content: { 'application/json': { schema: { $ref: '#/components/schemas/SimulacionMonitoreo' } } } },
+          '500': { description: 'Error al ejecutar la simulación' },
+        },
+      },
+    },
   },
   components: {
     schemas: {
@@ -261,6 +310,48 @@ export const openApiDocument = {
           viento: { type: 'number', example: 22 },
           condicion: { type: 'string', enum: ['SOLEADO', 'NUBLADO', 'PARCIALMENTE_NUBLADO', 'LLUVIA', 'TORMENTA'], example: 'LLUVIA' },
         },
+      },
+      PaginacionMeta: {
+        type: 'object', required: ['total', 'page', 'limit', 'totalPages'],
+        properties: {
+          total: { type: 'integer', minimum: 0, example: 25 },
+          page: { type: 'integer', minimum: 1, example: 1 },
+          limit: { type: 'integer', minimum: 1, example: 10 },
+          totalPages: { type: 'integer', minimum: 0, example: 3 },
+        },
+      },
+      PaginaActividades: {
+        type: 'object', required: ['data', 'meta'],
+        properties: {
+          data: { type: 'array', items: { $ref: '#/components/schemas/Actividad' } },
+          meta: { $ref: '#/components/schemas/PaginacionMeta' },
+        },
+      },
+      ActividadDashboard: {
+        type: 'object', required: ['id', 'titulo', 'fecha_horario', 'rol', 'estado', 'votacion_abierta'],
+        properties: {
+          id: { type: 'string', format: 'uuid' }, titulo: { type: 'string' }, fecha_horario: { type: 'string', format: 'date-time' },
+          rol: { type: 'string', enum: ['organizador', 'participante'] },
+          estado: { type: 'string', enum: ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'] },
+          votacion_abierta: { type: 'boolean' },
+        },
+      },
+      PaginaDashboardUsuario: {
+        type: 'object', required: ['data', 'meta'],
+        properties: {
+          data: { type: 'array', items: { $ref: '#/components/schemas/ActividadDashboard' } },
+          meta: { $ref: '#/components/schemas/PaginacionMeta' },
+        },
+      },
+      Estadisticas: {
+        type: 'object',
+        description: 'Mapa de métricas a sus contadores. Puede ser vacío cuando todavía no se registraron eventos.',
+        additionalProperties: { type: 'integer', minimum: 0 },
+        example: { Actividad_Creada: 12, Actividad_Reprogramada: 3, consultas_clima: 18, alertas_mal_clima: 4 },
+      },
+      SimulacionMonitoreo: {
+        type: 'object', required: ['mensaje', 'actividadEvaluada'],
+        properties: { mensaje: { type: 'string' }, actividadEvaluada: { type: 'string' } },
       },
     },
   },
