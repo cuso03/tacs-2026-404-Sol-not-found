@@ -10,7 +10,7 @@ export class CronSetup {
 
   // cada hora
   public iniciarTareasProgramadas(): void {
-    cron.schedule('0 * * * *', async () => {
+    cron.schedule('* * * * *', async () => {
       console.log('\n[CronJob] Iniciando evaluación periódica de clima...');
       
       const todasLasActividades = await this.repository.findAll({});

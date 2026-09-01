@@ -73,7 +73,7 @@ describe('GET /api/actividades/:id/clima', () => {
   it('usa el proveedor configurado y no requiere autenticación', async () => {
     let fueInvocado = false;
     const fakeProvider: IWeatherProvider = {
-      getClima: async (ubicacion, fecha_horario) => {
+      getClima: async (ubicacion: unknown, fecha_horario: string) => {
         fueInvocado = true;
         return {
           ubicacion: 'Buenos Aires',
@@ -82,8 +82,8 @@ describe('GET /api/actividades/:id/clima', () => {
           pronostico_actividad: { probabilidad_lluvia: 70, temperatura: 16, viento: 22, condicion: 'LLUVIA' },
         };
       },
-      getForecastRange: async () => [],
-    };
+      obtenerPronostico: async (ubicacion: any, fechaDesde: any, dias: any) => [],
+    } as unknown as IWeatherProvider;
     const repository = new ActividadInMemoryRepository();
     const app = createApp(repository, fakeProvider);
     const created = await request(app).post('/api/actividades').set('X-User-Id', 'auth0|organizador-1').send(validPayloadCoordenadas);

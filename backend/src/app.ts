@@ -25,14 +25,14 @@ export function createApp(
   jobQueue: IVotingJobQueue = new InMemoryVotingJobQueue(),
 ) {
   // 1. Feature 7
-  const rabbitNotifier = new RabbitMQNotifier(); // El orquestador usa la cola
+  //const rabbitNotifier = new RabbitMQNotifier(); // El orquestador usa la cola
+  const baseNotifier = process.env.NODE_ENV === 'test'  // esto es para que los tests no fallen al no tener RabbitMQ corriendo, no usamos la cola y listo en caso de tests
+    ? { notify: async () => {} } 
+    : new RabbitMQNotifier();
   const telegramService = new TelegramService(); // El worker usa Telegram
 
-  const eventNotifier = new ActividadEventNotifier(rabbitNotifier);
-  const climaMonitor = new ClimaMonitorService(weatherProvider, rabbitNotifier);
-
-  const notificationWorker = new NotificationWorker(telegramService);
-  notificationWorker.iniciar();
+  const eventNotifier = new ActividadEventNotifier(baseNotifier);
+  const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier);
 
   // 2. Instanciar VotacionService inyectando el Notificador
   const votacionService = new VotacionService(repository, weatherProvider, jobQueue, eventNotifier);
@@ -43,9 +43,14 @@ export function createApp(
 
   const actividadesService = new ActividadesService(repository);
 
-  // 3. Inicializar Cronjobs en el arranque
-  const cronSetup = new CronSetup(climaMonitor, repository);
-  cronSetup.iniciarTareasProgramadas();
+  if (process.env.NODE_ENV !== 'test') { // si ejecutamos tests, no usamos ni cron ni nos conectamos con telegram.
+    const notificationWorker = new NotificationWorker(telegramService);
+    notificationWorker.iniciar();
+
+    // 3. Inicializar Cronjobs en el arranque
+    const cronSetup = new CronSetup(climaMonitor, repository);
+    cronSetup.iniciarTareasProgramadas();
+  }
 
   const app = express();
   app.use(express.json({ limit: '100kb' }));
