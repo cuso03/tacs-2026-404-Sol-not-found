@@ -1,7 +1,7 @@
 
 services:
   backend:
-    build: 
+    build:
       context: ./backend
     container_name: tacs-backend
     ports:
@@ -11,3 +11,22 @@ services:
       - ./backend:/app
       # Evita que tu carpeta node_modules local pise la del contenedor
       - /app/node_modules
+    env_file:
+      - ./backend/.env
+    environment:
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - rabbitmq
+      - redis
+
+  redis:
+    image: redis:8.10.1-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"   # Puerto principal de comunicación
+      - "15672:15672" # Puerto del panel de administración UI

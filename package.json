@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "node-cron": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/node-cron": "^3.0.11"
+  }
+}
