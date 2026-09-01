@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 import { Ubicacion } from "../interfaces/models/actividad";
 import { PronosticoHora } from "../interfaces/models/pronostico";
 import {
