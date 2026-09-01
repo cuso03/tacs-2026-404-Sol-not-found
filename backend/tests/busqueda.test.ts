@@ -11,11 +11,9 @@ const basePayload = {
 };
 
 describe('Feature 3: Búsqueda y Dashboard', () => {
-  // Instanciamos un único repositorio y app para compartir el estado entre estos tests
   const repository = new ActividadInMemoryRepository();
   const app = createApp(repository);
 
-  // Pre-poblamos la memoria con dos actividades distintas antes de correr los tests
   beforeAll(async () => {
     await request(app).post('/api/actividades')
       .set('X-User-Id', 'auth0|organizador-1')
@@ -30,21 +28,24 @@ describe('Feature 3: Búsqueda y Dashboard', () => {
     it('retorna todas las actividades si no se envían filtros', async () => {
       const response = await request(app).get('/api/actividades');
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(2);
+      // Ahora accedemos al array dentro de 'data'
+      expect(response.body.data.length).toBe(2);
+      // Opcional: Validar que el total en los metadatos sea correcto
+      expect(response.body.meta.total).toBe(2);
     });
 
     it('aplica correctamente el filtro por tipo de actividad', async () => {
       const response = await request(app).get('/api/actividades').query({ tipo: 'aire_libre' });
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(1);
-      expect(response.body[0].titulo).toBe('Partido en Capital');
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].titulo).toBe('Partido en Capital');
     });
 
     it('aplica correctamente el filtro por ubicación ignorando mayúsculas', async () => {
       const response = await request(app).get('/api/actividades').query({ ubicacion: 'buenos' });
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(1);
-      expect(response.body[0].titulo).toBe('Partido en Capital');
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].titulo).toBe('Partido en Capital');
     });
   });
 
@@ -53,10 +54,9 @@ describe('Feature 3: Búsqueda y Dashboard', () => {
       const response = await request(app).get('/api/usuarios/me/actividades').set('X-User-Id', 'auth0|organizador-1');
       
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(1);
+      expect(response.body.data.length).toBe(1);
       
-      // Verificamos que el DTO del dashboard formatea los campos requeridos
-      expect(response.body[0]).toMatchObject({
+      expect(response.body.data[0]).toMatchObject({
         titulo: 'Partido en Capital',
         rol: 'organizador',
         estado: 'PROPUESTA',
