@@ -15,8 +15,15 @@ services:
       - ./backend/.env
     environment:
       - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
     depends_on:
       - rabbitmq
+      - redis
+
+  redis:
+    image: redis:8.10.1-alpine
+    ports:
+      - "6379:6379"
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
