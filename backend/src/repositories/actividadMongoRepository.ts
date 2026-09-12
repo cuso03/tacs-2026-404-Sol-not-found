@@ -49,7 +49,7 @@ export class ActividadMongoRepository implements ActividadRepository {
     const doc = await ActividadModel.findByIdAndUpdate(
       id,
       { $set: dataToUpdate },
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
     if (!doc) return undefined;
     return toActividad(doc);
