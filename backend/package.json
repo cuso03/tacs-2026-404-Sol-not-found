@@ -33,8 +33,10 @@
   "dependencies": {
     "amqplib": "^2.0.1",
     "bullmq": "^6.3.2",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
+    "mongoose": "^9.10.0",
     "node-cron": "^4.6.0",
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.3.5"

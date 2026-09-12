@@ -27,7 +27,7 @@ export const openApiDocument = {
       post: {
         summary: 'Configura las reglas climáticas y de reprogramación de una actividad',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ReglasClima' } } } },
@@ -41,7 +41,7 @@ export const openApiDocument = {
     '/api/actividades/{id}/clima': {
       get: {
         summary: 'Consulta el clima actual y pronóstico para una actividad',
-        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } }],
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           '200': { description: 'Clima obtenido', content: { 'application/json': { schema: { $ref: '#/components/schemas/WeatherForecast' } } } },
           '404': { description: 'Actividad inexistente' },
@@ -53,7 +53,7 @@ export const openApiDocument = {
       post: {
         summary: 'Inscribe al usuario en una actividad',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
@@ -68,7 +68,7 @@ export const openApiDocument = {
       delete: {
         summary: 'Da de baja al usuario de una actividad',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
@@ -84,7 +84,7 @@ export const openApiDocument = {
         summary: 'Obtiene fechas con clima adecuado para reprogramación',
         description: 'Retorna fechas futuras que tienen pronóstico disponible y cumplen las reglas climáticas de la actividad.',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
@@ -103,7 +103,7 @@ export const openApiDocument = {
         summary: 'Abre una votación de reprogramación',
         description: 'Si el body viene vacío, el sistema genera las alternativas automáticamente basándose en el pronóstico. Si se proveen alternativas, se usan las provistas por el organizador.',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AbrirVotacion' } } } },
@@ -122,9 +122,9 @@ export const openApiDocument = {
         summary: 'Registra un voto en la votación indicada',
         description: 'El usuario debe ser un participante inscrito. Si ya votó, se sobreescribe su voto anterior.',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-          { name: 'votacionId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-          { name: 'alternativaId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'alternativaId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
@@ -142,8 +142,8 @@ export const openApiDocument = {
       get: {
         summary: 'Resultados parciales de la votación indicada',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-          { name: 'votacionId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
@@ -158,8 +158,8 @@ export const openApiDocument = {
         summary: 'Cierra manualmente una votación de reprogramación',
         description: 'Solo el organizador puede cerrar la votación. Se resuelve la reprogramación según los votos recibidos.',
         parameters: [
-          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
-          { name: 'votacionId', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
@@ -370,7 +370,7 @@ export const openApiDocument = {
         type: 'object',
         required: ['id', 'creadorId', 'creadaEn', 'estado', 'participantes'],
         properties: {
-          id: { type: 'string', format: 'uuid' },
+          id: { type: 'string' },
           creadorId: { type: 'string' },
           creadaEn: { type: 'string', format: 'date-time' },
           estado: { type: 'string', enum: ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'], example: 'PROPUESTA' },
@@ -404,7 +404,7 @@ export const openApiDocument = {
         type: 'object',
         required: ['id', 'abiertaEn', 'cierraEn', 'duracionHoras', 'automatica', 'alternativas', 'votos'],
         properties: {
-          id: { type: 'string', format: 'uuid' },
+          id: { type: 'string' },
           abiertaEn: { type: 'string', format: 'date-time' },
           cierraEn: { type: 'string', format: 'date-time' },
           duracionHoras: { type: 'integer', example: 24 },
@@ -417,7 +417,7 @@ export const openApiDocument = {
         type: 'object',
         required: ['id', 'fecha_horario'],
         properties: {
-          id: { type: 'string', format: 'uuid' },
+          id: { type: 'string' },
           fecha_horario: { type: 'string', format: 'date-time', example: '2026-09-12T14:00:00-03:00' },
         },
       },

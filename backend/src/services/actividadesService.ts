@@ -1,9 +1,5 @@
 import { Actividad, NuevaActividad, ReglasClima, DatosCreacionActividad } from '../interfaces/models/actividad';
-import {
-  ActividadRepository,
-  InscribirParticipanteResult,
-  RemoverParticipanteResult,
-} from '../interfaces/repositories/actividadRepository';
+import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { BuscarActividadesDto, PaginacionDto } from '../dtos/busquedaDto';
 import {IEstadisticasStore} from "../utils/IEstadisticasStore";
 
@@ -11,6 +7,18 @@ export type ConfigurarReglasResult =
   | { status: 'not_found' }
   | { status: 'forbidden' }
   | { status: 'updated'; actividad: Actividad };
+
+export type InscribirParticipanteResult =
+  | { status: 'created'; actividad: Actividad }
+  | { status: 'not_found' }
+  | { status: 'already_participating' }
+  | { status: 'full' };
+
+export type RemoverParticipanteResult =
+  | { status: 'removed'; actividad: Actividad }
+  | { status: 'not_found' }
+  | { status: 'not_participating' }
+  | { status: 'organizer_cannot_leave' };
 
 export class ActividadesService {
   constructor(private readonly repository: ActividadRepository, private statsStore: IEstadisticasStore) {}
@@ -58,10 +66,30 @@ export class ActividadesService {
   }
 
   async inscribirParticipante(actividadId: string, userId: string): Promise<InscribirParticipanteResult> {
-    return this.repository.addParticipant(actividadId, userId);
+    const actividad = await this.repository.findById(actividadId);
+    if (!actividad) return { status: 'not_found' };
+    if (actividad.participantes.includes(userId)) return { status: 'already_participating' };
+    if (actividad.participantes.length >= actividad.max_participantes) return { status: 'full' };
+
+    const updated = await this.repository.update({
+      ...actividad,
+      participantes: [...actividad.participantes, userId],
+    });
+    if (!updated) return { status: 'not_found' };
+    return { status: 'created', actividad: updated };
   }
 
   async removerParticipante(actividadId: string, userId: string): Promise<RemoverParticipanteResult> {
-    return this.repository.removeParticipant(actividadId, userId);
+    const actividad = await this.repository.findById(actividadId);
+    if (!actividad) return { status: 'not_found' };
+    if (actividad.creadorId === userId) return { status: 'organizer_cannot_leave' };
+    if (!actividad.participantes.includes(userId)) return { status: 'not_participating' };
+
+    const updated = await this.repository.update({
+      ...actividad,
+      participantes: actividad.participantes.filter((participante) => participante !== userId),
+    });
+    if (!updated) return { status: 'not_found' };
+    return { status: 'removed', actividad: updated };
   }
 }
