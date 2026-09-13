@@ -2,7 +2,8 @@ import express from 'express';
 import notificacionesRoutes from './routes/notificacionesRoutes';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './openapi';
-import { ActividadInMemoryRepository } from './repositories/actividadInMemoryRepository';
+import { ActividadMongoRepository } from './repositories/actividadMongoRepository';
+import { connectToMongo } from './infrastructure/mongo/connection';
 import { IWeatherProvider } from './interfaces/services/IWeatherProvider';
 import { createActividadesRoutes } from './routes/actividadesRoutes';
 import { VotacionService } from './services/votacionService';
@@ -13,9 +14,10 @@ import { Redis } from 'ioredis';
 import { BullMQVotingJobQueue, createVotingWorker } from './infrastructure/bullmq/votingJobQueue';
 import { createUsuariosRoutes } from './routes/usuariosRoutes';
 import { ActividadesService } from './services/actividadesService';
-import {createEstadisticasRouter} from "./routes/estadisticasRoutes";
-import {InMemoryEstadisticasStore} from "./utils/InMemoryEstadisticasStore";
-import {EstadisticasStoreService} from "./services/estadisticasStoreService";
+import { createEstadisticasRouter } from "./routes/estadisticasRoutes";
+import { InMemoryEstadisticasStore } from "./utils/InMemoryEstadisticasStore";
+import { EstadisticasStoreService } from "./services/estadisticasStoreService";
+import { errorHandler } from "./middleware/errorHandler";
 
 import { RabbitMQNotifier } from './services/notifications/RabbitMQNotifier';
 import { NotificationWorker } from './services/notifications/NotificationWorker';
@@ -34,7 +36,7 @@ function createJobQueue(): IVotingJobQueue {
 }
 
 export function createApp(
-  repository = new ActividadInMemoryRepository(),
+  repository = new ActividadMongoRepository(),
   weatherProvider: IWeatherProvider = new MockWeatherService(),
   jobQueue: IVotingJobQueue = createJobQueue(),
   estadisticas = new InMemoryEstadisticasStore(),
@@ -89,10 +91,20 @@ export function createApp(
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+
+  // 5. Manejo centralizado de errores: siempre al final, después de las rutas.
+  app.use(errorHandler);
   return app;
 }
 
 if (require.main === module) {
   const port = Number(process.env.PORT ?? 3000);
-  createApp().listen(port, () => console.log(`Servidor corriendo en http://localhost:${port}`));
+  const start = async () => {
+    await connectToMongo();
+    createApp().listen(port, () => console.log(`Servidor corriendo en http://localhost:${port}`));
+  };
+  start().catch((error) => {
+    console.error('No se pudo iniciar la aplicación:', error);
+    process.exit(1);
+  });
 }
