@@ -48,7 +48,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-root}
       - MONGO_INITDB_DATABASE=${MONGO_DATABASE:-solnotfound}
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      test: ["CMD", "mongosh", "-u", "${MONGO_USER:-root}", "-p", "${MONGO_PASSWORD:-root}", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 5s
       timeout: 5s
       retries: 10

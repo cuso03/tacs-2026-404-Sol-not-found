@@ -3,6 +3,7 @@ import notificacionesRoutes from './routes/notificacionesRoutes';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './openapi';
 import { ActividadMongoRepository } from './repositories/actividadMongoRepository';
+import { ActividadInMemoryRepository } from './repositories/actividadInMemoryRepository';
 import { connectToMongo } from './infrastructure/mongo/connection';
 import { IWeatherProvider } from './interfaces/services/IWeatherProvider';
 import { createActividadesRoutes } from './routes/actividadesRoutes';
@@ -18,13 +19,17 @@ import { createEstadisticasRouter } from "./routes/estadisticasRoutes";
 import { InMemoryEstadisticasStore } from "./utils/InMemoryEstadisticasStore";
 import { EstadisticasStoreService } from "./services/estadisticasStoreService";
 import { errorHandler } from "./middleware/errorHandler";
-
+import { EstadisticasMongoStore } from './repositories/estadisticasMongoStore';
 import { RabbitMQNotifier } from './services/notifications/RabbitMQNotifier';
 import { NotificationWorker } from './services/notifications/NotificationWorker';
 import { TelegramService } from './services/notifications/TelegramService';
 import { ActividadEventNotifier } from './services/notifications/ActividadEventNotifier';
 import { ClimaMonitorService } from './services/clima/ClimaMonitorService';
 import { CronSetup } from './cronJobs/CronSetup';
+import { ActividadRepository } from './interfaces/repositories/actividadRepository';
+import { IEstadisticasStore } from './utils/IEstadisticasStore';
+import { NotificacionMongoRepository } from './repositories/notificacionMongoRepository';
+import { UsuarioMongoRepository } from './repositories/usuarioMongoRepository';
 
 function createJobQueue(): IVotingJobQueue {
   const useBullMq = process.env.USE_BULLMQ === 'true' && process.env.NODE_ENV !== 'test';
@@ -36,10 +41,14 @@ function createJobQueue(): IVotingJobQueue {
 }
 
 export function createApp(
-  repository = new ActividadMongoRepository(),
+  repository: ActividadRepository = process.env.NODE_ENV === 'test' 
+    ? new ActividadInMemoryRepository() 
+    : new ActividadMongoRepository(),
   weatherProvider: IWeatherProvider = new MockWeatherService(),
   jobQueue: IVotingJobQueue = createJobQueue(),
-  estadisticas = new InMemoryEstadisticasStore(),
+  estadisticas: IEstadisticasStore = process.env.NODE_ENV === 'test' 
+    ? new InMemoryEstadisticasStore() 
+    : new EstadisticasMongoStore(),
 ) {
   // 1. Feature 7
   //const rabbitNotifier = new RabbitMQNotifier(); // El orquestador usa la cola
@@ -48,7 +57,10 @@ export function createApp(
     : new RabbitMQNotifier();
   const telegramService = new TelegramService(); // El worker usa Telegram
 
-  const eventNotifier = new ActividadEventNotifier(baseNotifier);
+  const notificacionRepo = new NotificacionMongoRepository();
+  const usuarioRepo = new UsuarioMongoRepository();
+
+  const eventNotifier = new ActividadEventNotifier(baseNotifier, notificacionRepo);
   const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier, estadisticas);
 
   // 2. Instanciar VotacionService inyectando el Notificador
@@ -83,11 +95,12 @@ export function createApp(
 
   // 4. Configurar Rutas
   app.use('/api/actividades', createActividadesRoutes(repository, actividadesService, votacionService, weatherProvider));
-  app.use('/api/usuarios', createUsuariosRoutes(actividadesService));
+  app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
   app.use('/api/notificaciones', notificacionesRoutes);
   app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService))
 
   app.use('/api/actividades', notificacionesRoutes);
+  app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
