@@ -44,6 +44,7 @@ export async function seedActividadConVotacion(
     automatica: options.automatica ?? false,
     alternativas: alternativasInput,
     votos: options.votos ?? {},
+    estado: 'ABIERTA',
   };
 
   const participantes = options.participantes ?? [

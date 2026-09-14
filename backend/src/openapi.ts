@@ -154,16 +154,18 @@ export const openApiDocument = {
           '404': { description: 'Actividad o votación inexistente' },
         },
       },
-      delete: {
+      patch: {
         summary: 'Cierra manualmente una votación de reprogramación',
-        description: 'Solo el organizador puede cerrar la votación. Se resuelve la reprogramación según los votos recibidos.',
+        description: 'Solicita la transición de estado ABIERTA → CERRADA. Solo el organizador puede cerrar la votación. Se resuelve la reprogramación según los votos recibidos. Un segundo cierre devuelve 409 y no repite notificaciones.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CerrarVotacion' } } } },
         responses: {
           '200': { description: 'Votación cerrada', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '400': { description: 'Estado inválido' },
           '401': { description: 'Usuario no autenticado' },
           '403': { description: 'El usuario no es el organizador' },
           '404': { description: 'Actividad o votación inexistente' },
@@ -402,7 +404,7 @@ export const openApiDocument = {
       },
       Votacion: {
         type: 'object',
-        required: ['id', 'abiertaEn', 'cierraEn', 'duracionHoras', 'automatica', 'alternativas', 'votos'],
+        required: ['id', 'abiertaEn', 'cierraEn', 'duracionHoras', 'automatica', 'alternativas', 'votos', 'estado'],
         properties: {
           id: { type: 'string' },
           abiertaEn: { type: 'string', format: 'date-time' },
@@ -411,6 +413,15 @@ export const openApiDocument = {
           automatica: { type: 'boolean', example: false, description: 'Si las alternativas fueron generadas automáticamente por el sistema' },
           alternativas: { type: 'array', items: { $ref: '#/components/schemas/Alternativa' } },
           votos: { type: 'object', additionalProperties: { type: 'string' }, description: 'Mapa userId → alternativaId' },
+          estado: { type: 'string', enum: ['ABIERTA', 'CERRADA'], example: 'ABIERTA', description: 'Estado actual de la votación en su ciclo de vida' },
+          cerradaEn: { type: 'string', format: 'date-time', description: 'Momento del cierre. Presente si estado === CERRADA' },
+        },
+      },
+      CerrarVotacion: {
+        type: 'object',
+        required: ['estado'],
+        properties: {
+          estado: { type: 'string', enum: ['CERRADA'], example: 'CERRADA', description: 'Estado objetivo. La única transición válida es ABIERTA → CERRADA.' },
         },
       },
       Alternativa: {

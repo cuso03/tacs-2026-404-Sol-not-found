@@ -17,3 +17,12 @@ export const abrirVotacionSchema = z
   .strict();
 
 export type AbrirVotacionDto = z.infer<typeof abrirVotacionSchema>;
+
+/** Body válido para cerrar una votación: solicita la transición ABIERTA → CERRADA. */
+export const cerrarVotacionSchema = z
+  .object({
+    estado: z.literal('CERRADA'),
+  })
+  .strict();
+
+export type CerrarVotacionDto = z.infer<typeof cerrarVotacionSchema>;

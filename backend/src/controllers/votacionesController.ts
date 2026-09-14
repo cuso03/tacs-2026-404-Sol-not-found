@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { abrirVotacionSchema } from '../dtos/votacionDto';
+import { abrirVotacionSchema, cerrarVotacionSchema } from '../dtos/votacionDto';
 import { VotacionService } from '../services/votacionService';
 
 /** Construye los controladores HTTP de votaciones con sus dependencias. */
@@ -98,7 +98,7 @@ export function createVotacionesController(service: VotacionService) {
     res.status(200).json(result.votacion);
   }
 
-  /** Cierra manualmente una votación de reprogramación. Solo el organizador puede hacerlo. */
+  /** Cierra manualmente una votación de reprogramación (PATCH de estado). Solo el organizador puede hacerlo. */
   async function cerrarVotacion(req: Request, res: Response): Promise<void> {
     const actividadId = req.params.id;
     const votacionId = req.params.votacionId;
@@ -107,7 +107,13 @@ export function createVotacionesController(service: VotacionService) {
       return;
     }
 
-    const result = await service.cerrarVotacionManual(actividadId, votacionId, req.userId!);
+    const parsed = cerrarVotacionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Datos de cierre inválidos', details: parsed.error.issues });
+      return;
+    }
+
+    const result = await service.cerrarVotacionManual(actividadId, votacionId, req.userId!, parsed.data.estado);
 
     if (result.status === 'not_found') {
       res.status(404).json({ error: 'Actividad no encontrada' });
