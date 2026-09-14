@@ -5,10 +5,9 @@ import { ActividadModel } from '../../../../src/infrastructure/mongo/actividadMo
 import { seedActividad } from '../../../helpers/fixtures/actividad.fixture';
 import { createReglasPayload } from '../../../helpers/fixtures/regla.fixture';
 import { authHeader, AUTH_ORGANIZADOR, AUTH_OTRO_USUARIO } from '../../../helpers/fixtures/auth.fixture';
-import { ActividadMongoRepository } from '../../../../src/repositories/actividadMongoRepository';
 
 describe('POST /api/actividades/:id/votaciones', () => {
-  const app = createApp(new ActividadMongoRepository());
+  const app = createApp();
 
   it('abre votación manual con alternativas provistas y actualiza el estado en MongoDB', async () => {
     const actividad = await seedActividad({

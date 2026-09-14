@@ -5,10 +5,9 @@ import { ActividadModel } from '../../../src/infrastructure/mongo/actividadModel
 import { seedActividad } from '../../helpers/fixtures/actividad.fixture';
 import { createReglasPayload } from '../../helpers/fixtures/regla.fixture';
 import { authHeader, AUTH_ORGANIZADOR, AUTH_OTRO_USUARIO } from '../../helpers/fixtures/auth.fixture';
-import { ActividadMongoRepository } from '../../../src/repositories/actividadMongoRepository';
 
 describe('POST /api/actividades/:id/reglas', () => {
-  const app = createApp(new ActividadMongoRepository());
+  const app = createApp();
 
   it('vincula reglas válidas cuando quien las define es el organizador y persiste en DB', async () => {
     const actividad = await seedActividad();

@@ -6,7 +6,7 @@ export class EstadisticasMongoStore implements IEstadisticasStore {
     await EstadisticaModel.findOneAndUpdate(
       { metrica },
       { $inc: { cantidad } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
   }
 

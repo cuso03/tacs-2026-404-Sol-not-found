@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../../../../src/app';
 import { ActividadModel } from '../../../../src/infrastructure/mongo/actividadModel';
 import { seedActividadConVotacion } from '../../../helpers/fixtures/votacion.fixture';
-import { ActividadMongoRepository } from '../../../../src/repositories/actividadMongoRepository';
 import {
   authHeader,
   AUTH_PARTICIPANTE_1,
@@ -11,7 +10,7 @@ import {
 } from '../../../helpers/fixtures/auth.fixture';
 
 describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alternativaId/votar', () => {
-  const app = createApp(new ActividadMongoRepository());
+  const app = createApp();
 
   it('registra un voto válido y persiste el mapa de votos en MongoDB', async () => {
     const { actividadId, votacionId, alternativas } = await seedActividadConVotacion();

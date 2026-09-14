@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../../../../src/app';
 import { ActividadModel } from '../../../../src/infrastructure/mongo/actividadModel';
 import { seedActividadConVotacion } from '../../../helpers/fixtures/votacion.fixture';
-import { ActividadMongoRepository } from '../../../../src/repositories/actividadMongoRepository';
 import {
   authHeader,
   AUTH_ORGANIZADOR,
@@ -12,7 +11,7 @@ import {
 } from '../../../helpers/fixtures/auth.fixture';
 
 describe('Resultados y Cierre de Votaciones', () => {
-  const app = createApp(new ActividadMongoRepository());
+  const app = createApp();
 
   describe('GET /api/actividades/:id/votaciones/:votacionId', () => {
     it('retorna resultados parciales con conteo de votos correcto', async () => {
