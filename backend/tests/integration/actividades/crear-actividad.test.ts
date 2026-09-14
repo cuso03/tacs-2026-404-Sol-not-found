@@ -4,9 +4,10 @@ import { createApp } from '../../../src/app';
 import { ActividadModel } from '../../../src/infrastructure/mongo/actividadModel';
 import { createActividadPayload } from '../../helpers/fixtures/actividad.fixture';
 import { authHeader, AUTH_ORGANIZADOR } from '../../helpers/fixtures/auth.fixture';
+import { ActividadMongoRepository } from '../../../src/repositories/actividadMongoRepository';
 
 describe('POST /api/actividades', () => {
-  const app = createApp();
+  const app = createApp(new ActividadMongoRepository());
 
   it('crea una actividad válida, registra al creador y persiste el documento en MongoDB', async () => {
     const payload = createActividadPayload();

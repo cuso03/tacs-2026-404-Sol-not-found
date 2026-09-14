@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../../../src/app';
 import { ActividadModel } from '../../../src/infrastructure/mongo/actividadModel';
 import { seedActividad } from '../../helpers/fixtures/actividad.fixture';
+import { ActividadMongoRepository } from '../../../src/repositories/actividadMongoRepository';
 import {
   authHeader,
   AUTH_ORGANIZADOR,
@@ -12,7 +13,7 @@ import {
 } from '../../helpers/fixtures/auth.fixture';
 
 describe('Gestión de Participantes en Actividades', () => {
-  const app = createApp();
+  const app = createApp(new ActividadMongoRepository());
 
   describe('POST /api/actividades/:id/participantes', () => {
     it('inscribe al usuario, permite ocupar el último cupo y persiste el cambio en MongoDB', async () => {

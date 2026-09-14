@@ -7,6 +7,7 @@ import { MockWeatherService } from '../../../src/services/mockWeatherService';
 import { createActividadPayload, seedActividad } from '../../helpers/fixtures/actividad.fixture';
 import { createReglasPayload } from '../../helpers/fixtures/regla.fixture';
 import { seedActividadConVotacion } from '../../helpers/fixtures/votacion.fixture';
+import { ActividadMongoRepository } from '../../../src/repositories/actividadMongoRepository';
 import {
   authHeader,
   adminHeader,
@@ -18,13 +19,13 @@ import {
 describe('GET /api/admin/estadisticas', () => {
   describe('Control de acceso y estado inicial', () => {
     it('responde 403 si no se envía el header X-User-Role: admin', async () => {
-      const response = await request(createApp()).get('/api/admin/estadisticas');
+      const response = await request(createApp(new ActividadMongoRepository())).get('/api/admin/estadisticas');
       expect(response.status).toBe(403);
       expect(response.body.error).toBe('Requiere rol admin');
     });
 
     it('responde 200 con un objeto JSON cuando el rol es admin', async () => {
-      const response = await request(createApp())
+      const response = await request(createApp(new ActividadMongoRepository()))
         .get('/api/admin/estadisticas')
         .set(adminHeader());
 
@@ -34,7 +35,7 @@ describe('GET /api/admin/estadisticas', () => {
 
     it('devuelve un objeto vacío cuando no se realizó ninguna acción', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       const response = await request(app)
         .get('/api/admin/estadisticas')
@@ -48,7 +49,7 @@ describe('GET /api/admin/estadisticas', () => {
   describe('Métrica: Actividad_Creada', () => {
     it('incrementa en 1 al crear una actividad', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       await request(app)
         .post('/api/actividades')
@@ -65,7 +66,7 @@ describe('GET /api/admin/estadisticas', () => {
 
     it('acumula correctamente al crear múltiples actividades', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       await request(app).post('/api/actividades').set(authHeader(AUTH_ORGANIZADOR)).send(createActividadPayload());
       await request(app).post('/api/actividades').set(authHeader(AUTH_ORGANIZADOR)).send(createActividadPayload());
@@ -77,7 +78,7 @@ describe('GET /api/admin/estadisticas', () => {
 
     it('no modifica Actividad_Creada cuando la solicitud es inválida (400)', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       await request(app)
         .post('/api/actividades')
@@ -170,7 +171,7 @@ describe('GET /api/admin/estadisticas', () => {
   describe('Métrica: Actividad_Reprogramada', () => {
     it('incrementa Actividad_Reprogramada al cerrar una votación sin quórum', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       // Actividad con mínimo 2 participantes, pero solo está el organizador y no hay votos
       const { actividadId, votacionId } = await seedActividadConVotacion({
@@ -192,7 +193,7 @@ describe('GET /api/admin/estadisticas', () => {
 
     it('no incrementa Actividad_Reprogramada cuando la votación tiene quórum y hay ganadora', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       const { actividadId, votacionId, alternativas } = await seedActividadConVotacion({
         min_participantes: 2,
@@ -224,7 +225,7 @@ describe('GET /api/admin/estadisticas', () => {
 
     it('acumula Actividad_Reprogramada en múltiples cierres sin quórum', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       for (let i = 0; i < 3; i++) {
         const { actividadId, votacionId } = await seedActividadConVotacion({
@@ -261,7 +262,7 @@ describe('GET /api/admin/estadisticas', () => {
 
     it('reset() limpia todos los contadores de forma idempotente', async () => {
       const estadisticas = new InMemoryEstadisticasStore();
-      const app = createApp(undefined, undefined, undefined, estadisticas);
+      const app = createApp(new ActividadMongoRepository(), undefined, undefined, estadisticas);
 
       await request(app).post('/api/actividades').set(authHeader('auth0|u1')).send(createActividadPayload());
       const antes = await request(app).get('/api/admin/estadisticas').set(adminHeader());
