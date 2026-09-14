@@ -11,8 +11,9 @@ export class TelegramService implements INotifier {
   }
 
   async notify(destinatarios: string[], mensaje: string): Promise<void> {
-    // Por ahora, enviaremos la alerta a tu chat de prueba.
-    // En un futuro, deberías buscar en la base de datos el Chat ID asociado a cada "userId" del array de destinatarios.
+    /*
+     Por limitaciones de entorno de pruebas, las notificaciones se envían en modo broadcast a un canal/chat de configuración global. En una etapa futura, se cruzará el array de destinatarios con el UsuarioMongoRepository para obtener el chat_id individual de Telegram de cada participante.
+     */
     const url = `https://api.telegram.org/bot${this.botToken}/sendMessage`;
 
     try {

@@ -21,10 +21,13 @@ cp backend/.env.example backend/.env
 | `TELEGRAM_CHAT_ID` | ID del chat/grupo de Telegram | Si |
 | `RABBITMQ_URL` | URL de conexion a RabbitMQ (se sobreescribe en docker-compose) | Si |
 | `OPENWEATHER_API_KEY` | API key de OpenWeatherMap | Si |
+| `WEATHER_PROVIDER` | Proveedor de clima (`OPENWEATHER` para OpenWeather; cualquier otro valor usa el mock) | No |
 | `REDIS_URL` | URL de conexion a Redis (se sobreescribe en docker-compose) | Si |
 | `USE_BULLMQ` | Habilitar/deshabilitar colas con BullMQ (`true`/`false`) | No |
 
 > **Nota:** En el `docker-compose.yml`, `RABBITMQ_URL` y `REDIS_URL` se configuran automaticamente apuntando a los servicios internos de Docker (`amqp://rabbitmq:5672` y `redis://redis:6379`). No es necesario definirlas en el `.env` para el despliegue con Docker, pero si las incluis seran ignoradas.
+
+> **Notificaciones:** Por limitaciones de entorno de pruebas, las notificaciones se envían en modo broadcast a un canal/chat de configuración global. En una etapa futura, se cruzará el array de destinatarios con el UsuarioMongoRepository para obtener el chat_id individual de Telegram de cada participante.
 
 ### Iniciar servicios
 

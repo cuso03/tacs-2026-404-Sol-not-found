@@ -3,7 +3,7 @@ import { NotificacionModel } from '../infrastructure/mongo/notificacionModel';
 export class NotificacionMongoRepository {
   async registrar(
     actividadId: string, 
-    tipoEvento: 'REPROGRAMACION' | 'CANCELACION' | 'INICIO',
+    tipoEvento: 'ALERTA' | 'REPROGRAMACION' | 'CANCELACION' | 'INICIO',
     mensaje: string, 
     destinatarios: string[]
   ): Promise<void> {

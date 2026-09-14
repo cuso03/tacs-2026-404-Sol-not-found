@@ -96,6 +96,11 @@ export class ActividadMongoRepository implements ActividadRepository {
     };
   }
 
+  async findParaMonitoreo(): Promise<Actividad[]> {
+    const docs = await ActividadModel.find({ estado: { $in: ['PROPUESTA', 'CONFIRMADA'] } });
+    return docs.map(toActividad);
+  }
+
   async findDashboardByUser(userId: string, paginacion: PaginacionDto): Promise<{ data: Actividad[]; total: number }> {
     const query = {
       $or: [{ creadorId: userId }, { participantes: userId }],

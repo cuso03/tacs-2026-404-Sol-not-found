@@ -9,6 +9,7 @@ import { IWeatherProvider } from './interfaces/services/IWeatherProvider';
 import { createActividadesRoutes } from './routes/actividadesRoutes';
 import { VotacionService } from './services/votacionService';
 import { MockWeatherService } from './services/mockWeatherService';
+import { OpenWeatherAdapter } from './utils/openWeatherAdapter';
 import { InMemoryVotingJobQueue } from './services/inMemoryVotingJobQueue';
 import { IVotingJobQueue } from './interfaces/services/votingJobQueue';
 import { Redis } from 'ioredis';
@@ -44,7 +45,9 @@ export function createApp(
   repository: ActividadRepository = process.env.NODE_ENV === 'test' 
     ? new ActividadInMemoryRepository() 
     : new ActividadMongoRepository(),
-  weatherProvider: IWeatherProvider = new MockWeatherService(),
+  weatherProvider: IWeatherProvider = process.env.WEATHER_PROVIDER === 'OPENWEATHER'
+    ? new OpenWeatherAdapter()
+    : new MockWeatherService(),
   jobQueue: IVotingJobQueue = createJobQueue(),
   estadisticas: IEstadisticasStore = process.env.NODE_ENV === 'test' 
     ? new InMemoryEstadisticasStore() 
@@ -61,10 +64,9 @@ export function createApp(
   const usuarioRepo = new UsuarioMongoRepository();
 
   const eventNotifier = new ActividadEventNotifier(baseNotifier, notificacionRepo);
-  const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier, estadisticas);
-
   // 2. Instanciar VotacionService inyectando el Notificador
   const votacionService = new VotacionService(repository, weatherProvider, jobQueue, eventNotifier, estadisticas);
+  const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier, estadisticas, votacionService, notificacionRepo);
 
   if (jobQueue instanceof InMemoryVotingJobQueue) {
     jobQueue.setVotacionService(votacionService);
@@ -98,9 +100,6 @@ export function createApp(
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
   app.use('/api/notificaciones', notificacionesRoutes);
   app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService))
-
-  app.use('/api/actividades', notificacionesRoutes);
-  app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));

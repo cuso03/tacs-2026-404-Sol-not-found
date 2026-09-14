@@ -60,6 +60,12 @@ export class ActividadInMemoryRepository implements ActividadRepository {
     return { data: paginated.map(a => this.copy(a)), total };
   }
 
+  async findParaMonitoreo(): Promise<Actividad[]> {
+    return Array.from(this.actividades.values())
+      .filter(a => a.estado === 'PROPUESTA' || a.estado === 'CONFIRMADA')
+      .map(a => this.copy(a));
+  }
+
   async findDashboardByUser(userId: string, paginacion: import('../dtos/busquedaDto').PaginacionDto): Promise<{ data: Actividad[], total: number }> {
     const resultados = Array.from(this.actividades.values()).filter(a => {
       const esCreador = a.creadorId === userId;

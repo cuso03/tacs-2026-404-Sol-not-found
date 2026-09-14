@@ -10,14 +10,10 @@ export class CronSetup {
 
   // cada hora
   public iniciarTareasProgramadas(): void {
-    cron.schedule('* * * * *', async () => {
+    cron.schedule('0 * * * *', async () => {
       console.log('\n[CronJob] Iniciando evaluación periódica de clima...');
       
-      const { data: todasLasActividades } = await this.repository.findAll({ page: 1, limit: 10000 });
-      
-      const actividadesAEvaluar = todasLasActividades.filter(
-        (a) => a.estado === 'PROPUESTA' || a.estado === 'CONFIRMADA'
-      );
+      const actividadesAEvaluar = await this.repository.findParaMonitoreo();
 
       for (const actividad of actividadesAEvaluar) {
         await this.monitorService.checkActividadWeather(actividad);
