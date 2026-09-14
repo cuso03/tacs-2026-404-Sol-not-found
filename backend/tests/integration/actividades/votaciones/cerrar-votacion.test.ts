@@ -20,15 +20,15 @@ describe('Resultados y Cierre de Votaciones', () => {
 
       // Voto 1
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_PARTICIPANTE_1))
-        .send({});
+        .send({ alternativa_id: alt1 });
 
       // Voto 2
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_PARTICIPANTE_2))
-        .send({});
+        .send({ alternativa_id: alt1 });
 
       const response = await request(app)
         .get(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
@@ -60,13 +60,13 @@ describe('Resultados y Cierre de Votaciones', () => {
 
       // Ambos participantes votan la alternativa 1 para alcanzar quórum
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_ORGANIZADOR))
-        .send({});
+        .send({ alternativa_id: alt1 });
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_PARTICIPANTE_1))
-        .send({});
+        .send({ alternativa_id: alt1 });
 
       const response = await request(app)
         .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)

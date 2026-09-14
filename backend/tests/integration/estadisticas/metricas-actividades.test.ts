@@ -129,14 +129,14 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
       const altId = alternativas[0].id;
 
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_ORGANIZADOR))
-        .send({});
+        .send({ alternativa_id: altId });
 
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_PARTICIPANTE_1))
-        .send({});
+        .send({ alternativa_id: altId });
 
       const cerrarRes = await request(app)
         .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)

@@ -24,15 +24,16 @@ export const openApiDocument = {
       },
     },
     '/api/actividades/{id}/reglas': {
-      post: {
-        summary: 'Configura las reglas climáticas y de reprogramación de una actividad',
+      put: {
+        summary: 'Reemplaza las reglas climáticas y de reprogramación de una actividad',
+        description: 'PUT idempotente de reemplazo completo. Sustituye la configuración de reglas existente por la recibida.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ReglasClima' } } } },
         responses: {
-          '200': { description: 'Reglas configuradas', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '200': { description: 'Reglas reemplazadas', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
           '400': { description: 'Reglas inválidas' }, '401': { description: 'Usuario no autenticado' },
           '403': { description: 'El usuario no es el organizador' }, '404': { description: 'Actividad inexistente' },
         },
@@ -117,20 +118,19 @@ export const openApiDocument = {
         },
       },
     },
-    '/api/actividades/{id}/votaciones/{votacionId}/alternativas/{alternativaId}/votar': {
-      post: {
-        summary: 'Registra un voto en la votación indicada',
-        description: 'El usuario debe ser un participante inscrito. Si ya votó, se sobreescribe su voto anterior.',
+    '/api/actividades/{id}/votaciones/{votacionId}/votos/me': {
+      put: {
+        summary: 'Emite o reemplaza el voto propio en la votación indicada',
+        description: 'PUT idempotente. El usuario debe ser un participante inscrito. Repetir el mismo PUT conserva un único voto; enviar otra alternativa reemplaza el voto anterior.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'alternativaId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/EmitirVoto' } } } },
         responses: {
           '200': { description: 'Voto registrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Votacion' } } } },
-          '400': { description: 'Alternativa inválida' },
+          '400': { description: 'Body inválido o alternativa inexistente' },
           '401': { description: 'Usuario no autenticado' },
           '403': { description: 'El usuario no es participante inscrito' },
           '404': { description: 'Actividad o votación inexistente' },
@@ -422,6 +422,13 @@ export const openApiDocument = {
         required: ['estado'],
         properties: {
           estado: { type: 'string', enum: ['CERRADA'], example: 'CERRADA', description: 'Estado objetivo. La única transición válida es ABIERTA → CERRADA.' },
+        },
+      },
+      EmitirVoto: {
+        type: 'object',
+        required: ['alternativa_id'],
+        properties: {
+          alternativa_id: { type: 'string', example: '66db614fef5a153200000000', description: 'Identificador de la alternativa elegida. Reemplaza el voto anterior del usuario.' },
         },
       },
       Alternativa: {

@@ -6,7 +6,7 @@ import { seedActividad } from '../../helpers/fixtures/actividad.fixture';
 import { createReglasPayload } from '../../helpers/fixtures/regla.fixture';
 import { authHeader, AUTH_ORGANIZADOR, AUTH_OTRO_USUARIO } from '../../helpers/fixtures/auth.fixture';
 
-describe('POST /api/actividades/:id/reglas', () => {
+describe('PUT /api/actividades/:id/reglas', () => {
   const app = createApp();
 
   it('vincula reglas válidas cuando quien las define es el organizador y persiste en DB', async () => {
@@ -15,7 +15,7 @@ describe('POST /api/actividades/:id/reglas', () => {
     const reglasPayload = createReglasPayload();
 
     const response = await request(app)
-      .post(`/api/actividades/${id}/reglas`)
+      .put(`/api/actividades/${id}/reglas`)
       .set(authHeader(AUTH_ORGANIZADOR))
       .send(reglasPayload);
 
@@ -32,6 +32,23 @@ describe('POST /api/actividades/:id/reglas', () => {
     expect(persisted?.reglasClima?.rango_horario?.horario_min).toBe(reglasPayload.rango_horario.horario_min);
   });
 
+  it('repetir el mismo PUT conserva una única configuración en DB', async () => {
+    const actividad = await seedActividad();
+    const id = actividad._id.toString();
+    const reglasPayload = createReglasPayload();
+
+    const url = `/api/actividades/${id}/reglas`;
+
+    await request(app).put(url).set(authHeader(AUTH_ORGANIZADOR)).send(reglasPayload);
+    const repetido = await request(app).put(url).set(authHeader(AUTH_ORGANIZADOR)).send(reglasPayload);
+
+    expect(repetido.status).toBe(200);
+    expect(repetido.body.reglasClima).toEqual(reglasPayload);
+
+    const persisted = await ActividadModel.findById(id);
+    expect(persisted?.toObject().reglasClima).toEqual(reglasPayload);
+  });
+
   it('rechaza rangos climáticos y horarios inválidos y no altera el documento en DB', async () => {
     const actividad = await seedActividad();
     const id = actividad._id.toString();
@@ -42,7 +59,7 @@ describe('POST /api/actividades/:id/reglas', () => {
     });
 
     const response = await request(app)
-      .post(`/api/actividades/${id}/reglas`)
+      .put(`/api/actividades/${id}/reglas`)
       .set(authHeader(AUTH_ORGANIZADOR))
       .send(reglasInvalidas);
 
@@ -56,7 +73,7 @@ describe('POST /api/actividades/:id/reglas', () => {
   it('informa 404 si la actividad no existe en DB', async () => {
     const fakeId = '66db614fef5a153200000000';
     const response = await request(app)
-      .post(`/api/actividades/${fakeId}/reglas`)
+      .put(`/api/actividades/${fakeId}/reglas`)
       .set(authHeader(AUTH_ORGANIZADOR))
       .send(createReglasPayload());
 
@@ -68,7 +85,7 @@ describe('POST /api/actividades/:id/reglas', () => {
     const id = actividad._id.toString();
 
     const response = await request(app)
-      .post(`/api/actividades/${id}/reglas`)
+      .put(`/api/actividades/${id}/reglas`)
       .set(authHeader(AUTH_OTRO_USUARIO))
       .send(createReglasPayload());
 

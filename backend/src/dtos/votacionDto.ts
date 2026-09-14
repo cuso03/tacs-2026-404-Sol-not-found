@@ -26,3 +26,12 @@ export const cerrarVotacionSchema = z
   .strict();
 
 export type CerrarVotacionDto = z.infer<typeof cerrarVotacionSchema>;
+
+/** Body válido para emitir o reemplazar el voto propio (PUT idempotente). */
+export const emitirVotoSchema = z
+  .object({
+    alternativa_id: z.string().min(1),
+  })
+  .strict();
+
+export type EmitirVotoDto = z.infer<typeof emitirVotoSchema>;

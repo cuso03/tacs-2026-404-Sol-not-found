@@ -44,7 +44,7 @@ Se requiere instanciar una actividad base en el repositorio en memoria.
 
 Para garantizar que el pronóstico falle y se dispare la alerta, se aplican reglas climáticas extremas e imposibles de cumplir.
 
-**Endpoint:** `POST http://localhost:3000/api/actividades/:id/reglas`
+**Endpoint:** `PUT http://localhost:3000/api/actividades/:id/reglas`
 
 **Headers:**
 

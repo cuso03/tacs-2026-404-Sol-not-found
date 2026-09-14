@@ -10,8 +10,9 @@ Auth0 antes de un despliegue productivo.
 La especificación está disponible en `/openapi.json` y la interfaz Swagger en
 `/api-docs`.
 
-`POST /api/actividades/{id}/reglas` configura las condiciones climáticas y de
-reprogramación. Solo acepta al mismo `X-User-Id` que creó la actividad.
+`PUT /api/actividades/{id}/reglas` reemplaza las condiciones climáticas y de
+reprogramación (PUT idempotente). Solo acepta al mismo `X-User-Id` que creó la
+actividad.
 
 `POST /api/actividades/{id}/participantes` inscribe al usuario autenticado si hay
 cupo. `DELETE /api/actividades/{id}/participantes/me` elimina su inscripción. El

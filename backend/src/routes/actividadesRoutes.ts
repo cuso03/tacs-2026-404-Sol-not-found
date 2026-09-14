@@ -24,14 +24,14 @@ export function createActividadesRoutes(
 
   router.get('/', controller.search);
   router.post('/', requireAuthenticatedUser, controller.create);
-  router.post('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
+  router.put('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
   router.get('/:id/clima', climaController.getClima);
   router.post('/:id/participantes', requireAuthenticatedUser, controller.addParticipant);
   router.delete('/:id/participantes/me', requireAuthenticatedUser, controller.removeParticipant);
 
   router.get('/:id/fechas-disponibles', requireAuthenticatedUser, votacionController.getFechasDisponibles);
   router.post('/:id/votaciones', requireAuthenticatedUser, votacionController.abrirVotacion);
-  router.post('/:id/votaciones/:votacionId/alternativas/:alternativaId/votar', requireAuthenticatedUser, votacionController.votar);
+  router.put('/:id/votaciones/:votacionId/votos/me', requireAuthenticatedUser, votacionController.votar);
   router.get('/:id/votaciones/:votacionId', requireAuthenticatedUser, votacionController.getResultados);
   router.patch('/:id/votaciones/:votacionId', requireAuthenticatedUser, votacionController.cerrarVotacion);
 
