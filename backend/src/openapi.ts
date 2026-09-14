@@ -18,8 +18,29 @@ export const openApiDocument = {
         parameters: [{ name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } }],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CrearActividad' } } } },
         responses: {
-          '201': { description: 'Actividad creada', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '201': {
+            description: 'Actividad creada',
+            headers: {
+              Location: { description: 'URI de la actividad creada', schema: { type: 'string', format: 'uri' } },
+            },
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } },
+          },
           '400': { description: 'Body inválido' }, '401': { description: 'Usuario no autenticado' },
+        },
+      },
+    },
+    '/api/actividades/{id}': {
+      get: {
+        summary: 'Recupera una actividad por su id',
+        description: 'Permite recuperar una actividad aunque esté llena y no figure en la búsqueda.',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': { description: 'Actividad obtenida', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '401': { description: 'Usuario no autenticado' },
+          '404': { description: 'Actividad inexistente' },
         },
       },
     },
@@ -59,9 +80,9 @@ export const openApiDocument = {
         ],
         responses: {
           '201': { description: 'Participante inscripto', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
-          '400': { description: 'Usuario ya inscripto o actividad sin cupo' },
           '401': { description: 'Usuario no autenticado' },
           '404': { description: 'Actividad inexistente' },
+          '409': { description: 'Usuario ya inscripto o actividad sin cupo' },
         },
       },
     },
@@ -74,9 +95,9 @@ export const openApiDocument = {
         ],
         responses: {
           '200': { description: 'Participante dado de baja', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
-          '400': { description: 'Usuario no inscripto o baja del organizador' },
           '401': { description: 'Usuario no autenticado' },
           '404': { description: 'Actividad inexistente' },
+          '409': { description: 'Usuario no inscripto o baja del organizador' },
         },
       },
     },

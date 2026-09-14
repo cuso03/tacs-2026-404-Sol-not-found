@@ -23,6 +23,7 @@ export function createActividadesRoutes(
   const climaController = createClimaController(new ClimaService(repository, weatherProvider));
 
   router.get('/', controller.search);
+  router.get('/:id', requireAuthenticatedUser, controller.getById);
   router.post('/', requireAuthenticatedUser, controller.create);
   router.put('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
   router.get('/:id/clima', climaController.getClima);

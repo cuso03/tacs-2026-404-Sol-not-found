@@ -14,6 +14,9 @@ La especificación está disponible en `/openapi.json` y la interfaz Swagger en
 reprogramación (PUT idempotente). Solo acepta al mismo `X-User-Id` que creó la
 actividad.
 
+`GET /api/actividades/{id}` recupera una actividad por su id (requiere
+`X-User-Id`). Permite consultar actividades llenas que no figuran en la búsqueda.
+
 `POST /api/actividades/{id}/participantes` inscribe al usuario autenticado si hay
 cupo. `DELETE /api/actividades/{id}/participantes/me` elimina su inscripción. El
 organizador se incluye al crear la actividad, ocupa un cupo y no puede darse de

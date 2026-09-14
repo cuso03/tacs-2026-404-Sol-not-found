@@ -10,9 +10,9 @@ describe('OpenAPI Documentation & Contracts', () => {
       const actividad = openApiDocument.components.schemas.Actividad;
 
       expect(add.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Id', required: true }));
-      expect(Object.keys(add.responses)).toEqual(expect.arrayContaining(['201', '400', '401', '404']));
+      expect(Object.keys(add.responses)).toEqual(expect.arrayContaining(['201', '401', '404', '409']));
       expect(remove.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Id', required: true }));
-      expect(Object.keys(remove.responses)).toEqual(expect.arrayContaining(['200', '400', '401', '404']));
+      expect(Object.keys(remove.responses)).toEqual(expect.arrayContaining(['200', '401', '404', '409']));
       expect(actividad.required).toContain('participantes');
       expect(actividad.properties.participantes).toMatchObject({
         type: 'array',
