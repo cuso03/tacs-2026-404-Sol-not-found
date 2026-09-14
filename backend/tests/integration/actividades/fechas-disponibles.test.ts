@@ -4,9 +4,10 @@ import { createApp } from '../../../src/app';
 import { seedActividad } from '../../helpers/fixtures/actividad.fixture';
 import { createReglasPayload } from '../../helpers/fixtures/regla.fixture';
 import { authHeader, AUTH_ORGANIZADOR } from '../../helpers/fixtures/auth.fixture';
+import { ActividadMongoRepository } from '../../../src/repositories/actividadMongoRepository';
 
 describe('GET /api/actividades/:id/fechas-disponibles', () => {
-  const app = createApp();
+  const app = createApp(new ActividadMongoRepository());
 
   it('retorna fechas con pronóstico adecuado para una actividad con reglas configuradas', async () => {
     const actividad = await seedActividad({
