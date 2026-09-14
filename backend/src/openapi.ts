@@ -498,10 +498,10 @@ export const openApiDocument = {
           data: {
             type: 'array',
 
-            description: 'Actividades correspondientes al usuario autenticado.',
+            description: 'Resumen de actividades correspondientes al usuario autenticado.',
 
             items: {
-              $ref: '#/components/schemas/Actividad',
+              $ref: '#/components/schemas/ActividadResumenUsuario',
             },
 
           },
@@ -552,6 +552,18 @@ export const openApiDocument = {
 
         },
 
+      },
+      ActividadResumenUsuario: {
+        type: 'object',
+        required: ['id', 'titulo', 'fecha_horario', 'rol', 'estado', 'votacion_abierta'],
+        properties: {
+          id: { type: 'string', example: 'abc123' },
+          titulo: { type: 'string', example: 'Caminata urbana' },
+          fecha_horario: { type: 'string', format: 'date-time', example: '2026-09-10T14:00:00-03:00' },
+          rol: { type: 'string', enum: ['organizador', 'participante'], example: 'organizador' },
+          estado: { type: 'string', enum: ['PROPUESTA', 'EN_VOTACION', 'CONFIRMADA', 'REPROGRAMADA', 'CANCELADA', 'FINALIZADA'], example: 'PROPUESTA' },
+          votacion_abierta: { type: 'boolean', example: false },
+        },
       },
       ErrorResponse: {
 
