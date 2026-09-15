@@ -18,14 +18,16 @@ El proxy de Vite dirige `/api` al backend. Docker Compose configura el destino
 interno mediante `VITE_PROXY_TARGET=http://backend:3000`.
 
 ```bash
-npm install --package-lock=false
-npm run build
-npm test
-npm run dev
+pnpm install --no-frozen-lockfile
+pnpm run build
+pnpm test
+pnpm run dev
 ```
 
-El lockfile actual es anterior a las dependencias de shadcn. Hasta regenerarlo
-en un entorno con npm disponible, tanto Docker como CI lo ignoran explícitamente.
+El CI utiliza pnpm para evitar el error interno `edgesOut` del resolvedor de npm.
+Cuando pnpm pueda ejecutarse en un entorno de desarrollo, debe versionarse el
+archivo `pnpm-lock.yaml` generado y cambiar la instalación a `pnpm install
+--frozen-lockfile`.
 
 ---
 

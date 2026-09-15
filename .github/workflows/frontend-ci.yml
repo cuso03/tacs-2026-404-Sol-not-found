@@ -15,13 +15,12 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      # El lockfile se regenerará cuando haya un entorno local con npm disponible.
-      # Mientras tanto se ignora para evitar que Arborist mezcle árboles incompatibles.
-      - run: npm install --package-lock=false
-      - run: npm run build
-      - run: npm test
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm run build
+      - run: pnpm test
