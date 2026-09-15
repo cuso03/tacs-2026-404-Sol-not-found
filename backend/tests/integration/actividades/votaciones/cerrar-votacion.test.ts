@@ -52,19 +52,19 @@ describe('Resultados y Cierre de Votaciones', () => {
   });
 
   describe('DELETE /api/actividades/:id/votaciones/:votacionId', () => {
-    it('cierra manualmente la votación como organizador y actualiza el estado en MongoDB', async () => {
+    it('cierra manualmente la votación como organizador, reprograma la actividad y actualiza MongoDB', async () => {
       const { actividadId, votacionId, alternativas } = await seedActividadConVotacion({
         min_participantes: 2,
       });
-      const alt1 = alternativas[0].id;
+      const alt1 = alternativas[0];
 
       // Ambos participantes votan la alternativa 1 para alcanzar quórum
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1}/votar`)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
         .set(authHeader(AUTH_ORGANIZADOR))
         .send({});
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1}/votar`)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
         .set(authHeader(AUTH_PARTICIPANTE_1))
         .send({});
 
@@ -74,12 +74,143 @@ describe('Resultados y Cierre de Votaciones', () => {
 
       // 1. Verificación del contrato HTTP
       expect(response.status).toBe(200);
-      expect(response.body.estado).toBe('CONFIRMADA');
+      expect(response.body.estado).toBe('REPROGRAMADA');
+      expect(response.body.fecha_horario).toBe(alt1.fecha_horario);
 
       // 2. Verificación dual de persistencia en MongoDB
       const doc = await ActividadModel.findById(actividadId);
       expect(doc).not.toBeNull();
-      expect(doc?.estado).toBe('CONFIRMADA');
+      expect(doc?.estado).toBe('REPROGRAMADA');
+      expect(doc?.fecha_horario).toBe(alt1.fecha_horario);
+    });
+
+    it('cancela la votación si la alternativa ganadora no alcanza el quórum (votos repartidos)', async () => {
+      const { actividad, actividadId, votacionId, alternativas } = await seedActividadConVotacion({
+        min_participantes: 3,
+      });
+      const fechaOriginal = actividad.fecha_horario;
+      const alt1 = alternativas[0];
+      const alt2 = alternativas[1];
+
+      // Reparto 2-1: la ganadora (alt1) obtiene 2 votos con mínimo 3
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({});
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
+        .set(authHeader(AUTH_PARTICIPANTE_1))
+        .send({});
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt2.id}/votar`)
+        .set(authHeader(AUTH_PARTICIPANTE_2))
+        .send({});
+
+      const response = await request(app)
+        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR));
+
+      // 1. Verificación del contrato HTTP
+      expect(response.status).toBe(200);
+      expect(response.body.estado).toBe('CANCELADA');
+      expect(response.body.fecha_horario).toBe(fechaOriginal);
+
+      // 2. Verificación dual de persistencia en MongoDB
+      const doc = await ActividadModel.findById(actividadId);
+      expect(doc?.estado).toBe('CANCELADA');
+      expect(doc?.fecha_horario).toBe(fechaOriginal);
+    });
+
+    it('cancela la votación si nadie emite un voto (falta de quórum)', async () => {
+      const { actividad, actividadId, votacionId } = await seedActividadConVotacion({
+        min_participantes: 2,
+      });
+      const fechaOriginal = actividad.fecha_horario;
+
+      const response = await request(app)
+        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR));
+
+      expect(response.status).toBe(200);
+      expect(response.body.estado).toBe('CANCELADA');
+      expect(response.body.fecha_horario).toBe(fechaOriginal);
+
+      const doc = await ActividadModel.findById(actividadId);
+      expect(doc?.estado).toBe('CANCELADA');
+      expect(doc?.fecha_horario).toBe(fechaOriginal);
+    });
+
+    it('cancela la votación si la ganadora queda alcanzada pero hay empate en el máximo', async () => {
+      const { actividad, actividadId, votacionId, alternativas } = await seedActividadConVotacion({
+        min_participantes: 2,
+        participantes: [AUTH_ORGANIZADOR, AUTH_PARTICIPANTE_1, AUTH_PARTICIPANTE_2, 'auth0|participante-3'],
+      });
+      const fechaOriginal = actividad.fecha_horario;
+      const alt1 = alternativas[0];
+      const alt2 = alternativas[1];
+
+      // Reparto 2-2: ambas alternativas alcanzan el quórum pero no hay ganadora única
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({});
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
+        .set(authHeader(AUTH_PARTICIPANTE_1))
+        .send({});
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt2.id}/votar`)
+        .set(authHeader(AUTH_PARTICIPANTE_2))
+        .send({});
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt2.id}/votar`)
+        .set(authHeader('auth0|participante-3'))
+        .send({});
+
+      const response = await request(app)
+        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR));
+
+      expect(response.status).toBe(200);
+      expect(response.body.estado).toBe('CANCELADA');
+      expect(response.body.fecha_horario).toBe(fechaOriginal);
+
+      const doc = await ActividadModel.findById(actividadId);
+      expect(doc?.estado).toBe('CANCELADA');
+      expect(doc?.fecha_horario).toBe(fechaOriginal);
+    });
+
+    it('confirma la reprogramación cuando la alternativa ganadora alcanza el quórum', async () => {
+      const { actividadId, votacionId, alternativas } = await seedActividadConVotacion({
+        min_participantes: 3,
+      });
+      const alt1 = alternativas[0];
+
+      // Los tres participantes votan la misma alternativa: quórum alcanzado por la ganadora
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({});
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
+        .set(authHeader(AUTH_PARTICIPANTE_1))
+        .send({});
+      await request(app)
+        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1.id}/votar`)
+        .set(authHeader(AUTH_PARTICIPANTE_2))
+        .send({});
+
+      const response = await request(app)
+        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR));
+
+      expect(response.status).toBe(200);
+      expect(response.body.estado).toBe('REPROGRAMADA');
+      expect(response.body.fecha_horario).toBe(alt1.fecha_horario);
+
+      const doc = await ActividadModel.findById(actividadId);
+      expect(doc?.estado).toBe('REPROGRAMADA');
+      expect(doc?.fecha_horario).toBe(alt1.fecha_horario);
     });
 
     it('rechaza si el usuario que intenta cerrar no es el organizador', async () => {

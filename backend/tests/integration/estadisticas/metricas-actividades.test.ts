@@ -92,7 +92,7 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
       expect(doc?.cantidad).toBe(1);
     });
 
-    it('no incrementa Actividad_Reprogramada si la votación alcanza quórum y se confirma', async () => {
+    it('no incrementa Actividad_Reprogramada si la votación alcanza quórum y se reprograma', async () => {
       const { actividadId, votacionId, alternativas } = await seedActividadConVotacion({
         min_participantes: 2,
         participantes: [AUTH_ORGANIZADOR, AUTH_PARTICIPANTE_1],
@@ -114,7 +114,7 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
         .set(authHeader(AUTH_ORGANIZADOR));
 
       expect(cerrarRes.status).toBe(200);
-      expect(cerrarRes.body.estado).toBe('CONFIRMADA');
+      expect(cerrarRes.body.estado).toBe('REPROGRAMADA');
 
       const statsRes = await request(app)
         .get('/api/admin/estadisticas')

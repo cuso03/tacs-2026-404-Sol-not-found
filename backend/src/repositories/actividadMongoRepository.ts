@@ -97,7 +97,7 @@ export class ActividadMongoRepository implements ActividadRepository {
   }
 
   async findParaMonitoreo(): Promise<Actividad[]> {
-    const docs = await ActividadModel.find({ estado: { $in: ['PROPUESTA', 'CONFIRMADA'] } });
+    const docs = await ActividadModel.find({ estado: { $in: ['PROPUESTA', 'CONFIRMADA', 'REPROGRAMADA'] } });
     return docs.map(toActividad);
   }
 

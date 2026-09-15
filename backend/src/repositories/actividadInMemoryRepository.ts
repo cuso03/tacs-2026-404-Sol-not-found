@@ -62,7 +62,7 @@ export class ActividadInMemoryRepository implements ActividadRepository {
 
   async findParaMonitoreo(): Promise<Actividad[]> {
     return Array.from(this.actividades.values())
-      .filter(a => a.estado === 'PROPUESTA' || a.estado === 'CONFIRMADA')
+      .filter(a => a.estado === 'PROPUESTA' || a.estado === 'CONFIRMADA' || a.estado === 'REPROGRAMADA')
       .map(a => this.copy(a));
   }
 

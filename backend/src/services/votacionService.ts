@@ -240,7 +240,9 @@ export class VotacionService {
   /**
    * Cierra la votación y resuelve la reprogramación.
    * La alternativa más votada gana si alcanza el quórum (min_participantes).
-   * Si no hay quórum, la actividad se cancela.
+   * Un empate en el máximo de votos no define ganadora: la actividad se cancela.
+   * Si la ganadora no alcanza el quórum, la actividad también se cancela.
+   * Ante una reprogramación exitosa, la actividad queda en estado REPROGRAMADA.
    */
   async cerrarVotacion(actividadId: string, votacionId: string): Promise<void> {
     const actividad = await this.repository.findById(actividadId);
@@ -257,20 +259,22 @@ export class VotacionService {
 
     let ganadora: Alternativa | null = null;
     let maxVotos = 0;
+    let empate = false;
     for (const alt of votacion.alternativas) {
       if (conteo[alt.id] > maxVotos) {
         maxVotos = conteo[alt.id];
         ganadora = alt;
+        empate = false;
+      } else if (conteo[alt.id] === maxVotos && conteo[alt.id] > 0) {
+        empate = true;
       }
     }
 
-    const totalVotos = Object.keys(votacion.votos).length;
-
     // Resolución y Notificación Síncrona
-    if (ganadora && maxVotos > 0 && totalVotos >= actividad.min_participantes) {
+    if (ganadora && !empate && maxVotos >= actividad.min_participantes) {
       await this.repository.update({
         ...actividad,
-        estado: 'CONFIRMADA',
+        estado: 'REPROGRAMADA',
         fecha_horario: ganadora.fecha_horario,
       });
       // US 13: Disparar alerta de reprogramación
