@@ -1,73 +1,75 @@
 import { useState } from 'react';
-import { Link, Outlet } from 'react-router-dom';
-import Button from './ui/Button';
+import { Compass, Gauge, Plus, ShieldCheck, SunMedium, UserRound } from 'lucide-react';
+import { NavLink, Outlet } from 'react-router-dom';
+import { CURRENT_USER_ID } from '../services/api';
 import CreateActivityModal from './CreateActivityModal';
+import { Button } from './ui/Button';
 
+export interface AppOutletContext {
+  refreshVersion: number;
+}
+
+const navigation = [
+  { to: '/', label: 'Descubrir', icon: Compass, end: true },
+  { to: '/dashboard', label: 'Mi actividad', icon: Gauge, end: false },
+  { to: '/admin', label: 'Administración', icon: ShieldCheck, end: false },
+];
+
+/** Marco principal y navegación persistente de la aplicación. */
 export default function Layout() {
-  // Estado para controlar la visibilidad del modal
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [refreshVersion, setRefreshVersion] = useState(0);
 
   return (
-    <div className="h-full flex flex-col font-sans text-slate-800">
-      {/* Top Global Bar */}
-      <header className="bg-slate-900 text-slate-300 text-xs px-4 py-2 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span className="font-semibold text-slate-200">Entorno TACS</span>
-          <span className="text-slate-500">|</span>
-          <span>Simulador <code className="text-amber-400 bg-slate-800 px-1.5 py-0.5 rounded font-mono">X-User-Id</code></span>
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
+          <NavLink to="/" className="mr-auto flex items-center gap-3" aria-label="Sol Not Found - Inicio">
+            <span className="grid size-10 place-items-center rounded-xl bg-blue-600 text-white shadow-sm"><SunMedium className="size-5" /></span>
+            <span className="hidden sm:block">
+              <span className="block text-sm font-extrabold leading-none tracking-tight">Sol Not Found</span>
+              <span className="mt-1 block text-[11px] text-slate-500">Actividades preparadas para el clima</span>
+            </span>
+          </NavLink>
+
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Navegación principal">
+            {navigation.map(({ to, label, icon: Icon, end }) => (
+              <NavLink key={to} to={to} end={end} className={({ isActive }) => `inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-950' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                <Icon className="size-4" />{label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 lg:flex" title={CURRENT_USER_ID}>
+            <UserRound className="size-3.5" /><span>Usuario demo</span>
+          </div>
+          <Button size="sm" onClick={() => setIsModalOpen(true)}><Plus className="size-4" /><span className="hidden sm:inline">Nueva actividad</span></Button>
         </div>
+
+        <nav className="mx-auto flex max-w-7xl border-t border-slate-100 px-4 md:hidden" aria-label="Navegación móvil">
+          {navigation.map(({ to, label, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-xs font-semibold ${isActive ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500'}`}>
+              <Icon className="size-3.5" />{label}
+            </NavLink>
+          ))}
+        </nav>
       </header>
 
-      {/* Main App Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            
-            <Link to="/" className="flex items-center gap-3 cursor-pointer">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-400 to-blue-500 flex items-center justify-center text-white shadow-md text-xl font-black">
-                ☀️
-              </div>
-              <div>
-                <div className="font-extrabold text-lg tracking-tight text-slate-900 leading-none flex items-center gap-1.5">
-                  404 <span className="text-blue-600">Sol Not Found</span>
-                </div>
-                <span className="text-[11px] font-medium text-slate-400">Monitoreo y Reprogramación</span>
-              </div>
-            </Link>
-
-            <div className="hidden md:flex items-center space-x-2">
-              <Link to="/" className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-                Descubrir
-              </Link>
-              <Link to="/dashboard" className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900">
-                Mi Dashboard
-              </Link>
-              <Link to="/admin" className="px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 flex items-center gap-1.5">
-                <span>Admin</span>
-                <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold">Métricas</span>
-              </Link>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Actualizamos el botón para que abra el modal y usamos nuestro componente Button */}
-              <Button onClick={() => setIsModalOpen(true)}>
-                Nueva Actividad
-              </Button>
-            </div>
-
-          </div>
-        </div>
-      </nav>
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Outlet />
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <Outlet context={{ refreshVersion } satisfies AppOutletContext} />
       </main>
 
-      {/* Renderizamos el modal pasándole el estado y la función para cerrarlo */}
-      <CreateActivityModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <span>Sol Not Found · Gestión climática de actividades</span>
+          <span>Identidad simulada mediante X-User-Id</span>
+        </div>
+      </footer>
+
+      <CreateActivityModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreated={() => setRefreshVersion((current) => current + 1)}
       />
     </div>
   );

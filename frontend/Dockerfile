@@ -5,10 +5,11 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copiamos los archivos de dependencias primero (para aprovechar la caché de Docker)
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
-# Instalamos las dependencias
-RUN npm install
+# Instalamos pnpm de forma global para no depender del resolvedor Arborist del proyecto.
+RUN npm install --global pnpm@10.33.0
+RUN pnpm install --no-frozen-lockfile
 
 # Copiamos el resto del código
 COPY . .
@@ -17,4 +18,4 @@ COPY . .
 EXPOSE 5173
 
 # Comando para levantar la aplicación en modo desarrollo
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]
