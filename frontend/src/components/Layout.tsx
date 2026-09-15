@@ -1,4 +1,5 @@
 import { Link, Outlet } from 'react-router-dom'
+import Button from './ui/Button'
 
 export default function Layout() {
   return (
@@ -47,9 +48,9 @@ export default function Layout() {
 
             {/* User Profile Pill */}
             <div className="flex items-center gap-3">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg shadow-sm transition">
+              <Button className="px-3.5 rounded-lg">
                 Nueva Actividad
-              </button>
+              </Button>
             </div>
 
           </div>
