@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Actividad } from '../interfaces/models/actividad';
-import { Alternativa, Votacion } from '../interfaces/models/votacion';
+import { Alternativa, EstadoVotacion, Votacion } from '../interfaces/models/votacion';
 import { PronosticoHora } from '../interfaces/models/pronostico';
 import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
@@ -136,6 +136,7 @@ export class VotacionService {
       automatica,
       alternativas,
       votos: {},
+      estado: 'ABIERTA',
     };
 
     const votaciones = [...actividad.votaciones, votacion];
@@ -171,6 +172,7 @@ export class VotacionService {
 
     const ahora = new Date();
     if (new Date(votacion.cierraEn) <= ahora) return { status: 'voting_closed' };
+    if (votacion.estado !== 'ABIERTA') return { status: 'voting_closed' };
     if (actividad.estado !== 'EN_VOTACION') return { status: 'voting_closed' };
     if (!actividad.participantes.includes(userId)) return { status: 'not_participant' };
 
@@ -217,9 +219,14 @@ export class VotacionService {
 
   /**
    * Cierra manualmente una votación de reprogramación.
-   * Solo el organizador puede ejecutar esta acción.
+   * Solo el organizador puede ejecutar esta acción. La única transición válida es ABIERTA → CERRADA.
    */
-  async cerrarVotacionManual(actividadId: string, votacionId: string, userId: string): Promise<CerrarVotacionResult> {
+  async cerrarVotacionManual(
+    actividadId: string,
+    votacionId: string,
+    userId: string,
+    estadoObjetivo: EstadoVotacion,
+  ): Promise<CerrarVotacionResult> {
     const actividad = await this.repository.findById(actividadId);
     if (!actividad) return { status: 'not_found' };
     if (actividad.creadorId !== userId) return { status: 'forbidden' };
@@ -229,6 +236,7 @@ export class VotacionService {
 
     const ahora = new Date();
     if (new Date(votacion.cierraEn) <= ahora) return { status: 'voting_closed' };
+    if (votacion.estado !== 'ABIERTA' || estadoObjetivo !== 'CERRADA') return { status: 'voting_closed' };
     if (actividad.estado !== 'EN_VOTACION') return { status: 'voting_closed' };
 
     await this.cerrarVotacion(actividadId, votacionId);
@@ -240,14 +248,17 @@ export class VotacionService {
   /**
    * Cierra la votación y resuelve la reprogramación.
    * La alternativa más votada gana si alcanza el quórum (min_participantes).
-   * Si no hay quórum, la actividad se cancela.
+   * Un empate en el máximo de votos no define ganadora: la actividad se cancela.
+   * Si la ganadora no alcanza el quórum, la actividad también se cancela.
+   * Ante una reprogramación exitosa, la actividad queda en estado REPROGRAMADA.
+   * Es idempotente: si la votación ya está CERRADA no hace nada.
    */
   async cerrarVotacion(actividadId: string, votacionId: string): Promise<void> {
     const actividad = await this.repository.findById(actividadId);
     if (!actividad || actividad.estado !== 'EN_VOTACION') return;
 
     const votacion = this.buscarVotacion(actividad, votacionId);
-    if (!votacion) return;
+    if (!votacion || votacion.estado === 'CERRADA') return;
 
     const conteo: Record<string, number> = {};
     for (const alt of votacion.alternativas) conteo[alt.id] = 0;
@@ -257,34 +268,47 @@ export class VotacionService {
 
     let ganadora: Alternativa | null = null;
     let maxVotos = 0;
+    let empate = false;
     for (const alt of votacion.alternativas) {
       if (conteo[alt.id] > maxVotos) {
         maxVotos = conteo[alt.id];
         ganadora = alt;
+        empate = false;
+      } else if (conteo[alt.id] === maxVotos && conteo[alt.id] > 0) {
+        empate = true;
       }
     }
 
-    const totalVotos = Object.keys(votacion.votos).length;
+    const votacionCerrada: Votacion = {
+      ...votacion,
+      estado: 'CERRADA',
+      cerradaEn: new Date().toISOString(),
+    };
+    const votaciones = actividad.votaciones.map((v) => (v.id === votacionId ? votacionCerrada : v));
 
     // Resolución y Notificación Síncrona
-    if (ganadora && maxVotos > 0 && totalVotos >= actividad.min_participantes) {
+    if (ganadora && !empate && maxVotos >= actividad.min_participantes) {
       await this.repository.update({
         ...actividad,
-        estado: 'CONFIRMADA',
+        estado: 'REPROGRAMADA',
         fecha_horario: ganadora.fecha_horario,
+        votaciones,
       });
       // US 13: Disparar alerta de reprogramación
       await this.eventNotifier.notificarReprogramacion(actividad, ganadora.fecha_horario);
+      // US 14: guardar Estadistica
+      await this.statsStore.incrementar('Actividad_Reprogramada');
     } else {
       await this.repository.update({
         ...actividad,
         estado: 'CANCELADA',
+        votaciones,
       });
       // US 13: Disparar alerta de cancelación
       await this.eventNotifier.notificarCancelacion(actividad);
 
-      //US 14: guardar Estadistica
-      await this.statsStore.incrementar('Actividad_Reprogramada');
+      // US 14: guardar Estadistica
+      await this.statsStore.incrementar('Actividad_Cancelada');
     }
   }
 

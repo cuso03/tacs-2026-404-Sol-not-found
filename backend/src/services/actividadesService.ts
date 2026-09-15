@@ -40,6 +40,11 @@ export class ActividadesService {
     return this.repository.findAll(filtros);
   }
 
+  /** Recupera una actividad por su id, incluso si está llena y no figura en la búsqueda. */
+  async buscarPorId(actividadId: string): Promise<Actividad | undefined> {
+    return this.repository.findById(actividadId);
+  }
+
   // Recibe la paginación, busca, extrae el total, y solo mapea el array "data"
   async obtenerDashboardUsuario(userId: string, paginacion: PaginacionDto) {
     const result = await this.repository.findDashboardByUser(userId, paginacion);

@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../../../src/app';
 import { ActividadModel } from '../../../src/infrastructure/mongo/actividadModel';
 import { seedActividad } from '../../helpers/fixtures/actividad.fixture';
-import { ActividadMongoRepository } from '../../../src/repositories/actividadMongoRepository';
 import {
   authHeader,
   AUTH_ORGANIZADOR,
@@ -13,7 +12,7 @@ import {
 } from '../../helpers/fixtures/auth.fixture';
 
 describe('Gestión de Participantes en Actividades', () => {
-  const app = createApp(new ActividadMongoRepository());
+  const app = createApp();
 
   describe('POST /api/actividades/:id/participantes', () => {
     it('inscribe al usuario, permite ocupar el último cupo y persiste el cambio en MongoDB', async () => {
@@ -50,7 +49,7 @@ describe('Gestión de Participantes en Actividades', () => {
         .post(`/api/actividades/${id}/participantes`)
         .set(authHeader(AUTH_PARTICIPANTE_1));
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(409);
       expect(response.body.error).toBe('ALREADY_PARTICIPATING');
 
       // Verificación dual en base de datos: el array no fue modificado
@@ -70,7 +69,7 @@ describe('Gestión de Participantes en Actividades', () => {
         .post(`/api/actividades/${id}/participantes`)
         .set(authHeader(AUTH_PARTICIPANTE_1));
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(409);
       expect(response.body.error).toBe('ACTIVITY_FULL');
 
       // Verificación dual en base de datos
@@ -152,7 +151,7 @@ describe('Gestión de Participantes en Actividades', () => {
         .delete(`/api/actividades/${id}/participantes/me`)
         .set(authHeader(AUTH_OTRO_USUARIO));
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(409);
       expect(response.body.error).toBe('NOT_PARTICIPATING');
 
       // Verificación dual en DB
@@ -172,7 +171,7 @@ describe('Gestión de Participantes en Actividades', () => {
         .delete(`/api/actividades/${id}/participantes/me`)
         .set(authHeader(AUTH_ORGANIZADOR));
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(409);
       expect(response.body.error).toBe('ORGANIZER_CANNOT_LEAVE');
 
       // Verificación dual en DB

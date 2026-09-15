@@ -17,7 +17,6 @@ import { BullMQVotingJobQueue, createVotingWorker } from './infrastructure/bullm
 import { createUsuariosRoutes } from './routes/usuariosRoutes';
 import { ActividadesService } from './services/actividadesService';
 import { createEstadisticasRouter } from "./routes/estadisticasRoutes";
-import { InMemoryEstadisticasStore } from "./utils/InMemoryEstadisticasStore";
 import { EstadisticasStoreService } from "./services/estadisticasStoreService";
 import { errorHandler } from "./middleware/errorHandler";
 import { EstadisticasMongoStore } from './repositories/estadisticasMongoStore';
@@ -42,16 +41,11 @@ function createJobQueue(): IVotingJobQueue {
 }
 
 export function createApp(
-  repository: ActividadRepository = process.env.NODE_ENV === 'test' 
-    ? new ActividadInMemoryRepository() 
-    : new ActividadMongoRepository(),
   weatherProvider: IWeatherProvider = process.env.WEATHER_PROVIDER === 'OPENWEATHER'
     ? new OpenWeatherAdapter()
     : new MockWeatherService(),
   jobQueue: IVotingJobQueue = createJobQueue(),
-  estadisticas: IEstadisticasStore = process.env.NODE_ENV === 'test' 
-    ? new InMemoryEstadisticasStore() 
-    : new EstadisticasMongoStore(),
+  estadisticas: IEstadisticasStore = new EstadisticasMongoStore(),
 ) {
   // 1. Feature 7
   //const rabbitNotifier = new RabbitMQNotifier(); // El orquestador usa la cola
@@ -60,19 +54,20 @@ export function createApp(
     : new RabbitMQNotifier();
   const telegramService = new TelegramService(); // El worker usa Telegram
 
+  const actividadesRepository = new ActividadMongoRepository();
   const notificacionRepo = new NotificacionMongoRepository();
   const usuarioRepo = new UsuarioMongoRepository();
 
   const eventNotifier = new ActividadEventNotifier(baseNotifier, notificacionRepo);
   // 2. Instanciar VotacionService inyectando el Notificador
-  const votacionService = new VotacionService(repository, weatherProvider, jobQueue, eventNotifier, estadisticas);
+  const votacionService = new VotacionService(actividadesRepository, weatherProvider, jobQueue, eventNotifier, estadisticas);
   const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier, estadisticas, votacionService, notificacionRepo);
 
   if (jobQueue instanceof InMemoryVotingJobQueue) {
     jobQueue.setVotacionService(votacionService);
   }
 
-  const actividadesService = new ActividadesService(repository, estadisticas);
+  const actividadesService = new ActividadesService(actividadesRepository, estadisticas);
   const estadisticasStoreService = new EstadisticasStoreService(estadisticas)
 
   if (process.env.NODE_ENV !== 'test') { // si ejecutamos tests, no usamos ni cron ni nos conectamos con telegram.
@@ -88,7 +83,7 @@ export function createApp(
     }
 
     // 3. Inicializar Cronjobs en el arranque
-    const cronSetup = new CronSetup(climaMonitor, repository);
+    const cronSetup = new CronSetup(climaMonitor, actividadesRepository);
     cronSetup.iniciarTareasProgramadas();
   }
 
@@ -96,7 +91,7 @@ export function createApp(
   app.use(express.json({ limit: '100kb' }));
 
   // 4. Configurar Rutas
-  app.use('/api/actividades', createActividadesRoutes(repository, actividadesService, votacionService, weatherProvider));
+  app.use('/api/actividades', createActividadesRoutes(actividadesRepository, actividadesService, votacionService, weatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
   app.use('/api/notificaciones', notificacionesRoutes);
   app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService))

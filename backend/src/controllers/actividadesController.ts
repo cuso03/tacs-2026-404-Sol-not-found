@@ -14,7 +14,25 @@ export function createActividadesController(service: ActividadesService) {
       return;
     }
     const actividad = await service.crearActividad(parsed.data, req.userId!);
+    res.location(`/api/actividades/${actividad.id}`);
     res.status(201).json(actividad);
+  }
+
+  /** Recupera una actividad por su id para el usuario autenticado. */
+  async function getById(req: Request, res: Response): Promise<void> {
+    const actividadId = req.params.id;
+    if (typeof actividadId !== 'string') {
+      res.status(404).json({ error: 'Actividad no encontrada' });
+      return;
+    }
+
+    const actividad = await service.buscarPorId(actividadId);
+    if (!actividad) {
+      res.status(404).json({ error: 'Actividad no encontrada' });
+      return;
+    }
+
+    res.status(200).json(actividad);
   }
 
   /** Valida, autoriza y vincula reglas de clima a una actividad existente. */
@@ -56,11 +74,11 @@ export function createActividadesController(service: ActividadesService) {
       return;
     }
     if (result.status === 'already_participating') {
-      res.status(400).json({ error: 'ALREADY_PARTICIPATING', message: 'El usuario ya participa en la actividad.' });
+      res.status(409).json({ error: 'ALREADY_PARTICIPATING', message: 'El usuario ya participa en la actividad.' });
       return;
     }
     if (result.status === 'full') {
-      res.status(400).json({ error: 'ACTIVITY_FULL', message: 'La actividad alcanzó su cupo máximo.' });
+      res.status(409).json({ error: 'ACTIVITY_FULL', message: 'La actividad alcanzó su cupo máximo.' });
       return;
     }
     res.status(201).json(result.actividad);
@@ -79,11 +97,11 @@ export function createActividadesController(service: ActividadesService) {
       return;
     }
     if (result.status === 'not_participating') {
-      res.status(400).json({ error: 'NOT_PARTICIPATING', message: 'El usuario no participa en la actividad.' });
+      res.status(409).json({ error: 'NOT_PARTICIPATING', message: 'El usuario no participa en la actividad.' });
       return;
     }
     if (result.status === 'organizer_cannot_leave') {
-      res.status(400).json({ error: 'ORGANIZER_CANNOT_LEAVE', message: 'El organizador no puede darse de baja.' });
+      res.status(409).json({ error: 'ORGANIZER_CANNOT_LEAVE', message: 'El organizador no puede darse de baja.' });
       return;
     }
     res.status(200).json(result.actividad);
@@ -111,5 +129,5 @@ export function createActividadesController(service: ActividadesService) {
     });
   }
 
-  return { create, configureRules, addParticipant, removeParticipant, search };
+  return { create, getById, configureRules, addParticipant, removeParticipant, search };
 }

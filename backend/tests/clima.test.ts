@@ -1,7 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
-import { ActividadInMemoryRepository } from '../src/repositories/actividadInMemoryRepository';
 import { IWeatherProvider } from '../src/interfaces/services/IWeatherProvider';
 import { MockWeatherService } from '../src/services/mockWeatherService';
 
@@ -70,8 +69,7 @@ describe('GET /api/actividades/:id/clima', () => {
   });
 
   it('es determinístico: misma actividad retorna mismo clima', async () => {
-    const repository = new ActividadInMemoryRepository();
-    const app = createApp(repository);
+    const app = createApp();
     const created = await request(app).post('/api/actividades').set('X-User-Id', 'auth0|organizador-1').send(validPayloadCoordenadas);
     const id = created.body.id as string;
     const primerLlamado = await request(app).get(`/api/actividades/${id}/clima`);
@@ -93,8 +91,7 @@ describe('GET /api/actividades/:id/clima', () => {
       },
       obtenerPronostico: async (ubicacion: any, fechaDesde: any, dias: any) => [],
     } as unknown as IWeatherProvider;
-    const repository = new ActividadInMemoryRepository();
-    const app = createApp(repository, fakeProvider);
+    const app = createApp(fakeProvider);
     const created = await request(app).post('/api/actividades').set('X-User-Id', 'auth0|organizador-1').send(validPayloadCoordenadas);
     const response = await request(app).get(`/api/actividades/${created.body.id}/clima`);
     expect(response.status).toBe(200);

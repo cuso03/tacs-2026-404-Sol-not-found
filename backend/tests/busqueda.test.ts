@@ -1,7 +1,6 @@
 import request from 'supertest';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
-import { ActividadInMemoryRepository } from '../src/repositories/actividadInMemoryRepository';
 
 const basePayload = {
   descripcion: 'Prueba de feature 3',
@@ -11,10 +10,9 @@ const basePayload = {
 };
 
 describe('Feature 3: Búsqueda y Dashboard', () => {
-  const repository = new ActividadInMemoryRepository();
-  const app = createApp(repository);
+  const app = createApp();
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     await request(app).post('/api/actividades')
       .set('X-User-Id', 'auth0|organizador-1')
       .send({ ...basePayload, titulo: 'Partido en Capital', tipo: 'aire_libre', ubicacion: { tipo: 'ciudad', ciudad: 'Buenos Aires', pais: 'AR' } });
