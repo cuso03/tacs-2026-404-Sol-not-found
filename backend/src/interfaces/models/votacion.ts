@@ -1,3 +1,7 @@
+/** Estados posibles de una votación a lo largo de su ciclo de vida. */
+export const ESTADOS_VOTACION = ['ABIERTA', 'CERRADA'] as const;
+export type EstadoVotacion = typeof ESTADOS_VOTACION[number];
+
 /** Alternativa de fecha y horario dentro de una votación de reprogramación. */
 export interface Alternativa {
   id: string;
@@ -20,4 +24,8 @@ export interface Votacion {
   alternativas: Alternativa[];
   /** Mapa de userId → alternativaId. Sobreescribe si el usuario cambia su voto. */
   votos: Record<string, string>;
+  /** Estado actual de la votación en su ciclo de vida. */
+  estado: EstadoVotacion;
+  /** Momento en que se cerró la votación (ISO 8601). Presente si estado === 'CERRADA'. */
+  cerradaEn?: string;
 }

@@ -9,7 +9,7 @@ import {
   AUTH_OTRO_USUARIO,
 } from '../../../helpers/fixtures/auth.fixture';
 
-describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alternativaId/votar', () => {
+describe('PUT /api/actividades/:id/votaciones/:votacionId/votos/me', () => {
   const app = createApp();
 
   it('registra un voto válido y persiste el mapa de votos en MongoDB', async () => {
@@ -17,9 +17,9 @@ describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alterna
     const targetAltId = alternativas[0].id;
 
     const response = await request(app)
-      .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${targetAltId}/votar`)
+      .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
       .set(authHeader(AUTH_PARTICIPANTE_1))
-      .send({});
+      .send({ alternativa_id: targetAltId });
 
     // 1. Verificación del contrato HTTP
     expect(response.status).toBe(200);
@@ -38,22 +38,56 @@ describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alterna
     expect(votos[AUTH_PARTICIPANTE_1]).toBe(targetAltId);
   });
 
-  it('sobreescribe un voto anterior del mismo usuario en la respuesta y en MongoDB', async () => {
+  it('repetir el mismo PUT conserva un único voto del usuario', async () => {
+    const { actividadId, votacionId, alternativas } = await seedActividadConVotacion();
+    const alt1 = alternativas[0].id;
+
+    const url = `/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`;
+
+    // Primer PUT
+    const primera = await request(app)
+      .put(url)
+      .set(authHeader(AUTH_PARTICIPANTE_1))
+      .send({ alternativa_id: alt1 });
+    expect(primera.status).toBe(200);
+
+    // Mismo PUT repetido
+    const segunda = await request(app)
+      .put(url)
+      .set(authHeader(AUTH_PARTICIPANTE_1))
+      .send({ alternativa_id: alt1 });
+    expect(segunda.status).toBe(200);
+
+    // Verificación dual: sigue existiendo un único voto con el mismo valor
+    expect(segunda.body.votos[AUTH_PARTICIPANTE_1]).toBe(alt1);
+    expect(Object.keys(segunda.body.votos)).toHaveLength(1);
+
+    const doc = await ActividadModel.findById(actividadId);
+    const votacionDoc = doc!.votaciones.find((v: any) => v._id.toString() === votacionId);
+    const votos = votacionDoc!.votos instanceof Map
+      ? Object.fromEntries(votacionDoc!.votos)
+      : votacionDoc!.votos;
+
+    expect(Object.keys(votos)).toHaveLength(1);
+    expect(votos[AUTH_PARTICIPANTE_1]).toBe(alt1);
+  });
+
+  it('reemplaza un voto anterior del mismo usuario en la respuesta y en MongoDB', async () => {
     const { actividadId, votacionId, alternativas } = await seedActividadConVotacion();
     const alt1 = alternativas[0].id;
     const alt2 = alternativas[1].id;
 
     // Primer voto
     await request(app)
-      .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt1}/votar`)
+      .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
       .set(authHeader(AUTH_PARTICIPANTE_1))
-      .send({});
+      .send({ alternativa_id: alt1 });
 
-    // Sobreescritura de voto
+    // Reemplazo de voto
     const response = await request(app)
-      .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${alt2}/votar`)
+      .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
       .set(authHeader(AUTH_PARTICIPANTE_1))
-      .send({});
+      .send({ alternativa_id: alt2 });
 
     expect(response.status).toBe(200);
     expect(response.body.votos[AUTH_PARTICIPANTE_1]).toBe(alt2);
@@ -65,7 +99,19 @@ describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alterna
       ? Object.fromEntries(votacionDoc!.votos)
       : votacionDoc!.votos;
 
+    expect(Object.keys(votos)).toHaveLength(1);
     expect(votos[AUTH_PARTICIPANTE_1]).toBe(alt2);
+  });
+
+  it('rechaza un body sin alternativa_id', async () => {
+    const { actividadId, votacionId } = await seedActividadConVotacion();
+
+    const response = await request(app)
+      .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
+      .set(authHeader(AUTH_PARTICIPANTE_1))
+      .send({});
+
+    expect(response.status).toBe(400);
   });
 
   it('rechaza el voto de un usuario no participante y no muta la base de datos', async () => {
@@ -73,9 +119,9 @@ describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alterna
     const altId = alternativas[0].id;
 
     const response = await request(app)
-      .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+      .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
       .set(authHeader(AUTH_OTRO_USUARIO))
-      .send({});
+      .send({ alternativa_id: altId });
 
     expect(response.status).toBe(403);
 
@@ -94,9 +140,9 @@ describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alterna
     const fakeAltId = '66db614fef5a153200000000';
 
     const response = await request(app)
-      .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${fakeAltId}/votar`)
+      .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
       .set(authHeader(AUTH_PARTICIPANTE_1))
-      .send({});
+      .send({ alternativa_id: fakeAltId });
 
     expect(response.status).toBe(400);
 
@@ -113,9 +159,9 @@ describe('POST /api/actividades/:id/votaciones/:votacionId/alternativas/:alterna
   it('retorna 404 si la actividad no existe', async () => {
     const fakeId = '66db614fef5a153200000000';
     const response = await request(app)
-      .post(`/api/actividades/${fakeId}/votaciones/vot-1/alternativas/alt-1/votar`)
+      .put(`/api/actividades/${fakeId}/votaciones/vot-1/votos/me`)
       .set(authHeader(AUTH_PARTICIPANTE_1))
-      .send({});
+      .send({ alternativa_id: 'alt-1' });
 
     expect(response.status).toBe(404);
   });

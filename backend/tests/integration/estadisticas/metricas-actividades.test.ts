@@ -67,6 +67,34 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
   });
 
   describe('Métrica: Actividad_Reprogramada', () => {
+it('resuelve una sola vez: un segundo cierre devuelve 409 y no duplica la métrica', async () => {
+      const { actividadId, votacionId } = await seedActividadConVotacion({
+        min_participantes: 2,
+        participantes: [AUTH_ORGANIZADOR],
+      });
+
+      const primerCierre = await request(app)
+        .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({ estado: 'CERRADA' });
+      expect(primerCierre.status).toBe(200);
+      expect(primerCierre.body.estado).toBe('CANCELADA');
+
+      const segundoCierre = await request(app)
+        .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({ estado: 'CERRADA' });
+      expect(segundoCierre.status).toBe(409);
+
+      const statsRes = await request(app)
+        .get('/api/admin/estadisticas')
+        .set(adminHeader());
+      expect(statsRes.body.Actividad_Cancelada).toBe(1);
+
+      const doc = await EstadisticaModel.findOne({ metrica: 'Actividad_Cancelada' });
+      expect(doc?.cantidad).toBe(1);
+    });
+
     it('incrementa Actividad_Reprogramada cuando la votación alcanza quórum y se reprograma', async () => {
       const { actividadId, votacionId, alternativas } = await seedActividadConVotacion({
         min_participantes: 2,
@@ -75,18 +103,19 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
       const altId = alternativas[0].id;
 
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_ORGANIZADOR))
-        .send({});
+        .send({ alternativa_id: altId });
 
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_PARTICIPANTE_1))
-        .send({});
+        .send({ alternativa_id: altId });
 
       const cerrarRes = await request(app)
-        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
-        .set(authHeader(AUTH_ORGANIZADOR));
+        .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({ estado: 'CERRADA' });
 
       expect(cerrarRes.status).toBe(200);
       expect(cerrarRes.body.estado).toBe('REPROGRAMADA');
@@ -110,8 +139,9 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
       });
 
       const cerrarRes = await request(app)
-        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
-        .set(authHeader(AUTH_ORGANIZADOR));
+        .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({ estado: 'CERRADA' });
 
       expect(cerrarRes.status).toBe(200);
       expect(cerrarRes.body.estado).toBe('CANCELADA');
@@ -124,26 +154,28 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
     });
 
     it('acumula Actividad_Reprogramada en reprogramaciones sucesivas', async () => {
+      const participantes = [AUTH_ORGANIZADOR, AUTH_PARTICIPANTE_1];
       for (let i = 0; i < 3; i++) {
         const { actividadId, votacionId, alternativas } = await seedActividadConVotacion({
           min_participantes: 2,
-          participantes: [AUTH_ORGANIZADOR, AUTH_PARTICIPANTE_1],
+          participantes,
         });
         const altId = alternativas[0].id;
 
         await request(app)
-          .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+          .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
           .set(authHeader(AUTH_ORGANIZADOR))
-          .send({});
+          .send({ alternativa_id: altId });
 
         await request(app)
-          .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+          .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
           .set(authHeader(AUTH_PARTICIPANTE_1))
-          .send({});
+          .send({ alternativa_id: altId });
 
         await request(app)
-          .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
-          .set(authHeader(AUTH_ORGANIZADOR));
+          .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+          .set(authHeader(AUTH_ORGANIZADOR))
+          .send({ estado: 'CERRADA' });
       }
 
       const statsRes = await request(app)
@@ -162,8 +194,9 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
       });
 
       const cerrarRes = await request(app)
-        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
-        .set(authHeader(AUTH_ORGANIZADOR));
+        .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({ estado: 'CERRADA' });
 
       expect(cerrarRes.status).toBe(200);
       expect(cerrarRes.body.estado).toBe('CANCELADA');
@@ -188,18 +221,19 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
       const altId = alternativas[0].id;
 
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_ORGANIZADOR))
-        .send({});
+        .send({ alternativa_id: altId });
 
       await request(app)
-        .post(`/api/actividades/${actividadId}/votaciones/${votacionId}/alternativas/${altId}/votar`)
+        .put(`/api/actividades/${actividadId}/votaciones/${votacionId}/votos/me`)
         .set(authHeader(AUTH_PARTICIPANTE_1))
-        .send({});
+        .send({ alternativa_id: altId });
 
       const cerrarRes = await request(app)
-        .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
-        .set(authHeader(AUTH_ORGANIZADOR));
+        .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+        .set(authHeader(AUTH_ORGANIZADOR))
+        .send({ estado: 'CERRADA' });
 
       expect(cerrarRes.status).toBe(200);
       expect(cerrarRes.body.estado).toBe('REPROGRAMADA');
@@ -219,8 +253,9 @@ describe('Métricas de Ciclo de Vida de Actividades', () => {
         });
 
         await request(app)
-          .delete(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
-          .set(authHeader(AUTH_ORGANIZADOR));
+          .patch(`/api/actividades/${actividadId}/votaciones/${votacionId}`)
+          .set(authHeader(AUTH_ORGANIZADOR))
+          .send({ estado: 'CERRADA' });
       }
 
       const statsRes = await request(app)

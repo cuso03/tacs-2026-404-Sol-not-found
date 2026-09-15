@@ -18,21 +18,43 @@ export const openApiDocument = {
         parameters: [{ name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } }],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CrearActividad' } } } },
         responses: {
-          '201': { description: 'Actividad creada', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '201': {
+            description: 'Actividad creada',
+            headers: {
+              Location: { description: 'URI de la actividad creada', schema: { type: 'string', format: 'uri' } },
+            },
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } },
+          },
           '400': { description: 'Body inválido' }, '401': { description: 'Usuario no autenticado' },
         },
       },
     },
+    '/api/actividades/{id}': {
+      get: {
+        summary: 'Recupera una actividad por su id',
+        description: 'Permite recuperar una actividad aunque esté llena y no figure en la búsqueda.',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
+          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
+        ],
+        responses: {
+          '200': { description: 'Actividad obtenida', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '401': { description: 'Usuario no autenticado' },
+          '404': { description: 'Actividad inexistente' },
+        },
+      },
+    },
     '/api/actividades/{id}/reglas': {
-      post: {
-        summary: 'Configura las reglas climáticas y de reprogramación de una actividad',
+      put: {
+        summary: 'Reemplaza las reglas climáticas y de reprogramación de una actividad',
+        description: 'PUT idempotente de reemplazo completo. Sustituye la configuración de reglas existente por la recibida.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ReglasClima' } } } },
         responses: {
-          '200': { description: 'Reglas configuradas', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '200': { description: 'Reglas reemplazadas', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
           '400': { description: 'Reglas inválidas' }, '401': { description: 'Usuario no autenticado' },
           '403': { description: 'El usuario no es el organizador' }, '404': { description: 'Actividad inexistente' },
         },
@@ -58,9 +80,9 @@ export const openApiDocument = {
         ],
         responses: {
           '201': { description: 'Participante inscripto', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
-          '400': { description: 'Usuario ya inscripto o actividad sin cupo' },
           '401': { description: 'Usuario no autenticado' },
           '404': { description: 'Actividad inexistente' },
+          '409': { description: 'Usuario ya inscripto o actividad sin cupo' },
         },
       },
     },
@@ -73,9 +95,9 @@ export const openApiDocument = {
         ],
         responses: {
           '200': { description: 'Participante dado de baja', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
-          '400': { description: 'Usuario no inscripto o baja del organizador' },
           '401': { description: 'Usuario no autenticado' },
           '404': { description: 'Actividad inexistente' },
+          '409': { description: 'Usuario no inscripto o baja del organizador' },
         },
       },
     },
@@ -117,20 +139,19 @@ export const openApiDocument = {
         },
       },
     },
-    '/api/actividades/{id}/votaciones/{votacionId}/alternativas/{alternativaId}/votar': {
-      post: {
-        summary: 'Registra un voto en la votación indicada',
-        description: 'El usuario debe ser un participante inscrito. Si ya votó, se sobreescribe su voto anterior.',
+    '/api/actividades/{id}/votaciones/{votacionId}/votos/me': {
+      put: {
+        summary: 'Emite o reemplaza el voto propio en la votación indicada',
+        description: 'PUT idempotente. El usuario debe ser un participante inscrito. Repetir el mismo PUT conserva un único voto; enviar otra alternativa reemplaza el voto anterior.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'alternativaId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
-        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object' } } } },
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/EmitirVoto' } } } },
         responses: {
           '200': { description: 'Voto registrado', content: { 'application/json': { schema: { $ref: '#/components/schemas/Votacion' } } } },
-          '400': { description: 'Alternativa inválida' },
+          '400': { description: 'Body inválido o alternativa inexistente' },
           '401': { description: 'Usuario no autenticado' },
           '403': { description: 'El usuario no es participante inscrito' },
           '404': { description: 'Actividad o votación inexistente' },
@@ -154,16 +175,18 @@ export const openApiDocument = {
           '404': { description: 'Actividad o votación inexistente' },
         },
       },
-      delete: {
+      patch: {
         summary: 'Cierra manualmente una votación de reprogramación',
-        description: 'Solo el organizador puede cerrar la votación. Se resuelve la reprogramación según los votos recibidos.',
+        description: 'Solicita la transición de estado ABIERTA → CERRADA. Solo el organizador puede cerrar la votación. Se resuelve la reprogramación según los votos recibidos. Un segundo cierre devuelve 409 y no repite notificaciones.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CerrarVotacion' } } } },
         responses: {
           '200': { description: 'Votación cerrada', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '400': { description: 'Estado inválido' },
           '401': { description: 'Usuario no autenticado' },
           '403': { description: 'El usuario no es el organizador' },
           '404': { description: 'Actividad o votación inexistente' },
@@ -402,7 +425,7 @@ export const openApiDocument = {
       },
       Votacion: {
         type: 'object',
-        required: ['id', 'abiertaEn', 'cierraEn', 'duracionHoras', 'automatica', 'alternativas', 'votos'],
+        required: ['id', 'abiertaEn', 'cierraEn', 'duracionHoras', 'automatica', 'alternativas', 'votos', 'estado'],
         properties: {
           id: { type: 'string' },
           abiertaEn: { type: 'string', format: 'date-time' },
@@ -411,6 +434,22 @@ export const openApiDocument = {
           automatica: { type: 'boolean', example: false, description: 'Si las alternativas fueron generadas automáticamente por el sistema' },
           alternativas: { type: 'array', items: { $ref: '#/components/schemas/Alternativa' } },
           votos: { type: 'object', additionalProperties: { type: 'string' }, description: 'Mapa userId → alternativaId' },
+          estado: { type: 'string', enum: ['ABIERTA', 'CERRADA'], example: 'ABIERTA', description: 'Estado actual de la votación en su ciclo de vida' },
+          cerradaEn: { type: 'string', format: 'date-time', description: 'Momento del cierre. Presente si estado === CERRADA' },
+        },
+      },
+      CerrarVotacion: {
+        type: 'object',
+        required: ['estado'],
+        properties: {
+          estado: { type: 'string', enum: ['CERRADA'], example: 'CERRADA', description: 'Estado objetivo. La única transición válida es ABIERTA → CERRADA.' },
+        },
+      },
+      EmitirVoto: {
+        type: 'object',
+        required: ['alternativa_id'],
+        properties: {
+          alternativa_id: { type: 'string', example: '66db614fef5a153200000000', description: 'Identificador de la alternativa elegida. Reemplaza el voto anterior del usuario.' },
         },
       },
       Alternativa: {
