@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, BellRing, CalendarClock, CalendarDays, CloudRain, LoaderCircle, LogIn, LogOut, MapPin, ShieldCheck, Thermometer, UsersRound, Wind } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import ActivityStatusBadge from '../components/ActivityStatusBadge';
@@ -10,52 +10,38 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Progress } from '../components/ui/progress';
 import { Skeleton } from '../components/ui/skeleton';
+import { useActividad, useSalirseActividad, useUnirseActividad } from '../hooks/useActividades';
 import { activityTypeLabels, formatDateTime, formatLocation } from '../lib/formatters';
-import api, { CURRENT_USER_ID, getApiErrorMessage } from '../services/api';
+import { CURRENT_USER_ID, getApiErrorMessage } from '../services/api';
 import type { Actividad } from '../types/api';
 
 /** Vista operativa de una actividad: cupos, clima, reglas y votaciones. */
 export default function ActivityDetail() {
   const { id } = useParams<{ id: string }>();
-  const [activity, setActivity] = useState<Actividad>();
-  const [loading, setLoading] = useState(true);
-  const [loadingParticipation, setLoadingParticipation] = useState(false);
-  const [error, setError] = useState('');
+  const activityQuery = useActividad(id);
+  const joinMutation = useUnirseActividad();
+  const leaveMutation = useSalirseActividad();
   const [feedback, setFeedback] = useState('');
-  const [reloadVersion, setReloadVersion] = useState(0);
 
-  useEffect(() => {
-    if (!id) return;
-    const controller = new AbortController();
-    setLoading(true);
-    setError('');
-    api.get<Actividad>(`/actividades/${encodeURIComponent(id)}`, { signal: controller.signal })
-      .then((response) => setActivity(response.data))
-      .catch((cause) => { if (!controller.signal.aborted) setError(getApiErrorMessage(cause)); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [id, reloadVersion]);
+  const activity = activityQuery.data;
+  const loading = activityQuery.isPending;
+  const loadingParticipation = joinMutation.isPending || leaveMutation.isPending;
+  const queryError = activityQuery.isError ? getApiErrorMessage(activityQuery.error) : '';
+  const actionError = joinMutation.isError ? getApiErrorMessage(joinMutation.error) : leaveMutation.isError ? getApiErrorMessage(leaveMutation.error) : '';
+  const error = queryError || actionError;
 
-  async function changeParticipation(action: 'join' | 'leave') {
+  function changeParticipation(action: 'join' | 'leave') {
     if (!activity) return;
-    setLoadingParticipation(true);
-    setError('');
     setFeedback('');
-    try {
-      const path = `/actividades/${encodeURIComponent(activity.id)}/participantes${action === 'leave' ? '/me' : ''}`;
-      const response = action === 'join' ? await api.post<Actividad>(path) : await api.delete<Actividad>(path);
-      setActivity(response.data);
-      setFeedback(action === 'join' ? 'Ya estás inscripto en esta actividad.' : 'Tu lugar quedó liberado.');
-    } catch (cause) {
-      setError(getApiErrorMessage(cause));
-    } finally {
-      setLoadingParticipation(false);
-    }
+    const mutation = action === 'join' ? joinMutation : leaveMutation;
+    mutation.mutate(activity.id, {
+      onSuccess: () => setFeedback(action === 'join' ? 'Ya estás inscripto en esta actividad.' : 'Tu lugar quedó liberado.'),
+    });
   }
 
   if (loading && !activity) return <div className="space-y-5"><Skeleton className="h-6 w-40" /><Skeleton className="h-52 rounded-2xl" /><div className="grid gap-5 lg:grid-cols-2"><Skeleton className="h-80 rounded-2xl" /><Skeleton className="h-80 rounded-2xl" /></div></div>;
 
-  if (!activity) return <div className="mx-auto max-w-xl py-16"><Alert><AlertTitle>No pudimos abrir la actividad</AlertTitle><AlertDescription>{error || 'La actividad no existe.'}</AlertDescription></Alert><div className="mt-5 flex flex-wrap items-center gap-4"><Button variant="outline" onClick={() => setReloadVersion((current) => current + 1)}>Reintentar</Button><Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700"><ArrowLeft className="size-4" />Volver a descubrir</Link></div></div>;
+  if (!activity) return <div className="mx-auto max-w-xl py-16"><Alert><AlertTitle>No pudimos abrir la actividad</AlertTitle><AlertDescription>{error || 'La actividad no existe.'}</AlertDescription></Alert><div className="mt-5 flex flex-wrap items-center gap-4"><Button variant="outline" onClick={() => void activityQuery.refetch()}>Reintentar</Button><Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700"><ArrowLeft className="size-4" />Volver a descubrir</Link></div></div>;
 
   const organizer = activity.creadorId === CURRENT_USER_ID;
   const participant = activity.participantes.includes(CURRENT_USER_ID);
@@ -98,7 +84,7 @@ export default function ActivityDetail() {
         <RulesCard activity={activity} />
       </div>
 
-      <VotingPanel activity={activity} onActivityChange={setActivity} />
+      <VotingPanel activity={activity} />
     </div>
   );
 }

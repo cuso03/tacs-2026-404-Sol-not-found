@@ -1,7 +1,8 @@
-import { useEffect, useState, type ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import { Cloud, CloudLightning, CloudRain, CloudSun, Droplets, RefreshCw, Sun, Thermometer, Wind } from 'lucide-react';
-import api, { getApiErrorMessage } from '../services/api';
-import type { Actividad, ClimaActividad, CondicionClima } from '../types/api';
+import { useClimaActividad } from '../hooks/useClima';
+import { getApiErrorMessage } from '../services/api';
+import type { Actividad, CondicionClima } from '../types/api';
 import { Alert, AlertDescription } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Button } from './ui/Button';
@@ -26,25 +27,14 @@ const weatherLabels: Record<CondicionClima, string> = {
 
 /** Consulta y presenta las condiciones actuales y las previstas para una actividad. */
 export default function WeatherPanel({ activity }: { activity: Actividad }) {
-  const [weather, setWeather] = useState<ClimaActividad>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [reloadVersion, setReloadVersion] = useState(0);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError('');
-    api.get<ClimaActividad>(`/actividades/${encodeURIComponent(activity.id)}/clima`, { signal: controller.signal })
-      .then((response) => setWeather(response.data))
-      .catch((cause) => { if (!controller.signal.aborted) setError(getApiErrorMessage(cause)); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [activity.fecha_horario, activity.id, reloadVersion]);
+  const weatherQuery = useClimaActividad(activity.id);
+  const weather = weatherQuery.data;
+  const loading = weatherQuery.isPending;
+  const error = weatherQuery.isError ? getApiErrorMessage(weatherQuery.error) : '';
 
   if (loading && !weather) return <Card className="rounded-2xl"><CardContent className="space-y-4 p-6"><Skeleton className="h-6 w-40" /><Skeleton className="h-32 w-full" /></CardContent></Card>;
 
-  if (error && !weather) return <Alert><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}</span><Button variant="outline" size="sm" onClick={() => setReloadVersion((current) => current + 1)}><RefreshCw className="size-3.5" />Reintentar</Button></AlertDescription></Alert>;
+  if (error && !weather) return <Alert><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}</span><Button variant="outline" size="sm" onClick={() => void weatherQuery.refetch()}><RefreshCw className="size-3.5" />Reintentar</Button></AlertDescription></Alert>;
   if (!weather) return null;
 
   const CurrentIcon = weatherIcons[weather.clima_actual.condicion];
@@ -61,7 +51,7 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
     <Card className="rounded-2xl">
       <CardHeader className="flex-row items-start justify-between space-y-0 p-6 pb-4">
         <div><CardTitle className="text-lg">Clima de la actividad</CardTitle><p className="mt-1 text-xs text-slate-500">Datos actuales y pronóstico para el horario programado.</p></div>
-        <Button variant="ghost" size="icon" aria-label="Actualizar clima" disabled={loading} onClick={() => setReloadVersion((current) => current + 1)}><RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} /></Button>
+        <Button variant="ghost" size="icon" aria-label="Actualizar clima" disabled={weatherQuery.isFetching} onClick={() => void weatherQuery.refetch()}><RefreshCw className={`size-4 ${weatherQuery.isFetching ? 'animate-spin' : ''}`} /></Button>
       </CardHeader>
       <CardContent className="space-y-4 px-6 pb-6">
         <div className="grid gap-4 sm:grid-cols-2">

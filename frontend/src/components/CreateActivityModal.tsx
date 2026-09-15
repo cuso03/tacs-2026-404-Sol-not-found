@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
-import api, { getApiErrorMessage } from '../services/api';
+import { useConfigurarReglas, useCrearActividad } from '../hooks/useActividades';
+import { getApiErrorMessage } from '../services/api';
 import type { Actividad, CrearActividadPayload, ReglasClimaPayload, TipoActividad } from '../types/api';
 import LocationPicker, { type SelectedLocation } from './LocationPicker';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -19,6 +20,8 @@ interface CreateActivityModalProps {
 
 /** Formulario en dos pasos para crear una actividad y asociarle reglas climáticas. */
 export default function CreateActivityModal({ isOpen, onClose, onCreated }: CreateActivityModalProps) {
+  const createMutation = useCrearActividad();
+  const rulesMutation = useConfigurarReglas();
   const [step, setStep] = useState<1 | 2>(1);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,14 +130,14 @@ export default function CreateActivityModal({ isOpen, onClose, onCreated }: Crea
       const rules = buildRulesPayload();
       let activityId = createdId;
       if (!activityId) {
-        const response = await api.post<Actividad>('/actividades', buildActivityPayload());
-        activityId = response.data.id;
+        const created = await createMutation.mutateAsync(buildActivityPayload());
+        activityId = created.id;
         setCreatedId(activityId);
       }
 
-      const response = await api.put<Actividad>(`/actividades/${encodeURIComponent(activityId)}/reglas`, rules);
-      setCreatedActivity(response.data);
-      onCreated?.(response.data);
+      const updated = await rulesMutation.mutateAsync({ id: activityId, rules });
+      setCreatedActivity(updated);
+      onCreated?.(updated);
     } catch (cause) {
       setError(getApiErrorMessage(cause));
     } finally {

@@ -1,7 +1,8 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { renderWithProviders } from './renderWithProviders';
 import { activityFixture } from './fixtures';
 
 const { getMock, postMock, deleteMock } = vi.hoisted(() => ({ getMock: vi.fn(), postMock: vi.fn(), deleteMock: vi.fn() }));
@@ -17,7 +18,13 @@ vi.mock('../src/components/VotingPanel', () => ({ default: () => <div>Panel de v
 import ActivityDetail from '../src/pages/ActivityDetail';
 
 function renderDetail() {
-  return render(<MemoryRouter initialEntries={['/actividades/actividad-1']}><Routes><Route path="/actividades/:id" element={<ActivityDetail />} /></Routes></MemoryRouter>);
+  return renderWithProviders(
+    <MemoryRouter initialEntries={['/actividades/actividad-1']}>
+      <Routes>
+        <Route path="/actividades/:id" element={<ActivityDetail />} />
+      </Routes>
+    </MemoryRouter>,
+  );
 }
 
 describe('ActivityDetail - participantes', () => {
@@ -25,8 +32,12 @@ describe('ActivityDetail - participantes', () => {
   afterEach(cleanup);
 
   it('permite sumarse si hay cupo y actualiza la actividad', async () => {
-    getMock.mockResolvedValue({ data: activityFixture });
-    postMock.mockResolvedValue({ data: { ...activityFixture, participantes: [...activityFixture.participantes, 'auth0|user-1'] } });
+    let current = activityFixture;
+    getMock.mockImplementation(async () => ({ data: current }));
+    postMock.mockImplementation(async () => {
+      current = { ...activityFixture, participantes: [...activityFixture.participantes, 'auth0|user-1'] };
+      return { data: current };
+    });
     renderDetail();
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Sumarme' }));
@@ -35,9 +46,12 @@ describe('ActivityDetail - participantes', () => {
   });
 
   it('permite liberar el cupo propio', async () => {
-    const joined = { ...activityFixture, participantes: [...activityFixture.participantes, 'auth0|user-1'] };
-    getMock.mockResolvedValue({ data: joined });
-    deleteMock.mockResolvedValue({ data: activityFixture });
+    let current = { ...activityFixture, participantes: [...activityFixture.participantes, 'auth0|user-1'] };
+    getMock.mockImplementation(async () => ({ data: current }));
+    deleteMock.mockImplementation(async () => {
+      current = activityFixture;
+      return { data: current };
+    });
     renderDetail();
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Bajarme' }));

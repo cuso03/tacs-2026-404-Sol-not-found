@@ -5,10 +5,6 @@ import { CURRENT_USER_ID } from '../services/api';
 import CreateActivityModal from './CreateActivityModal';
 import { Button } from './ui/Button';
 
-export interface AppOutletContext {
-  refreshVersion: number;
-}
-
 const navigation = [
   { to: '/', label: 'Descubrir', icon: Compass, end: true },
   { to: '/dashboard', label: 'Mi actividad', icon: Gauge, end: false },
@@ -18,7 +14,6 @@ const navigation = [
 /** Marco principal y navegación persistente de la aplicación. */
 export default function Layout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [refreshVersion, setRefreshVersion] = useState(0);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -56,7 +51,7 @@ export default function Layout() {
       </header>
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
-        <Outlet context={{ refreshVersion } satisfies AppOutletContext} />
+        <Outlet />
       </main>
 
       <footer className="border-t border-slate-200 bg-white">
@@ -69,7 +64,6 @@ export default function Layout() {
       <CreateActivityModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onCreated={() => setRefreshVersion((current) => current + 1)}
       />
     </div>
   );

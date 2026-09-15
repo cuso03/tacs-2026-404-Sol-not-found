@@ -1,7 +1,8 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { renderWithProviders } from './renderWithProviders';
 import { activityFixture } from './fixtures';
 
 const { getMock } = vi.hoisted(() => ({ getMock: vi.fn() }));
@@ -14,7 +15,7 @@ describe('Discover', () => {
 
   it('consulta y presenta actividades navegables', async () => {
     getMock.mockResolvedValue({ data: { data: [activityFixture], meta: { total: 1, page: 1, limit: 9, totalPages: 1 } } });
-    render(<MemoryRouter><Routes><Route element={<Outlet context={{ refreshVersion: 0 }} />}><Route index element={<Discover />} /></Route></Routes></MemoryRouter>);
+    renderWithProviders(<MemoryRouter initialEntries={['/']}><Routes><Route index element={<Discover />} /></Routes></MemoryRouter>);
     expect(await screen.findByText('Caminata urbana')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Ver actividad/ }).getAttribute('href')).toBe('/actividades/actividad-1');
     expect(getMock).toHaveBeenCalledWith('/actividades', expect.objectContaining({ params: { page: 1, limit: 9 } }));
@@ -22,7 +23,7 @@ describe('Discover', () => {
 
   it('envía los filtros de tipo, ubicación y fecha al backend', async () => {
     getMock.mockResolvedValue({ data: { data: [activityFixture], meta: { total: 1, page: 1, limit: 9, totalPages: 1 } } });
-    render(<MemoryRouter><Routes><Route element={<Outlet context={{ refreshVersion: 0 }} />}><Route index element={<Discover />} /></Route></Routes></MemoryRouter>);
+    renderWithProviders(<MemoryRouter initialEntries={['/']}><Routes><Route index element={<Discover />} /></Routes></MemoryRouter>);
 
     await screen.findByText('Caminata urbana');
     const user = userEvent.setup();
@@ -43,7 +44,7 @@ describe('Discover', () => {
 
   it('solicita la página siguiente conservando la paginación de la API', async () => {
     getMock.mockResolvedValue({ data: { data: [activityFixture], meta: { total: 12, page: 1, limit: 9, totalPages: 2 } } });
-    render(<MemoryRouter><Routes><Route element={<Outlet context={{ refreshVersion: 0 }} />}><Route index element={<Discover />} /></Route></Routes></MemoryRouter>);
+    renderWithProviders(<MemoryRouter initialEntries={['/']}><Routes><Route index element={<Discover />} /></Routes></MemoryRouter>);
 
     await screen.findByText('Caminata urbana');
     await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
