@@ -1,13 +1,75 @@
-
 services:
+  frontend:
+    build:
+      context: ./frontend
+    container_name: tacs-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=/api
+      - VITE_PROXY_TARGET=http://backend:3000
+      - VITE_USER_ID=auth0|user-1
+      - VITE_USER_ROLE=admin
+    depends_on:
+      - backend
+
   backend:
-    build: 
+    build:
       context: ./backend
     container_name: tacs-backend
     ports:
       - "3000:3000"
     volumes:
-      # Sincroniza tu código local con el contenedor para que tsx aplique los cambios en vivo
       - ./backend:/app
-      # Evita que tu carpeta node_modules local pise la del contenedor
       - /app/node_modules
+    env_file:
+      - ./backend/.env
+    environment:
+      - PORT=3000
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URI=mongodb://${MONGO_USER:-root}:${MONGO_PASSWORD:-root}@mongo:27017/${MONGO_DATABASE:-solnotfound}?authSource=admin
+    depends_on:
+      rabbitmq:
+        condition: service_started
+      redis:
+        condition: service_started
+      mongo:
+        condition: service_healthy
+
+  redis:
+    image: redis:8.10.1-alpine
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  mongo:
+    image: mongo:8
+    container_name: tacs-mongo
+    command: ["--quiet"]
+    restart: unless-stopped
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-root}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-root}
+      - MONGO_INITDB_DATABASE=${MONGO_DATABASE:-solnotfound}
+    healthcheck:
+      test: ["CMD", "mongosh", "-u", "${MONGO_USER:-root}", "-p", "${MONGO_PASSWORD:-root}", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:

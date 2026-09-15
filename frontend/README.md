@@ -1,4 +1,64 @@
-# React + TypeScript + Vite
+# Frontend — 404 Sol Not Found
+
+Aplicación React + TypeScript + Vite. Los componentes visuales reutilizables se
+encuentran en `src/components/ui` y siguen la composición de shadcn/ui.
+
+## Gestión de actividades
+
+El botón **Nueva actividad** abre un flujo de dos pasos:
+
+1. Datos generales, tipo, fecha, cupos y ubicación exacta mediante buscador y mapa interactivo.
+2. Límites climáticos, anticipación y ventana de reprogramación.
+
+El cliente ejecuta `POST /api/actividades` y luego
+`PUT /api/actividades/{id}/reglas`. En desarrollo utiliza `VITE_USER_ID` como
+identidad simulada y, si no se define, usa `auth0|user-1`.
+
+El proxy de Vite dirige `/api` al backend. Docker Compose configura el destino
+interno mediante `VITE_PROXY_TARGET=http://backend:3000`.
+
+## Mapa y búsqueda de ubicaciones
+
+El selector usa React Leaflet, los mosaicos estándar de OpenStreetMap y búsquedas
+explícitas en Nominatim. No realiza autocompletado: cachea búsquedas repetidas y
+limita las consultas a una por segundo. El `TileLayer` envía una política de
+referer compatible con OpenStreetMap. Para cambiar de proveedor sin modificar
+el código se pueden configurar `VITE_MAP_TILE_URL` y `VITE_GEOCODING_URL`.
+
+Los servicios públicos de OpenStreetMap son adecuados para desarrollo y tráfico
+moderado, sin garantía de disponibilidad. Antes de un despliegue de producción
+con muchos usuarios se debe contratar o alojar un proveedor con capacidad y SLA
+acordes. Ver las políticas de [Nominatim](https://operations.osmfoundation.org/policies/nominatim/)
+y de [mosaicos](https://operations.osmfoundation.org/policies/tiles/).
+
+## Funcionalidad disponible
+
+- Catálogo de actividades con filtros por ubicación, tipo y fecha, más paginación.
+- Alta de actividad y configuración de reglas climáticas en dos pasos.
+- Detalle con inscripción y baja de participantes, cupos y pronóstico.
+- Votaciones automáticas o manuales, sugerencias por clima, voto, resultados y cierre.
+- Dashboard personal con roles, estados y votaciones abiertas.
+- Panel administrativo con métricas y simulación del monitoreo de notificaciones.
+
+Las rutas autenticadas usan temporalmente `VITE_USER_ID` y el panel administrativo
+usa `VITE_USER_ROLE`. Estos valores simulan los claims que posteriormente entregará
+Auth0; no constituyen autenticación válida para producción.
+
+```bash
+pnpm install --no-frozen-lockfile
+pnpm run build
+pnpm test
+pnpm run dev
+```
+
+El CI utiliza pnpm para evitar el error interno `edgesOut` del resolvedor de npm.
+Cuando pnpm pueda ejecutarse en un entorno de desarrollo, debe versionarse el
+archivo `pnpm-lock.yaml` generado y cambiar la instalación a `pnpm install
+--frozen-lockfile`.
+
+---
+
+## Plantilla original
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
