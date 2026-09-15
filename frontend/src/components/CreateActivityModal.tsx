@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from './ui/Button';
+import api from '../services/api';
 
 interface CreateActivityModalProps {
   isOpen: boolean;
@@ -7,7 +8,6 @@ interface CreateActivityModalProps {
 }
 
 export default function CreateActivityModal({ isOpen, onClose }: CreateActivityModalProps) {
-  // Estados para cada campo del formulario
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('aire_libre');
@@ -15,42 +15,52 @@ export default function CreateActivityModal({ isOpen, onClose }: CreateActivityM
   const [ubicacion, setUbicacion] = useState('');
   const [minParticipantes, setMinParticipantes] = useState(4);
   const [maxParticipantes, setMaxParticipantes] = useState(10);
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Si el modal no está abierto, no renderizamos nada
   if (!isOpen) return null;
 
-  // Manejador del envío del formulario
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Validación básica del prototipo
     if (maxParticipantes < minParticipantes) {
       alert("El cupo máximo debe ser mayor o igual al mínimo.");
       return;
     }
 
-    const nuevaActividad = {
+    const payload = {
       titulo,
       descripcion,
       tipo,
-      fecha_horario: fechaHorario,
-      ubicacion,
+      fecha_horario: new Date(fechaHorario).toISOString(),
+      ubicacion: {
+        tipo: 'ciudad',
+        ciudad: ubicacion,
+        pais: 'Argentina'
+      },
       min_participantes: minParticipantes,
       max_participantes: maxParticipantes,
     };
 
-    console.log("Datos a enviar a la API:", nuevaActividad);
-    
-    // Acá en el futuro llamaremos a Axios: axios.post('/api/activities', nuevaActividad)
-    
-    onClose(); // Cerramos el modal después de guardar
+    setIsSubmitting(true);
+    try {
+      await api.post('/actividades', payload);
+      
+      onClose();
+      // Recargamos la vista para ver la actividad nueva en la grilla de inmediato
+      window.location.reload(); 
+    } catch (error) {
+      console.error("Error al crear la actividad:", error);
+      alert("Hubo un error al crear la actividad. Revisá la consola.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-100">
         
-        {/* Header del Modal */}
         <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-bold text-slate-900 text-lg">Nueva Actividad</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-xl font-bold">
@@ -58,7 +68,6 @@ export default function CreateActivityModal({ isOpen, onClose }: CreateActivityM
           </button>
         </div>
 
-        {/* Formulario */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-sm">
           <div>
             <label className="block font-semibold text-slate-700 mb-1">Título de la actividad *</label>
@@ -147,11 +156,11 @@ export default function CreateActivityModal({ isOpen, onClose }: CreateActivityM
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" variant="primary">
-              Crear Actividad
+            <Button type="submit" variant="primary" disabled={isSubmitting}>
+              {isSubmitting ? 'Creando...' : 'Crear Actividad'}
             </Button>
           </div>
         </form>
