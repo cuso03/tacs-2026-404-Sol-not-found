@@ -5,7 +5,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copiamos los archivos de dependencias primero (para aprovechar la caché de Docker)
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
 # Instalamos pnpm de forma global para no depender del resolvedor Arborist del proyecto.
 RUN npm install --global pnpm@10.33.0

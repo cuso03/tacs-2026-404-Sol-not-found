@@ -1,8 +1,20 @@
+export type EstadoActividad = 'PROPUESTA' | 'EN_VOTACION' | 'CONFIRMADA' | 'REPROGRAMADA' | 'CANCELADA' | 'FINALIZADA';
 export type TipoActividad = 'aire_libre' | 'techada' | 'mixta';
 
-export type Ubicacion =
-  | { tipo: 'ciudad'; ciudad: string; pais: string }
-  | { tipo: 'coordenadas'; latitud: number; longitud: number; direccion?: string };
+export interface UbicacionCiudad {
+  tipo: 'ciudad';
+  ciudad: string;
+  pais: string;
+}
+
+export interface UbicacionCoordenadas {
+  tipo: 'coordenadas';
+  latitud: number;
+  longitud: number;
+  direccion?: string;
+}
+
+export type Ubicacion = UbicacionCiudad | UbicacionCoordenadas;
 
 export interface CrearActividadPayload {
   titulo: string;
@@ -28,7 +40,18 @@ export interface Actividad extends CrearActividadPayload {
   id: string;
   creadorId: string;
   creadaEn: string;
+  estado: EstadoActividad;
+  participantes: string[];
   reglasClima?: ReglasClimaPayload;
-  estado?: string;
-  participantes?: string[];
+  votaciones?: unknown[];
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

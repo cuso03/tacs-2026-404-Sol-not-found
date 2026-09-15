@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { Button } from './ui/Button';
 import CreateActivityModal from './CreateActivityModal';
-import type { Actividad } from '../types/actividad';
+import type { Actividad } from '../types/api';
 
 export default function Layout() {
   // Estado para controlar la visibilidad del modal

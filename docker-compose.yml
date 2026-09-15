@@ -6,13 +6,10 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      # Sincroniza el código local para reflejar los cambios en vivo
       - ./frontend:/app
-      # Protege la carpeta node_modules del contenedor
       - /app/node_modules
     environment:
-      # Variable de entorno lista para cuando conectes tu front con Axios a la API
-      - VITE_API_URL=
+      - VITE_API_URL=/api
       - VITE_PROXY_TARGET=http://backend:3000
     depends_on:
       - backend
@@ -49,8 +46,8 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
-      - "5672:5672"   # Puerto principal de comunicación
-      - "15672:15672" # Puerto del panel de administración UI
+      - "5672:5672"
+      - "15672:15672"
 
   mongo:
     image: mongo:8

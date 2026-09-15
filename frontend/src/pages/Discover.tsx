@@ -1,110 +1,72 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import api, { getApiErrorMessage } from '../services/api';
 import ActivityCard from '../components/ActivityCard';
+import { Alert, AlertDescription } from '../components/ui/alert';
 import { Input } from '../components/ui/input';
 import { NativeSelect } from '../components/ui/native-select';
-import type { Actividad, Ubicacion } from '../types/actividad';
-
-// Datos de prueba simulando la API
-const mockActivities = [
-  {
-    id: "1",
-    titulo: "Fútbol 7 de los Jueves",
-    descripcion: "Partido semanal en césped sintético. En caso de lluvia se vota.",
-    tipo: "aire_libre" as const,
-    estado: "EN_VOTACION",
-    fecha: "17 Sep - 20:00 hs",
-    ubicacion: "Plaza Irlanda, Caballito",
-    cuposOcupados: 5,
-    cuposMaximos: 14
-  },
-  {
-    id: "2",
-    titulo: "Torneo Relámpago de Padel Mixto",
-    descripcion: "Canchas techadas de blindex. El mal tiempo no suspende la actividad.",
-    tipo: "techada" as const,
-    estado: "CONFIRMADA",
-    fecha: "21 Sep - 19:00 hs",
-    ubicacion: "Club Padel Belgrano",
-    cuposOcupados: 8,
-    cuposMaximos: 8
-  },
-  {
-    id: "3",
-    titulo: "Picnic & Mateada en los Bosques",
-    descripcion: "Tarde relajada al aire libre. Cada uno lleva su mate.",
-    tipo: "aire_libre" as const,
-    estado: "PROPUESTA",
-    fecha: "19 Sep - 15:30 hs",
-    ubicacion: "Rosedal de Palermo",
-    cuposOcupados: 3,
-    cuposMaximos: 20
-  }
-];
+import type { Actividad, PaginatedResponse } from '../types/api';
 
 export default function Discover() {
-  // 1. Definimos los estados para el buscador y el select
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('todos');
+  const [apiActivities, setApiActivities] = useState<Actividad[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const { createdActivities } = useOutletContext<{ createdActivities: Actividad[] }>();
 
-  const newActivityCards = createdActivities.map((actividad) => ({
-    id: actividad.id,
-    titulo: actividad.titulo,
-    descripcion: actividad.descripcion,
-    tipo: actividad.tipo,
-    estado: actividad.estado ?? 'PROPUESTA',
-    fecha: new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(actividad.fecha_horario)),
-    ubicacion: formatLocation(actividad.ubicacion),
-    cuposOcupados: actividad.participantes?.length ?? 1,
-    cuposMaximos: actividad.max_participantes,
-  }));
-  const activities = [...newActivityCards, ...mockActivities];
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = globalThis.setTimeout(async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const params: Record<string, string> = {};
+        if (filterType !== 'todos') params.tipo = filterType;
+        if (searchTerm.trim()) params.ubicacion = searchTerm.trim();
+        const response = await api.get<PaginatedResponse<Actividad>>('/actividades', { params, signal: controller.signal });
+        setApiActivities(response.data.data);
+      } catch (cause) {
+        if (!controller.signal.aborted) setError(getApiErrorMessage(cause));
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
+      }
+    }, 350);
 
-  // 2. Filtramos la lista basándonos en los estados actuales
-  const filteredActivities = activities.filter((act) => {
-    const matchesSearch = 
-      act.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      act.ubicacion.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = filterType === 'todos' || act.tipo === filterType;
-    
-    return matchesSearch && matchesType;
-  });
+    return () => {
+      globalThis.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchTerm, filterType]);
+
+  const activities = useMemo(() => {
+    const combined = new Map(apiActivities.map((activity) => [activity.id, activity]));
+    for (const activity of createdActivities) combined.set(activity.id, activity);
+    const query = searchTerm.trim().toLocaleLowerCase('es');
+    return [...combined.values()].filter((activity) => {
+      const location = activity.ubicacion.tipo === 'ciudad'
+        ? `${activity.ubicacion.ciudad} ${activity.ubicacion.pais}`
+        : activity.ubicacion.direccion ?? '';
+      return (filterType === 'todos' || activity.tipo === filterType)
+        && (!query || activity.titulo.toLocaleLowerCase('es').includes(query) || location.toLocaleLowerCase('es').includes(query));
+    });
+  }, [apiActivities, createdActivities, filterType, searchTerm]);
 
   return (
     <div className="space-y-6">
-      {/* Search & Filters Hero */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute -right-8 -bottom-8 text-8xl opacity-10 select-none">⛅</div>
-        <div className="max-w-2xl relative z-10">
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Actividades al Aire Libre sin Sorpresas
-          </h1>
-          <p className="mt-2 text-slate-300 text-sm sm:text-base">
-            Buscá partidos, salidas en bici o picnics. Si el clima se complica, el sistema coordina la votación por vos.
-          </p>
-
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+        <div className="absolute -bottom-8 -right-8 select-none text-8xl opacity-10">⛅</div>
+        <div className="relative z-10 max-w-2xl">
+          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Actividades al Aire Libre sin Sorpresas</h1>
+          <p className="mt-2 text-sm text-slate-300 sm:text-base">Buscá partidos, salidas o encuentros. Si el clima cambia, el sistema ayuda a reprogramar.</p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
-              <svg className="w-5 h-5 text-slate-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-3.5 top-3 size-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              {/* Conectamos el input al estado searchTerm */}
-              <Input
-                type="text" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por ciudad, parque o dirección..." 
-                className="h-11 border-slate-700 bg-slate-800/90 pl-11 pr-4 text-white placeholder:text-slate-400"
-              />
+              <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Buscar por título, parque o dirección..." className="h-11 border-slate-700 bg-slate-800/90 pl-11 text-white placeholder:text-slate-400" />
             </div>
-            {/* Conectamos el select al estado filterType */}
-            <NativeSelect
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="h-11 border-slate-700 bg-slate-800/90 px-4 text-white"
-            >
+            <NativeSelect value={filterType} onChange={(event) => setFilterType(event.target.value)} className="h-11 border-slate-700 bg-slate-800/90 px-4 text-white">
               <option value="todos">Todos los tipos</option>
               <option value="aire_libre">Aire libre</option>
               <option value="techada">Techada</option>
@@ -114,42 +76,26 @@ export default function Discover() {
         </div>
       </div>
 
-      {/* Activities Section */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>Próximas Actividades</span>
-            {/* El contador ahora refleja los elementos filtrados */}
-            <span className="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">
-              {filteredActivities.length}
-            </span>
-          </h2>
-          <span className="text-xs text-slate-500">Actualizado con datos de clima en vivo</span>
-        </div>
+      {error && <Alert><AlertDescription>{error}</AlertDescription></Alert>}
 
-        {/* Renderizado condicional: Grilla o Estado Vacío */}
-        {filteredActivities.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredActivities.map((act) => (
-              <ActivityCard key={act.id} {...act} />
-            ))}
+      <section>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">Próximas Actividades <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700">{activities.length}</span></h2>
+        </div>
+        {loading && activities.length === 0 ? (
+          <div className="py-12 text-center text-slate-500">Cargando actividades desde la API...</div>
+        ) : activities.length > 0 ? (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {activities.map((activity) => <ActivityCard key={activity.id} {...activity} />)}
           </div>
         ) : (
-          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
-            <div className="text-4xl mb-3">🔍</div>
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
+            <div className="mb-3 text-4xl">🔍</div>
             <h3 className="text-base font-semibold text-slate-800">No se encontraron actividades</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              No hay eventos que coincidan con la búsqueda. Probá quitando filtros o creá una nueva.
-            </p>
+            <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">Probá quitando filtros o creá una nueva actividad.</p>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
-}
-
-function formatLocation(ubicacion: Ubicacion): string {
-  return ubicacion.tipo === 'ciudad'
-    ? `${ubicacion.ciudad}, ${ubicacion.pais}`
-    : ubicacion.direccion ?? `${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`;
 }

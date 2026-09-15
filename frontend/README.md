@@ -7,15 +7,28 @@ encuentran en `src/components/ui` y siguen la composición de shadcn/ui.
 
 El botón **Nueva actividad** abre un flujo de dos pasos:
 
-1. Datos generales, tipo, fecha, cupos y ubicación por coordenadas o ciudad.
+1. Datos generales, tipo, fecha, cupos y ubicación exacta mediante buscador y mapa interactivo.
 2. Límites climáticos, anticipación y ventana de reprogramación.
 
 El cliente ejecuta `POST /api/actividades` y luego
 `PUT /api/actividades/{id}/reglas`. En desarrollo utiliza `VITE_USER_ID` como
-identidad simulada y, si no se define, usa `auth0|frontend-demo`.
+identidad simulada y, si no se define, usa `auth0|user-1`.
 
 El proxy de Vite dirige `/api` al backend. Docker Compose configura el destino
 interno mediante `VITE_PROXY_TARGET=http://backend:3000`.
+
+## Mapa y búsqueda de ubicaciones
+
+El selector usa React Leaflet, los mosaicos estándar de OpenStreetMap y búsquedas
+explícitas en Nominatim. No realiza autocompletado: cachea búsquedas repetidas y
+limita las consultas a una por segundo. Para cambiar de proveedor sin modificar
+el código se pueden configurar `VITE_MAP_TILE_URL` y `VITE_GEOCODING_URL`.
+
+Los servicios públicos de OpenStreetMap son adecuados para desarrollo y tráfico
+moderado, sin garantía de disponibilidad. Antes de un despliegue de producción
+con muchos usuarios se debe contratar o alojar un proveedor con capacidad y SLA
+acordes. Ver las políticas de [Nominatim](https://operations.osmfoundation.org/policies/nominatim/)
+y de [mosaicos](https://operations.osmfoundation.org/policies/tiles/).
 
 ```bash
 pnpm install --no-frozen-lockfile
