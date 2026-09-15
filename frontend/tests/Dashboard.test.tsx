@@ -1,4 +1,5 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
 
@@ -17,5 +18,15 @@ describe('Dashboard', () => {
     expect(screen.getByText('Organizador')).toBeTruthy();
     expect(screen.getByText('Votación abierta')).toBeTruthy();
     expect(screen.getByRole('link', { name: /Caminata urbana/ }).getAttribute('href')).toBe('/actividades/actividad-1');
+  });
+
+  it('consulta la página siguiente del dashboard', async () => {
+    getMock.mockResolvedValue({ data: { data: [{ id: 'actividad-1', titulo: 'Caminata urbana', fecha_horario: '2026-10-20T18:30:00.000Z', rol: 'participante', estado: 'PROPUESTA', votacion_abierta: false }], meta: { total: 11, page: 1, limit: 10, totalPages: 2 } } });
+    render(<MemoryRouter initialEntries={['/dashboard']}><Routes><Route element={<Outlet context={{ refreshVersion: 0 }} />}><Route path="dashboard" element={<Dashboard />} /></Route></Routes></MemoryRouter>);
+    await screen.findByText('Caminata urbana');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+
+    await waitFor(() => expect(getMock).toHaveBeenCalledWith('/usuarios/me/actividades', expect.objectContaining({ params: { page: 2, limit: 10 } })));
   });
 });

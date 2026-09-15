@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { activityFixture, openVoting, resultsFixture } from './fixtures';
@@ -45,5 +45,52 @@ describe('VotingPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Cerrar y resolver' }));
     await waitFor(() => expect(patchMock).toHaveBeenCalledWith('/actividades/actividad-1/votaciones/votacion-1', { estado: 'CERRADA' }));
     expect(onChange).toHaveBeenCalled();
+  });
+
+  it('abre una votación con alternativas manuales', async () => {
+    const onChange = vi.fn();
+    postMock.mockResolvedValue({ data: { ...activityFixture, estado: 'EN_VOTACION', votaciones: [openVoting] } });
+    render(<VotingPanel activity={activityFixture} onActivityChange={onChange} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Manual/ }));
+    const selectedDate = '2026-10-21T18:30';
+    fireEvent.change(screen.getByLabelText('Alternativa 1'), { target: { value: selectedDate } });
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir votación' }));
+
+    expect(postMock).toHaveBeenCalledWith('/actividades/actividad-1/votaciones', {
+      duracion_horas: 24,
+      alternativas: [{ fecha_horario: new Date(selectedDate).toISOString() }],
+    });
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('carga sugerencias climáticas editables para la votación', async () => {
+    const suggestedDate = '2026-10-21T18:30:00.000Z';
+    getMock.mockResolvedValue({ data: { fechas: [suggestedDate] } });
+    render(<VotingPanel activity={activityFixture} onActivityChange={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Manual/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sugerir por clima' }));
+
+    await waitFor(() => expect(getMock).toHaveBeenCalledWith('/actividades/actividad-1/fechas-disponibles'));
+    expect((await screen.findByLabelText('Alternativa 1') as HTMLInputElement).value).toBe('2026-10-21T18:30');
+    expect(screen.getByText(/Cargamos las alternativas con pronóstico favorable/)).toBeTruthy();
+  });
+
+  it('oculta acciones de organización y voto a un usuario ajeno', async () => {
+    const votingActivity = {
+      ...activityFixture,
+      creadorId: 'auth0|otro-organizador',
+      participantes: ['auth0|otro-organizador'],
+      estado: 'EN_VOTACION' as const,
+      votaciones: [openVoting],
+    };
+    getMock.mockResolvedValue({ data: resultsFixture });
+    render(<VotingPanel activity={votingActivity} onActivityChange={vi.fn()} />);
+
+    expect(await screen.findByText('Tenés que estar inscripto en la actividad para votar.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Abrir votación' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Cerrar y resolver' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Votar' })).toBeNull();
   });
 });

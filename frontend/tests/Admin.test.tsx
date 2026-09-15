@@ -21,6 +21,7 @@ describe('Admin', () => {
     render(<Admin />);
     expect(await screen.findByText('Actividad creada')).toBeTruthy();
     expect(screen.getByText('10')).toBeTruthy();
+    expect(getMock).toHaveBeenCalledWith('/admin/estadisticas', expect.objectContaining({ headers: { 'X-User-Role': 'admin' } }));
     await userEvent.click(screen.getByRole('button', { name: 'Ejecutar simulación' }));
     expect(postMock).toHaveBeenCalledWith('/notificaciones/simular-inicio');
     expect(await screen.findByText('Partido de Fútbol 5')).toBeTruthy();

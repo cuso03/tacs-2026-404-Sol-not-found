@@ -65,7 +65,8 @@ describe('CreateActivityModal', () => {
     render(<CreateActivityModal isOpen onClose={vi.fn()} />);
     const user = await fillActivityStep();
     await user.click(screen.getByRole('button', { name: 'Continuar a reglas' }));
-    await user.click(screen.getByRole('button', { name: 'Crear actividad' }));
+    const submitButton = screen.getByRole('button', { name: 'Crear actividad' });
+    fireEvent.submit(submitButton.closest('form')!);
 
     expect(await screen.findByText('Actividad lista')).toBeTruthy();
     expect(postMock).toHaveBeenCalledWith('/actividades', expect.objectContaining({
@@ -79,14 +80,25 @@ describe('CreateActivityModal', () => {
     expect(putMock).toHaveBeenCalledWith('/actividades/actividad-1/reglas', expect.objectContaining({ horas_anticipacion: 24 }));
   });
 
-  it('no persiste si el rango de temperaturas es inválido', async () => {
+  const invalidRuleCases: Array<{ name: string; changes: Array<[string, string]>; message: string }> = [
+    { name: 'lluvia fuera de rango', changes: [['Lluvia máxima (%)', '-1']], message: 'La probabilidad de lluvia debe estar entre 0 y 100%.' },
+    { name: 'temperaturas invertidas', changes: [['Temperatura mínima (°C)', '35'], ['Temperatura máxima (°C)', '20']], message: 'La temperatura máxima debe ser mayor o igual a la mínima.' },
+    { name: 'viento negativo', changes: [['Viento máximo (km/h)', '-1']], message: 'Viento, anticipación y reprogramación deben tener valores válidos.' },
+    { name: 'anticipación nula', changes: [['Avisar con anticipación (h)', '0']], message: 'Viento, anticipación y reprogramación deben tener valores válidos.' },
+    { name: 'reprogramación nula', changes: [['Reprogramar hasta (días)', '0']], message: 'Viento, anticipación y reprogramación deben tener valores válidos.' },
+    { name: 'horarios invertidos', changes: [['Horario desde', '21:00'], ['Horario hasta', '20:00']], message: 'El horario máximo debe ser posterior al mínimo.' },
+  ];
+
+  it.each(invalidRuleCases)('no persiste con $name', async ({ changes, message }) => {
     render(<CreateActivityModal isOpen onClose={vi.fn()} />);
     const user = await fillActivityStep();
     await user.click(screen.getByRole('button', { name: 'Continuar a reglas' }));
-    fireEvent.change(screen.getByLabelText('Temperatura mínima (°C)'), { target: { value: '35' } });
-    fireEvent.change(screen.getByLabelText('Temperatura máxima (°C)'), { target: { value: '20' } });
-    await user.click(screen.getByRole('button', { name: 'Crear actividad' }));
-    expect(await screen.findByText('La temperatura máxima debe ser mayor o igual a la mínima.')).toBeTruthy();
+    for (const [label, value] of changes) {
+      fireEvent.change(screen.getByLabelText(label), { target: { value } });
+    }
+    const submitButton = screen.getByRole('button', { name: 'Crear actividad' });
+    fireEvent.submit(submitButton.closest('form')!);
+    expect(await screen.findByText(message)).toBeTruthy();
     expect(postMock).not.toHaveBeenCalled();
   });
 });

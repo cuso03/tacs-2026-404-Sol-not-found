@@ -44,4 +44,35 @@ describe('ActivityDetail - participantes', () => {
     expect(deleteMock).toHaveBeenCalledWith('/actividades/actividad-1/participantes/me');
     expect(await screen.findByRole('button', { name: 'Sumarme' })).toBeTruthy();
   });
+
+  it('deshabilita la inscripción cuando no quedan cupos', async () => {
+    getMock.mockResolvedValue({ data: { ...activityFixture, max_participantes: 1 } });
+    renderDetail();
+    const button = await screen.findByRole('button', { name: 'Sin cupos' });
+    expect(button.hasAttribute('disabled')).toBe(true);
+    expect(postMock).not.toHaveBeenCalled();
+  });
+
+  it('presenta el error del backend si la inscripción es rechazada', async () => {
+    getMock.mockResolvedValue({ data: activityFixture });
+    postMock.mockRejectedValue(new Error('El usuario ya participa en la actividad.'));
+    renderDetail();
+    await userEvent.click(await screen.findByRole('button', { name: 'Sumarme' }));
+    expect(await screen.findByText('El usuario ya participa en la actividad.')).toBeTruthy();
+  });
+
+  it('muestra un estado de error cuando la actividad no existe', async () => {
+    getMock.mockRejectedValue(new Error('La actividad no existe.'));
+    renderDetail();
+    expect(await screen.findByText('La actividad no existe.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Reintentar' })).toBeTruthy();
+  });
+
+  it('no ofrece controles de inscripción al organizador', async () => {
+    getMock.mockResolvedValue({ data: { ...activityFixture, creadorId: 'auth0|user-1', participantes: ['auth0|user-1'] } });
+    renderDetail();
+    expect(await screen.findByText('Sos el organizador')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Sumarme' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Bajarme' })).toBeNull();
+  });
 });
