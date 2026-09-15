@@ -1,3 +1,5 @@
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
+
 interface ActivityProps {
   id: string;
   titulo: string;
@@ -41,23 +43,25 @@ export default function ActivityCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 hover:border-blue-400 p-5 shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between group">
+    <Card className="group flex cursor-pointer flex-col justify-between rounded-2xl transition hover:border-blue-400 hover:shadow-md">
       <div>
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold">
-            {formatTipo(tipo)}
-          </span>
-          <span className={`px-2.5 py-0.5 rounded-full text-xs border font-medium ${formatEstado(estado)}`}>
-            {estado.replace('_', ' ')}
-          </span>
-        </div>
+        <CardHeader className="p-5 pb-3">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-semibold">
+              {formatTipo(tipo)}
+            </span>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs border font-medium ${formatEstado(estado)}`}>
+              {estado.replace('_', ' ')}
+            </span>
+          </div>
 
-        <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition line-clamp-1">
-          {titulo}
-        </h3>
-        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{descripcion}</p>
+          <CardTitle className="line-clamp-1 text-base font-bold text-slate-900 transition group-hover:text-blue-600">
+            {titulo}
+          </CardTitle>
+          <p className="text-xs text-slate-500 mt-1 line-clamp-2">{descripcion}</p>
+        </CardHeader>
 
-        <div className="mt-4 space-y-2 text-xs text-slate-600">
+        <CardContent className="space-y-2 px-5 pb-0 text-xs text-slate-600">
           <div className="flex items-center gap-2">
             <span>📅</span>
             <span className="font-medium">{fecha}</span>
@@ -66,17 +70,17 @@ export default function ActivityCard({
             <span>📍</span>
             <span className="truncate">{ubicacion}</span>
           </div>
-        </div>
+        </CardContent>
       </div>
 
-      <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+      <CardFooter className="mx-5 mt-5 flex items-center justify-between border-t border-slate-100 px-0 pb-4 pt-3 text-xs">
         <span className={`font-medium ${isFull ? 'text-rose-600 font-bold' : 'text-slate-500'}`}>
           👥 {cuposOcupados}/{cuposMaximos} cupos
         </span>
         <span className="text-blue-600 font-semibold group-hover:translate-x-0.5 transition inline-flex items-center">
           Ver detalle →
         </span>
-      </div>
-    </div>
+      </CardFooter>
+    </Card>
   );
 }

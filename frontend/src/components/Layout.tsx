@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
-import Button from './ui/Button';
+import { Button } from './ui/Button';
 import CreateActivityModal from './CreateActivityModal';
+import type { Actividad } from '../types/actividad';
 
 export default function Layout() {
   // Estado para controlar la visibilidad del modal
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [createdActivities, setCreatedActivities] = useState<Actividad[]>([]);
 
   return (
     <div className="h-full flex flex-col font-sans text-slate-800">
@@ -61,13 +63,14 @@ export default function Layout() {
       </nav>
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Outlet />
+        <Outlet context={{ createdActivities }} />
       </main>
 
       {/* Renderizamos el modal pasándole el estado y la función para cerrarlo */}
       <CreateActivityModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
+        onCreated={(actividad) => setCreatedActivities((current) => [actividad, ...current])}
       />
     </div>
   );

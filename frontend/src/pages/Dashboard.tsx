@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ActivityCard from '../components/ActivityCard';
+import { Button } from '../components/ui/Button';
 
 // Simulamos que el usuario logueado tiene este ID (luego vendrá del Auth/Header X-User-Id)
 const CURRENT_USER_ID = "user_martin";
@@ -48,15 +49,6 @@ export default function Dashboard() {
     return esOrganizador || esParticipante;
   });
 
-  // Función helper para aplicar estilos al botón activo
-  const estiloBotonFiltro = (filtroActual: string) => {
-    return `px-3 py-1.5 rounded-lg transition ${
-      filtro === filtroActual 
-        ? 'bg-white shadow-sm text-slate-800 font-semibold' 
-        : 'text-slate-600 hover:text-slate-900'
-    }`;
-  };
-
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
@@ -69,15 +61,15 @@ export default function Dashboard() {
           </div>
           
           <div className="flex bg-slate-100 p-1 rounded-xl gap-1 text-xs font-semibold">
-            <button onClick={() => setFiltro('todas')} className={estiloBotonFiltro('todas')}>
+            <Button size="sm" variant={filtro === 'todas' ? 'outline' : 'ghost'} onClick={() => setFiltro('todas')}>
               Todas
-            </button>
-            <button onClick={() => setFiltro('organizador')} className={estiloBotonFiltro('organizador')}>
+            </Button>
+            <Button size="sm" variant={filtro === 'organizador' ? 'outline' : 'ghost'} onClick={() => setFiltro('organizador')}>
               Organizador
-            </button>
-            <button onClick={() => setFiltro('participante')} className={estiloBotonFiltro('participante')}>
+            </Button>
+            <Button size="sm" variant={filtro === 'participante' ? 'outline' : 'ghost'} onClick={() => setFiltro('participante')}>
               Participante
-            </button>
+            </Button>
           </div>
         </div>
 

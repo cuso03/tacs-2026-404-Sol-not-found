@@ -1,4 +1,32 @@
-# React + TypeScript + Vite
+# Frontend — 404 Sol Not Found
+
+Aplicación React + TypeScript + Vite. Los componentes visuales reutilizables se
+encuentran en `src/components/ui` y siguen la composición de shadcn/ui.
+
+## Gestión de actividades
+
+El botón **Nueva actividad** abre un flujo de dos pasos:
+
+1. Datos generales, tipo, fecha, cupos y ubicación por coordenadas o ciudad.
+2. Límites climáticos, anticipación y ventana de reprogramación.
+
+El cliente ejecuta `POST /api/actividades` y luego
+`PUT /api/actividades/{id}/reglas`. En desarrollo utiliza `VITE_USER_ID` como
+identidad simulada y, si no se define, usa `auth0|frontend-demo`.
+
+El proxy de Vite dirige `/api` al backend. Docker Compose configura el destino
+interno mediante `VITE_PROXY_TARGET=http://backend:3000`.
+
+```bash
+npm install
+npm run build
+npm test
+npm run dev
+```
+
+---
+
+## Plantilla original
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

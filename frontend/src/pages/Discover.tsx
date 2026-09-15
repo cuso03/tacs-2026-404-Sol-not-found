@@ -1,5 +1,9 @@
 import { useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import ActivityCard from '../components/ActivityCard';
+import { Input } from '../components/ui/input';
+import { NativeSelect } from '../components/ui/native-select';
+import type { Actividad, Ubicacion } from '../types/actividad';
 
 // Datos de prueba simulando la API
 const mockActivities = [
@@ -42,9 +46,23 @@ export default function Discover() {
   // 1. Definimos los estados para el buscador y el select
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('todos');
+  const { createdActivities } = useOutletContext<{ createdActivities: Actividad[] }>();
+
+  const newActivityCards = createdActivities.map((actividad) => ({
+    id: actividad.id,
+    titulo: actividad.titulo,
+    descripcion: actividad.descripcion,
+    tipo: actividad.tipo,
+    estado: actividad.estado ?? 'PROPUESTA',
+    fecha: new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(actividad.fecha_horario)),
+    ubicacion: formatLocation(actividad.ubicacion),
+    cuposOcupados: actividad.participantes?.length ?? 1,
+    cuposMaximos: actividad.max_participantes,
+  }));
+  const activities = [...newActivityCards, ...mockActivities];
 
   // 2. Filtramos la lista basándonos en los estados actuales
-  const filteredActivities = mockActivities.filter((act) => {
+  const filteredActivities = activities.filter((act) => {
     const matchesSearch = 
       act.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       act.ubicacion.toLowerCase().includes(searchTerm.toLowerCase());
@@ -73,25 +91,25 @@ export default function Discover() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               {/* Conectamos el input al estado searchTerm */}
-              <input 
+              <Input
                 type="text" 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por ciudad, parque o dirección..." 
-                className="w-full pl-11 pr-4 py-2.5 bg-slate-800/90 text-white rounded-xl border border-slate-700 placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-11 border-slate-700 bg-slate-800/90 pl-11 pr-4 text-white placeholder:text-slate-400"
               />
             </div>
             {/* Conectamos el select al estado filterType */}
-            <select 
+            <NativeSelect
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="bg-slate-800/90 text-white rounded-xl px-4 py-2.5 border border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="h-11 border-slate-700 bg-slate-800/90 px-4 text-white"
             >
               <option value="todos">Todos los tipos</option>
               <option value="aire_libre">Aire libre</option>
               <option value="techada">Techada</option>
               <option value="mixta">Mixta</option>
-            </select>
+            </NativeSelect>
           </div>
         </div>
       </div>
@@ -128,4 +146,10 @@ export default function Discover() {
       </div>
     </div>
   );
+}
+
+function formatLocation(ubicacion: Ubicacion): string {
+  return ubicacion.tipo === 'ciudad'
+    ? `${ubicacion.ciudad}, ${ubicacion.pais}`
+    : ubicacion.direccion ?? `${ubicacion.latitud.toFixed(4)}, ${ubicacion.longitud.toFixed(4)}`;
 }

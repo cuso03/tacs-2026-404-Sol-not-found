@@ -10,6 +10,12 @@ export default defineConfig({
     strictPort: true,
     watch: {
       usePolling: true, // Ayuda a que el hot-reload funcione bien en volúmenes de Windows a Docker
-    }
+    },
+    proxy: {
+      '/api': {
+        target: process.env.VITE_PROXY_TARGET ?? 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   }
 })
