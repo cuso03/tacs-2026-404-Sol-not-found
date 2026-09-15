@@ -34,8 +34,12 @@ reglas:
    `REPROGRAMADA` (antes `CONFIRMADA`). Se notifica la reprogramación.
 4. **Falta de quórum cancela.** Si no hay votos, la ganadora no alcanza el mínimo
    o hay empate, la actividad pasa a `CANCELADA`, se notifica la cancelación y se
-   incrementa la métrica `Actividad_Reprogramada`.
-5. **Monitoreo climático.** `findParaMonitoreo` incluye el estado `REPROGRAMADA`
+   incrementa la métrica `Actividad_Cancelada`.
+5. **Métricas.** `Actividad_Reprogramada` se incrementa únicamente cuando la
+   votación se resuelve con una reprogramación exitosa; `Actividad_Cancelada` se
+   incrementa cuando la votación termina en cancelación. Cada métrica refleja el
+   significado de su nombre.
+6. **Monitoreo climático.** `findParaMonitoreo` incluye el estado `REPROGRAMADA`
    además de `PROPUESTA` y `CONFIRMADA`, para que una actividad reprogramada
    continúe evaluándose por clima y pueda abrir una nueva votación si hiciera falta.
 
@@ -49,3 +53,6 @@ reglas:
   actualizan a `REPROGRAMADA`, y se agregan casos que cubren votos repartidos,
   falta de quórum, empate y alternativa ganadora, verificando fecha y estado final
   tanto por contrato HTTP como en MongoDB.
+- Las métricas de ciclo de vida se corrigen: una reprogramación exitosa incrementa
+  `Actividad_Reprogramada`, una cancelación incrementa `Actividad_Cancelada`, y
+  cada caso verifica que la métrica contraria no se incremente.

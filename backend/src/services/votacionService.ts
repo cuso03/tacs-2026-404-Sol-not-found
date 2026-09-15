@@ -279,6 +279,8 @@ export class VotacionService {
       });
       // US 13: Disparar alerta de reprogramación
       await this.eventNotifier.notificarReprogramacion(actividad, ganadora.fecha_horario);
+      // US 14: guardar Estadistica
+      await this.statsStore.incrementar('Actividad_Reprogramada');
     } else {
       await this.repository.update({
         ...actividad,
@@ -287,8 +289,8 @@ export class VotacionService {
       // US 13: Disparar alerta de cancelación
       await this.eventNotifier.notificarCancelacion(actividad);
 
-      //US 14: guardar Estadistica
-      await this.statsStore.incrementar('Actividad_Reprogramada');
+      // US 14: guardar Estadistica
+      await this.statsStore.incrementar('Actividad_Cancelada');
     }
   }
 
