@@ -18,11 +18,14 @@ El proxy de Vite dirige `/api` al backend. Docker Compose configura el destino
 interno mediante `VITE_PROXY_TARGET=http://backend:3000`.
 
 ```bash
-npm install
+npm install --package-lock=false
 npm run build
 npm test
 npm run dev
 ```
+
+El lockfile actual es anterior a las dependencias de shadcn. Hasta regenerarlo
+en un entorno con npm disponible, tanto Docker como CI lo ignoran explícitamente.
 
 ---
 
