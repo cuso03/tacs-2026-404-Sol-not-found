@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Layout from './components/Layout'
-import Discover from './pages/Discover'
-import Dashboard from './pages/Dashboard'
-
-// Placeholder del Admin (todavía nos falta armarlo)
-const Admin = () => <h1 className="text-3xl font-extrabold text-slate-900">Panel de Estadísticas</h1>;
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Layout from './components/Layout';
+import ActivityDetail from './pages/ActivityDetail';
+import Admin from './pages/Admin';
+import Dashboard from './pages/Dashboard';
+import Discover from './pages/Discover';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -12,13 +12,12 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Discover />} />
-          
-          {/* 2. Reemplazá el placeholder por el componente Dashboard */}
+          <Route path="actividades/:id" element={<ActivityDetail />} />
           <Route path="dashboard" element={<Dashboard />} />
-          
           <Route path="admin" element={<Admin />} />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </BrowserRouter>
-  )
+  );
 }

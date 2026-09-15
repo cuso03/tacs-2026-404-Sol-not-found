@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
+import { ArrowLeft, ArrowRight, CheckCircle2 } from 'lucide-react';
 import api, { getApiErrorMessage } from '../services/api';
 import type { Actividad, CrearActividadPayload, ReglasClimaPayload, TipoActividad } from '../types/api';
 import LocationPicker, { type SelectedLocation } from './LocationPicker';
@@ -146,7 +147,7 @@ export default function CreateActivityModal({ isOpen, onClose, onCreated }: Crea
       <DialogContent className="max-h-[94vh] overflow-y-auto">
         {createdActivity ? (
           <div className="space-y-6 py-5 text-center">
-            <div className="mx-auto grid size-14 place-items-center rounded-full bg-emerald-100 text-2xl">✓</div>
+            <div className="mx-auto grid size-14 place-items-center rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 className="size-7" /></div>
             <DialogHeader className="text-center">
               <DialogTitle>Actividad lista</DialogTitle>
               <DialogDescription>“{createdActivity.titulo}” fue creada con sus reglas de clima y reprogramación.</DialogDescription>
@@ -199,7 +200,7 @@ export default function CreateActivityModal({ isOpen, onClose, onCreated }: Crea
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={closeAndReset}>Cancelar</Button>
-                  <Button type="submit">Continuar a reglas →</Button>
+                  <Button type="submit">Continuar a reglas<ArrowRight className="size-4" /></Button>
                 </DialogFooter>
               </form>
             ) : (
@@ -216,7 +217,7 @@ export default function CreateActivityModal({ isOpen, onClose, onCreated }: Crea
                 </div>
                 <p className="rounded-lg bg-blue-50 p-3 text-xs leading-relaxed text-blue-800">Estas reglas se aplicarán al pronóstico del punto exacto definido en el mapa.</p>
                 <DialogFooter>
-                  <Button variant="outline" disabled={isSubmitting} onClick={() => { setError(''); setStep(1); }}>← Volver</Button>
+                  <Button variant="outline" disabled={isSubmitting} onClick={() => { setError(''); setStep(1); }}><ArrowLeft className="size-4" />Volver</Button>
                   <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando…' : 'Crear actividad'}</Button>
                 </DialogFooter>
               </form>

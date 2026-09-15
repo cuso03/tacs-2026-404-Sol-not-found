@@ -21,7 +21,8 @@ interno mediante `VITE_PROXY_TARGET=http://backend:3000`.
 
 El selector usa React Leaflet, los mosaicos estándar de OpenStreetMap y búsquedas
 explícitas en Nominatim. No realiza autocompletado: cachea búsquedas repetidas y
-limita las consultas a una por segundo. Para cambiar de proveedor sin modificar
+limita las consultas a una por segundo. El `TileLayer` envía una política de
+referer compatible con OpenStreetMap. Para cambiar de proveedor sin modificar
 el código se pueden configurar `VITE_MAP_TILE_URL` y `VITE_GEOCODING_URL`.
 
 Los servicios públicos de OpenStreetMap son adecuados para desarrollo y tráfico
@@ -29,6 +30,19 @@ moderado, sin garantía de disponibilidad. Antes de un despliegue de producción
 con muchos usuarios se debe contratar o alojar un proveedor con capacidad y SLA
 acordes. Ver las políticas de [Nominatim](https://operations.osmfoundation.org/policies/nominatim/)
 y de [mosaicos](https://operations.osmfoundation.org/policies/tiles/).
+
+## Funcionalidad disponible
+
+- Catálogo de actividades con filtros por ubicación, tipo y fecha, más paginación.
+- Alta de actividad y configuración de reglas climáticas en dos pasos.
+- Detalle con inscripción y baja de participantes, cupos y pronóstico.
+- Votaciones automáticas o manuales, sugerencias por clima, voto, resultados y cierre.
+- Dashboard personal con roles, estados y votaciones abiertas.
+- Panel administrativo con métricas y simulación del monitoreo de notificaciones.
+
+Las rutas autenticadas usan temporalmente `VITE_USER_ID` y el panel administrativo
+usa `VITE_USER_ROLE`. Estos valores simulan los claims que posteriormente entregará
+Auth0; no constituyen autenticación válida para producción.
 
 ```bash
 pnpm install --no-frozen-lockfile

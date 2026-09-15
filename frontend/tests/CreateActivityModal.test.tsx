@@ -55,7 +55,7 @@ describe('CreateActivityModal', () => {
     const user = await fillActivityStep();
     await user.clear(screen.getByLabelText('Máximo de participantes'));
     await user.type(screen.getByLabelText('Máximo de participantes'), '1');
-    await user.click(screen.getByRole('button', { name: 'Continuar a reglas →' }));
+    await user.click(screen.getByRole('button', { name: 'Continuar a reglas' }));
     expect(screen.getByText('El cupo máximo debe ser mayor o igual al mínimo.')).toBeTruthy();
   });
 
@@ -64,7 +64,7 @@ describe('CreateActivityModal', () => {
     putMock.mockResolvedValue({ data: { ...activityResponse, reglasClima: {} } });
     render(<CreateActivityModal isOpen onClose={vi.fn()} />);
     const user = await fillActivityStep();
-    await user.click(screen.getByRole('button', { name: 'Continuar a reglas →' }));
+    await user.click(screen.getByRole('button', { name: 'Continuar a reglas' }));
     await user.click(screen.getByRole('button', { name: 'Crear actividad' }));
 
     expect(await screen.findByText('Actividad lista')).toBeTruthy();
@@ -82,7 +82,7 @@ describe('CreateActivityModal', () => {
   it('no persiste si el rango de temperaturas es inválido', async () => {
     render(<CreateActivityModal isOpen onClose={vi.fn()} />);
     const user = await fillActivityStep();
-    await user.click(screen.getByRole('button', { name: 'Continuar a reglas →' }));
+    await user.click(screen.getByRole('button', { name: 'Continuar a reglas' }));
     fireEvent.change(screen.getByLabelText('Temperatura mínima (°C)'), { target: { value: '35' } });
     fireEvent.change(screen.getByLabelText('Temperatura máxima (°C)'), { target: { value: '20' } });
     await user.click(screen.getByRole('button', { name: 'Crear actividad' }));

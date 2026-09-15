@@ -11,6 +11,8 @@ services:
     environment:
       - VITE_API_URL=/api
       - VITE_PROXY_TARGET=http://backend:3000
+      - VITE_USER_ID=auth0|user-1
+      - VITE_USER_ROLE=admin
     depends_on:
       - backend
 

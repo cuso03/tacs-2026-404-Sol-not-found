@@ -1,70 +1,87 @@
 import { useEffect, useState } from 'react';
-import api, { getApiErrorMessage } from '../services/api';
-import { Alert, AlertDescription } from '../components/ui/alert';
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, CircleUserRound, ClipboardList, Vote } from 'lucide-react';
+import { Link, useOutletContext } from 'react-router-dom';
+import ActivityStatusBadge from '../components/ActivityStatusBadge';
+import type { AppOutletContext } from '../components/Layout';
+import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/Button';
-import type { PaginatedResponse } from '../types/api';
+import { Card, CardContent } from '../components/ui/card';
+import { Skeleton } from '../components/ui/skeleton';
+import { formatDateTime } from '../lib/formatters';
+import api, { getApiErrorMessage } from '../services/api';
+import type { ActividadResumenUsuario, PaginatedResponse } from '../types/api';
 
-interface ActividadResumen {
-  id: string;
-  titulo: string;
-  fecha_horario: string;
-  rol: 'organizador' | 'participante';
-  estado: string;
-  votacion_abierta: boolean;
-}
+const PAGE_SIZE = 10;
 
+/** Actividades creadas o integradas por el usuario autenticado. */
 export default function Dashboard() {
-  const [filtro, setFiltro] = useState<'todas' | 'organizador' | 'participante'>('todas');
-  const [actividades, setActividades] = useState<ActividadResumen[]>([]);
+  const { refreshVersion } = useOutletContext<AppOutletContext>();
+  const [filter, setFilter] = useState<'todas' | 'organizador' | 'participante'>('todas');
+  const [page, setPage] = useState(1);
+  const [reloadVersion, setReloadVersion] = useState(0);
+  const [response, setResponse] = useState<PaginatedResponse<ActividadResumenUsuario>>({ data: [], meta: { total: 0, page: 1, limit: PAGE_SIZE, totalPages: 0 } });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
-    api.get<PaginatedResponse<ActividadResumen>>('/usuarios/me/actividades', { signal: controller.signal })
-      .then((response) => setActividades(response.data.data))
+    setLoading(true);
+    setError('');
+    api.get<PaginatedResponse<ActividadResumenUsuario>>('/usuarios/me/actividades', { params: { page, limit: PAGE_SIZE }, signal: controller.signal })
+      .then((result) => setResponse(result.data))
       .catch((cause) => { if (!controller.signal.aborted) setError(getApiErrorMessage(cause)); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, []);
+  }, [page, reloadVersion, refreshVersion]);
 
-  const actividadesFiltradas = actividades.filter((activity) => filtro === 'todas' || activity.rol === filtro);
-  const statusStyles: Record<string, string> = {
-    PROPUESTA: 'border-blue-200 bg-blue-50 text-blue-700',
-    EN_VOTACION: 'border-amber-300 bg-amber-50 font-bold text-amber-800',
-    CONFIRMADA: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  };
+  const activities = response.data.filter((activity) => filter === 'todas' || activity.rol === filter);
 
   return (
-    <div className="space-y-6">
-      {error && <Alert><AlertDescription>{error}</AlertDescription></Alert>}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col justify-between gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center">
-          <div><h1 className="text-2xl font-bold text-slate-900">Mi Dashboard</h1><p className="mt-1 text-xs text-slate-500">Actividades organizadas por vos o donde participás.</p></div>
-          <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
-            <Button size="sm" variant={filtro === 'todas' ? 'outline' : 'ghost'} onClick={() => setFiltro('todas')}>Todas</Button>
-            <Button size="sm" variant={filtro === 'organizador' ? 'outline' : 'ghost'} onClick={() => setFiltro('organizador')}>Organizador</Button>
-            <Button size="sm" variant={filtro === 'participante' ? 'outline' : 'ghost'} onClick={() => setFiltro('participante')}>Participante</Button>
-          </div>
+    <div className="space-y-8">
+      <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+        <div><span className="text-sm font-semibold text-blue-700">Espacio personal</span><h1 className="mt-1 text-3xl font-black tracking-tight">Mi actividad</h1><p className="mt-2 text-sm text-slate-500">Seguí tus organizaciones, inscripciones y votaciones pendientes.</p></div>
+        <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          <Button size="sm" variant={filter === 'todas' ? 'secondary' : 'ghost'} onClick={() => setFilter('todas')}>Todas</Button>
+          <Button size="sm" variant={filter === 'organizador' ? 'secondary' : 'ghost'} onClick={() => setFilter('organizador')}>Organizo</Button>
+          <Button size="sm" variant={filter === 'participante' ? 'secondary' : 'ghost'} onClick={() => setFilter('participante')}>Participo</Button>
         </div>
+      </header>
 
-        <div className="mt-4 divide-y divide-slate-100">
-          {loading ? <div className="py-12 text-center text-sm text-slate-500">Cargando tus actividades...</div> : actividadesFiltradas.length > 0 ? actividadesFiltradas.map((activity) => (
-            <div key={activity.id} className="flex cursor-pointer flex-col justify-between gap-3 rounded-xl px-3 py-4 transition hover:bg-slate-50 sm:flex-row sm:items-center">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-bold text-slate-900">{activity.titulo}</span>
-                  <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${activity.rol === 'organizador' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700'}`}>{activity.rol === 'organizador' ? 'Organizador' : 'Participante'}</span>
-                  <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusStyles[activity.estado] ?? 'border-slate-200 bg-slate-100 text-slate-700'}`}>{activity.estado}</span>
-                  {activity.votacion_abierta && <span className="rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">Votación activa</span>}
-                </div>
-                <p className="mt-1 text-xs text-slate-500">📅 {new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(activity.fecha_horario))}</p>
-              </div>
-              <span className="text-xs font-semibold text-blue-600">Ver detalle →</span>
-            </div>
-          )) : <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-12 text-center text-sm text-slate-500">No tenés actividades registradas bajo este filtro.</div>}
-        </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <SummaryCard icon={ClipboardList} label="En esta página" value={response.data.length} />
+        <SummaryCard icon={CircleUserRound} label="Como organizador" value={response.data.filter((activity) => activity.rol === 'organizador').length} />
+        <SummaryCard icon={Vote} label="Votaciones abiertas" value={response.data.filter((activity) => activity.votacion_abierta).length} accent />
       </div>
+
+      {error && <Alert><AlertTitle>No pudimos cargar tu dashboard</AlertTitle><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}</span><Button variant="outline" size="sm" onClick={() => setReloadVersion((current) => current + 1)}>Reintentar</Button></AlertDescription></Alert>}
+
+      <Card className="overflow-hidden rounded-2xl">
+        <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-bold">Actividades vinculadas</h2><p className="mt-1 text-xs text-slate-500">{response.meta.total} resultados totales</p></div>
+        <CardContent className="p-0">
+          {loading && response.data.length === 0 ? (
+            <div className="space-y-1 p-4">{Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-20 w-full" />)}</div>
+          ) : activities.length > 0 ? activities.map((activity) => (
+            <Link key={activity.id} to={`/actividades/${activity.id}`} className="group flex flex-col gap-3 border-b border-slate-100 px-5 py-4 outline-none transition last:border-0 hover:bg-slate-50 focus-visible:bg-blue-50 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-semibold text-slate-950">{activity.titulo}</h3><Badge variant={activity.rol === 'organizador' ? 'warning' : 'secondary'}>{activity.rol === 'organizador' ? 'Organizador' : 'Participante'}</Badge><ActivityStatusBadge status={activity.estado} />{activity.votacion_abierta && <Badge variant="default"><Vote className="mr-1 size-3" />Votación abierta</Badge>}</div>
+                <p className="mt-2 flex items-center gap-2 text-sm text-slate-500"><CalendarDays className="size-4" />{formatDateTime(activity.fecha_horario)}</p>
+              </div>
+              <span className="flex shrink-0 items-center gap-1 text-sm font-semibold text-blue-700">Abrir <ArrowRight className="size-4 transition group-hover:translate-x-0.5" /></span>
+            </Link>
+          )) : !error && (
+            <div className="flex flex-col items-center px-6 py-16 text-center"><ClipboardList className="mb-4 size-9 text-slate-300" /><h3 className="font-semibold">No hay actividades en este filtro</h3><p className="mt-1 text-sm text-slate-500">Probá otra vista o sumate a una actividad desde Descubrir.</p></div>
+          )}
+        </CardContent>
+      </Card>
+
+      {response.meta.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3"><Button variant="outline" size="sm" disabled={page <= 1 || loading} onClick={() => setPage((current) => current - 1)}><ChevronLeft className="size-4" />Anterior</Button><span className="text-sm text-slate-500">Página {response.meta.page} de {response.meta.totalPages}</span><Button variant="outline" size="sm" disabled={page >= response.meta.totalPages || loading} onClick={() => setPage((current) => current + 1)}>Siguiente<ChevronRight className="size-4" /></Button></div>
+      )}
     </div>
   );
+}
+
+function SummaryCard({ icon: Icon, label, value, accent = false }: { icon: typeof ClipboardList; label: string; value: number; accent?: boolean }) {
+  return <Card className={accent ? 'border-blue-200 bg-blue-50/60' : ''}><CardContent className="flex items-center gap-4 p-5"><span className={`grid size-10 place-items-center rounded-xl ${accent ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'}`}><Icon className="size-5" /></span><div><p className="text-2xl font-black">{value}</p><p className="text-xs text-slate-500">{label}</p></div></CardContent></Card>;
 }

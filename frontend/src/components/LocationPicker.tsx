@@ -132,6 +132,7 @@ export default function LocationPicker({ value, onChange }: LocationPickerProps)
       <div className="location-map overflow-hidden rounded-xl border border-slate-200" aria-label="Mapa para seleccionar la ubicación">
         <MapContainer center={initialCenter} zoom={12} scrollWheelZoom className="h-64 w-full">
           <TileLayer
+            referrerPolicy="strict-origin-when-cross-origin"
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url={tileUrl}
           />
