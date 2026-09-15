@@ -3,10 +3,11 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-# Copiamos los archivos de dependencias primero (para aprovechar la caché de Docker)
-COPY package.json ./
+# Copiamos los archivos de dependencias
+COPY package*.json ./
 
-RUN npm install 
+# Instalamos las dependencias dentro del contenedor
+RUN npm install
 
 # Build args → env vars para que Vite los inyecte en el bundle
 ARG VITE_API_URL=/api
