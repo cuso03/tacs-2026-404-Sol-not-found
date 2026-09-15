@@ -12,7 +12,7 @@ services:
       - /app/node_modules
     environment:
       # Variable de entorno lista para cuando conectes tu front con Axios a la API
-      - VITE_API_URL=http://localhost:3000
+      - VITE_API_URL=http://localhost:3000/api
     depends_on:
       - backend
 

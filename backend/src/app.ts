@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import notificacionesRoutes from './routes/notificacionesRoutes';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './openapi';
@@ -88,6 +89,7 @@ export function createApp(
   }
 
   const app = express();
+  app.use(cors());
   app.use(express.json({ limit: '100kb' }));
 
   // 4. Configurar Rutas
