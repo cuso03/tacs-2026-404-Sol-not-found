@@ -99,11 +99,11 @@ export const openApiDocument = {
       get: {
         tags: ['clima'],
         operationId: 'consultarClima',
-        summary: 'Consulta el pronóstico para la hora de la actividad',
-        description: 'Retorna el pronóstico climático (probabilidad de lluvia, temperatura, viento y condición) para la fecha y ubicación de la actividad.',
+        summary: 'Consulta el clima actual y pronóstico para una actividad',
+        description: 'Retorna las condiciones climáticas actuales y el pronóstico para la hora de la actividad (probabilidad de lluvia, temperatura, viento y condición).',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
-          '200': { description: 'Clima obtenido', content: { 'application/json': { schema: { $ref: '#/components/schemas/WeatherForecast' } } } },
+          '200': { description: 'Clima obtenido', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClimaResponse' } } } },
           '404': {
             description: 'Actividad inexistente',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
@@ -536,15 +536,33 @@ export const openApiDocument = {
           pais: { type: 'string', example: 'AR' },
         },
       },
-      WeatherForecast: {
+      ClimaResponse: {
         type: 'object',
-        required: ['ubicacion', 'fecha_horario', 'probabilidad_lluvia', 'temperatura', 'viento', 'condicion'],
+        required: ['ubicacion', 'fecha_horario', 'clima_actual', 'pronostico_actividad'],
         properties: {
           ubicacion: { type: 'string', example: 'Buenos Aires, AR' },
           fecha_horario: { type: 'string', format: 'date-time', example: '2026-09-10T14:00:00-03:00' },
+          clima_actual: { $ref: '#/components/schemas/ClimaActual' },
+          pronostico_actividad: { $ref: '#/components/schemas/PronosticoActividad' },
+        },
+      },
+      ClimaActual: {
+        type: 'object',
+        required: ['temperatura', 'condicion', 'viento', 'humedad'],
+        properties: {
+          temperatura: { type: 'number', example: 22 },
+          condicion: { type: 'string', enum: ['SOLEADO', 'NUBLADO', 'PARCIALMENTE_NUBLADO', 'LLUVIA', 'TORMENTA'], example: 'SOLEADO' },
+          viento: { type: 'number', minimum: 0, example: 10 },
+          humedad: { type: 'number', minimum: 0, maximum: 100, example: 55 },
+        },
+      },
+      PronosticoActividad: {
+        type: 'object',
+        required: ['probabilidad_lluvia', 'temperatura', 'viento', 'condicion'],
+        properties: {
           probabilidad_lluvia: { type: 'number', minimum: 0, maximum: 100, example: 70 },
           temperatura: { type: 'number', example: 16 },
-          viento: { type: 'number', example: 22 },
+          viento: { type: 'number', minimum: 0, example: 22 },
           condicion: { type: 'string', enum: ['SOLEADO', 'NUBLADO', 'PARCIALMENTE_NUBLADO', 'LLUVIA', 'TORMENTA'], example: 'LLUVIA' },
         },
       },
