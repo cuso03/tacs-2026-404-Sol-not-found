@@ -1,5 +1,6 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { renderWithProviders } from './renderWithProviders';
 import { activityFixture, weatherFixture } from './fixtures';
 
 const { getMock } = vi.hoisted(() => ({ getMock: vi.fn() }));
@@ -12,10 +13,10 @@ describe('WeatherPanel', () => {
 
   it('muestra clima actual, pronóstico y evaluación de reglas', async () => {
     getMock.mockResolvedValue({ data: weatherFixture });
-    render(<WeatherPanel activity={activityFixture} />);
+    renderWithProviders(<WeatherPanel activity={activityFixture} />);
     expect(await screen.findByText('Soleado')).toBeTruthy();
     expect(screen.getByText('Parcialmente nublado')).toBeTruthy();
     expect(screen.getByText('Pronóstico dentro de las reglas')).toBeTruthy();
-    expect(getMock).toHaveBeenCalledWith('/actividades/actividad-1/clima', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(getMock).toHaveBeenCalledWith('/actividades/actividad-1/clima');
   });
 });

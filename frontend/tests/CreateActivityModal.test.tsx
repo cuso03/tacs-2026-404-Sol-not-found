@@ -1,6 +1,7 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderWithProviders } from './renderWithProviders';
 
 const { postMock, putMock } = vi.hoisted(() => ({ postMock: vi.fn(), putMock: vi.fn() }));
 
@@ -51,7 +52,7 @@ describe('CreateActivityModal', () => {
   }
 
   it('valida los cupos de la actividad antes de avanzar', async () => {
-    render(<CreateActivityModal isOpen onClose={vi.fn()} />);
+    renderWithProviders(<CreateActivityModal isOpen onClose={vi.fn()} />);
     const user = await fillActivityStep();
     await user.clear(screen.getByLabelText('Máximo de participantes'));
     await user.type(screen.getByLabelText('Máximo de participantes'), '1');
@@ -62,7 +63,7 @@ describe('CreateActivityModal', () => {
   it('crea la actividad con coordenadas del mapa y configura sus reglas', async () => {
     postMock.mockResolvedValue({ data: activityResponse });
     putMock.mockResolvedValue({ data: { ...activityResponse, reglasClima: {} } });
-    render(<CreateActivityModal isOpen onClose={vi.fn()} />);
+    renderWithProviders(<CreateActivityModal isOpen onClose={vi.fn()} />);
     const user = await fillActivityStep();
     await user.click(screen.getByRole('button', { name: 'Continuar a reglas' }));
     const submitButton = screen.getByRole('button', { name: 'Crear actividad' });
@@ -90,7 +91,7 @@ describe('CreateActivityModal', () => {
   ];
 
   it.each(invalidRuleCases)('no persiste con $name', async ({ changes, message }) => {
-    render(<CreateActivityModal isOpen onClose={vi.fn()} />);
+    renderWithProviders(<CreateActivityModal isOpen onClose={vi.fn()} />);
     const user = await fillActivityStep();
     await user.click(screen.getByRole('button', { name: 'Continuar a reglas' }));
     for (const [label, value] of changes) {

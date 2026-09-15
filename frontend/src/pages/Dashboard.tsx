@@ -1,39 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, CircleUserRound, ClipboardList, Vote } from 'lucide-react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import ActivityStatusBadge from '../components/ActivityStatusBadge';
-import type { AppOutletContext } from '../components/Layout';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
+import { useMisActividades } from '../hooks/useUsuarios';
 import { formatDateTime } from '../lib/formatters';
-import api, { getApiErrorMessage } from '../services/api';
+import { getApiErrorMessage } from '../services/api';
 import type { ActividadResumenUsuario, PaginatedResponse } from '../types/api';
 
 const PAGE_SIZE = 10;
 
+function emptyResponse(page: number): PaginatedResponse<ActividadResumenUsuario> {
+  return { data: [], meta: { total: 0, page, limit: PAGE_SIZE, totalPages: 0 } };
+}
+
 /** Actividades creadas o integradas por el usuario autenticado. */
 export default function Dashboard() {
-  const { refreshVersion } = useOutletContext<AppOutletContext>();
   const [filter, setFilter] = useState<'todas' | 'organizador' | 'participante'>('todas');
   const [page, setPage] = useState(1);
-  const [reloadVersion, setReloadVersion] = useState(0);
-  const [response, setResponse] = useState<PaginatedResponse<ActividadResumenUsuario>>({ data: [], meta: { total: 0, page: 1, limit: PAGE_SIZE, totalPages: 0 } });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError('');
-    api.get<PaginatedResponse<ActividadResumenUsuario>>('/usuarios/me/actividades', { params: { page, limit: PAGE_SIZE }, signal: controller.signal })
-      .then((result) => setResponse(result.data))
-      .catch((cause) => { if (!controller.signal.aborted) setError(getApiErrorMessage(cause)); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
-    return () => controller.abort();
-  }, [page, reloadVersion, refreshVersion]);
+  const dashboardQuery = useMisActividades(page, PAGE_SIZE);
+  const response = dashboardQuery.data ?? emptyResponse(page);
+  const loading = dashboardQuery.isPending;
+  const error = dashboardQuery.isError ? getApiErrorMessage(dashboardQuery.error) : '';
 
   const activities = response.data.filter((activity) => filter === 'todas' || activity.rol === filter);
 
@@ -54,7 +46,7 @@ export default function Dashboard() {
         <SummaryCard icon={Vote} label="Votaciones abiertas" value={response.data.filter((activity) => activity.votacion_abierta).length} accent />
       </div>
 
-      {error && <Alert><AlertTitle>No pudimos cargar tu dashboard</AlertTitle><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}</span><Button variant="outline" size="sm" onClick={() => setReloadVersion((current) => current + 1)}>Reintentar</Button></AlertDescription></Alert>}
+      {error && <Alert><AlertTitle>No pudimos cargar tu dashboard</AlertTitle><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}</span><Button variant="outline" size="sm" onClick={() => void dashboardQuery.refetch()}>Reintentar</Button></AlertDescription></Alert>}
 
       <Card className="overflow-hidden rounded-2xl">
         <div className="border-b border-slate-100 px-5 py-4"><h2 className="font-bold">Actividades vinculadas</h2><p className="mt-1 text-xs text-slate-500">{response.meta.total} resultados totales</p></div>

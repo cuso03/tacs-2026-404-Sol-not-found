@@ -1,7 +1,8 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter, Outlet, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { renderWithProviders } from './renderWithProviders';
 
 const { getMock } = vi.hoisted(() => ({ getMock: vi.fn() }));
 vi.mock('../src/services/api', () => ({ default: { get: getMock }, getApiErrorMessage: () => 'Error' }));
@@ -13,7 +14,7 @@ describe('Dashboard', () => {
 
   it('muestra rol, estado y votación abierta del usuario', async () => {
     getMock.mockResolvedValue({ data: { data: [{ id: 'actividad-1', titulo: 'Caminata urbana', fecha_horario: '2026-10-20T18:30:00.000Z', rol: 'organizador', estado: 'EN_VOTACION', votacion_abierta: true }], meta: { total: 1, page: 1, limit: 10, totalPages: 1 } } });
-    render(<MemoryRouter initialEntries={['/dashboard']}><Routes><Route element={<Outlet context={{ refreshVersion: 0 }} />}><Route path="dashboard" element={<Dashboard />} /></Route></Routes></MemoryRouter>);
+    renderWithProviders(<MemoryRouter initialEntries={['/dashboard']}><Routes><Route path="/dashboard" element={<Dashboard />} /></Routes></MemoryRouter>);
     expect(await screen.findByText('Caminata urbana')).toBeTruthy();
     expect(screen.getByText('Organizador')).toBeTruthy();
     expect(screen.getByText('Votación abierta')).toBeTruthy();
@@ -22,7 +23,7 @@ describe('Dashboard', () => {
 
   it('consulta la página siguiente del dashboard', async () => {
     getMock.mockResolvedValue({ data: { data: [{ id: 'actividad-1', titulo: 'Caminata urbana', fecha_horario: '2026-10-20T18:30:00.000Z', rol: 'participante', estado: 'PROPUESTA', votacion_abierta: false }], meta: { total: 11, page: 1, limit: 10, totalPages: 2 } } });
-    render(<MemoryRouter initialEntries={['/dashboard']}><Routes><Route element={<Outlet context={{ refreshVersion: 0 }} />}><Route path="dashboard" element={<Dashboard />} /></Route></Routes></MemoryRouter>);
+    renderWithProviders(<MemoryRouter initialEntries={['/dashboard']}><Routes><Route path="/dashboard" element={<Dashboard />} /></Routes></MemoryRouter>);
     await screen.findByText('Caminata urbana');
 
     await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));

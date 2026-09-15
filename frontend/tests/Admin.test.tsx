@@ -1,6 +1,7 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderWithProviders } from './renderWithProviders';
 
 const { getMock, postMock } = vi.hoisted(() => ({ getMock: vi.fn(), postMock: vi.fn() }));
 vi.mock('../src/services/api', () => ({
@@ -18,7 +19,7 @@ describe('Admin', () => {
   it('muestra métricas y permite simular el monitoreo', async () => {
     getMock.mockResolvedValue({ data: { Actividad_Creada: 5, consultas_clima: 10 } });
     postMock.mockResolvedValue({ data: { mensaje: 'Monitoreo simulado ejecutado.', actividadEvaluada: 'Partido de Fútbol 5' } });
-    render(<Admin />);
+    renderWithProviders(<Admin />);
     expect(await screen.findByText('Actividad creada')).toBeTruthy();
     expect(screen.getByText('10')).toBeTruthy();
     expect(getMock).toHaveBeenCalledWith('/admin/estadisticas', expect.objectContaining({ headers: { 'X-User-Role': 'admin' } }));
