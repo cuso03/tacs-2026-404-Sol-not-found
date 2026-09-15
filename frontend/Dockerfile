@@ -4,11 +4,9 @@ FROM node:22-alpine AS build
 WORKDIR /app
 
 # Copiamos los archivos de dependencias primero (para aprovechar la caché de Docker)
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
-# Instalamos pnpm de forma global
-RUN npm install --global pnpm@10.33.0
-RUN pnpm install --no-frozen-lockfile
+RUN npm install 
 
 # Build args → env vars para que Vite los inyecte en el bundle
 ARG VITE_API_URL=/api
@@ -23,7 +21,7 @@ ENV VITE_USER_ROLE=$VITE_USER_ROLE
 COPY . .
 
 # Construimos la aplicación para producción
-RUN pnpm run build
+RUN npm run build
 
 # ---- Stage 2: Serve con nginx ----
 FROM nginx:alpine
