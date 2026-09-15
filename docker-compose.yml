@@ -1,4 +1,21 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+    container_name: tacs-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Sincroniza el código local para reflejar los cambios en vivo
+      - ./frontend:/app
+      # Protege la carpeta node_modules del contenedor
+      - /app/node_modules
+    environment:
+      # Variable de entorno lista para cuando conectes tu front con Axios a la API
+      - VITE_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+
   backend:
     build:
       context: ./backend
@@ -6,9 +23,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # Sincroniza tu código local con el contenedor para que tsx aplique los cambios en vivo
       - ./backend:/app
-      # Evita que tu carpeta node_modules local pise la del contenedor
       - /app/node_modules
     env_file:
       - ./backend/.env
