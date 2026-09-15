@@ -25,6 +25,7 @@ describe('POST /api/actividades', () => {
       estado: 'PROPUESTA',
     });
     expect(response.body.id).toEqual(expect.any(String));
+    expect(response.headers.location).toBe(`/api/actividades/${response.body.id}`);
 
     // 2. Verificación dual de persistencia en MongoDB
     const persisted = await ActividadModel.findById(response.body.id);

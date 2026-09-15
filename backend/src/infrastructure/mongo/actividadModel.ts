@@ -1,5 +1,6 @@
 import { Schema, model, InferSchemaType, HydratedDocument } from 'mongoose';
 import { Actividad, ESTADOS_ACTIVIDAD, TIPOS_ACTIVIDAD } from '../../interfaces/models/actividad';
+import { ESTADOS_VOTACION } from '../../interfaces/models/votacion';
 
 // Value objects embebidos sin identidad propia (_id: false)
 const ubicacionSchema = new Schema(
@@ -47,6 +48,8 @@ const votacionSchema = new Schema({
   automatica: { type: Boolean, required: true },
   alternativas: [alternativaSchema],
   votos: { type: Map, of: String, default: () => new Map() },
+  estado: { type: String, enum: ESTADOS_VOTACION, required: true, default: 'ABIERTA' },
+  cerradaEn: { type: String, required: false },
 });
 
 // Schema raíz de la colección 'actividades'
@@ -124,6 +127,8 @@ export function toActividad(doc: ActividadDocument): Actividad {
               }))
             : [],
           votos: v.votos instanceof Map ? Object.fromEntries(v.votos) : v.votos ? { ...v.votos } : {},
+          estado: v.estado ?? 'ABIERTA',
+          cerradaEn: v.cerradaEn,
         }))
       : [],
   };

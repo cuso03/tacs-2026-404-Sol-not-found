@@ -44,7 +44,7 @@ Se requiere instanciar una actividad base en el repositorio en memoria.
 
 Para garantizar que el pronóstico falle y se dispare la alerta, se aplican reglas climáticas extremas e imposibles de cumplir.
 
-**Endpoint:** `POST http://localhost:3000/api/actividades/:id/reglas`
+**Endpoint:** `PUT http://localhost:3000/api/actividades/:id/reglas`
 
 **Headers:**
 
@@ -124,13 +124,23 @@ Inicia un proceso de votación manual enviando alternativas de reprogramación.
 Para validar este flujo, existen dos alternativas de ejecución:
 
 **Opción A: Cierre Manual (Recomendado para testing rápido)**
-Fuerza la expiración inmediata de la votación mediante el endpoint de eliminación.
+Fuerza la expiración inmediata de la votación solicitando la transición de estado ABIERTA → CERRADA.
 
-**Endpoint:** `DELETE http://localhost:3000/api/actividades/:id/votaciones/:votacionId`
+**Endpoint:** `PATCH http://localhost:3000/api/actividades/:id/votaciones/:votacionId`
 
 **Headers:**
 
 * `X-User-Id`: `user-123`
+
+**Body:**
+
+```json
+{
+  "estado": "CERRADA"
+}
+```
+
+> Nota: un segundo cierre devuelve `409` y no repite notificaciones ni métricas.
 
 **Opción B: Cierre Automático (Requiere ajuste de tiempo)**
 Si se desea probar la expiración automática gestionada por la cola de trabajos (`votingJobQueue`), es necesario configurar el tiempo de duración en el CronJob/JobQueue a **minutos** en lugar de horas (modificando la lógica temporal en el servicio de creación de votaciones o enviando una fracción en `duracion_horas` si el DTO lo permite), y aguardar la ejecución en segundo plano.
