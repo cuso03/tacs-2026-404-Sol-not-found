@@ -1,21 +1,36 @@
 # Backend
 
+## Autenticación
+
+Todas las rutas protegidas exigen un access token de Auth0 enviado como
+`Authorization: Bearer <jwt>`. El middleware valida firma (vía JWKS),
+`issuer` (`https://<AUTH0_DOMAIN>/`), `audience` (`AUTH0_AUDIENCE`) y
+expiración; el `sub` del token queda disponible como `req.userId`. Los
+headers `X-User-Id` y `X-User-Role` ya no se aceptan en ningún endpoint.
+
+El rol admin se lee del claim configurado en `AUTH0_ROLES_CLAIM`
+(default `https://solnotfound.app/roles`): `["admin"]` habilita
+`GET /api/admin/estadisticas`. La guía completa de configuración del
+dashboard de Auth0 y del Action de roles está en el
+[README raíz](../README.md).
+
+Variables relevantes en `.env.example`: `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`,
+`AUTH0_ROLES_CLAIM` y el opcional `AUTH0_JWKS_URI`.
+
 ## Actividades
 
-`POST /api/actividades` crea una actividad. Durante esta etapa el creador se
-recibe mediante el header temporal `X-User-Id`; el adaptador está aislado en
-`src/middleware/authenticatedUser.ts` para sustituirlo por la validación JWT de
-Auth0 antes de un despliegue productivo.
+`POST /api/actividades` crea una actividad con el usuario autenticado
+(`sub` del token).
 
 La especificación está disponible en `/openapi.json` y la interfaz Swagger en
 `/api-docs`.
 
 `PUT /api/actividades/{id}/reglas` reemplaza las condiciones climáticas y de
-reprogramación (PUT idempotente). Solo acepta al mismo `X-User-Id` que creó la
+reprogramación (PUT idempotente). Solo acepta al mismo usuario que creó la
 actividad.
 
 `GET /api/actividades/{id}` recupera una actividad por su id (requiere
-`X-User-Id`). Permite consultar actividades llenas que no figuran en la búsqueda.
+token). Permite consultar actividades llenas que no figuran en la búsqueda.
 
 `POST /api/actividades/{id}/participantes` inscribe al usuario autenticado si hay
 cupo. `DELETE /api/actividades/{id}/participantes/me` elimina su inscripción. El
@@ -30,7 +45,7 @@ Ejemplo de request:
 
 ```http
 POST /api/actividades
-X-User-Id: auth0|usuario-123
+Authorization: Bearer <access-token-de-auth0>
 Content-Type: application/json
 
 {
@@ -49,5 +64,16 @@ Content-Type: application/json
 }
 ```
 
+## Usuarios
+
+`GET /api/usuarios/me/actividades` devuelve el dashboard del usuario
+autenticado. `POST /api/usuarios/sync` hace un upsert del perfil en Mongo
+usando el `sub` del token como `auth0Id` (email y nombre vienen del body); el
+frontend lo invoca tras el primer login.
+
 Instalar dependencias con `npm install`, ejecutar los tests con `npm test` y
 levantar el servicio con `npm run dev`.
+
+> Los tests usan `mongodb-memory-server`. En Windows, si la descarga del
+> binario falla (`spawn EFTYPE`) y MongoDB está instalado localmente, ejecutar:
+> `MONGOMS_SYSTEM_BINARY="C:\Program Files\MongoDB\Server\8.0\bin\mongod.exe" npm test`.

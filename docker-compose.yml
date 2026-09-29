@@ -4,8 +4,9 @@ services:
       context: ./frontend
       args:
         - VITE_API_URL=/api
-        - VITE_USER_ID=auth0|user-1
-        - VITE_USER_ROLE=admin
+        - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
+        - VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
+        - VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
     container_name: tacs-frontend
     ports:
       - "5173:80"

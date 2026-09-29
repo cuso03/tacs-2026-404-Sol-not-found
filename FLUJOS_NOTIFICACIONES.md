@@ -17,7 +17,7 @@ Se requiere instanciar una actividad base en el repositorio en memoria.
 
 **Endpoint:** `POST http://localhost:3000/api/actividades`  
 **Headers:**
-* `X-User-Id`: `user-123`
+* `Authorization`: `Bearer <access-token-de-auth0>`
 * `Content-Type`: `application/json`
 
 **Body:**
@@ -48,7 +48,7 @@ Para garantizar que el pronóstico falle y se dispare la alerta, se aplican regl
 
 **Headers:**
 
-* `X-User-Id`: `user-123`
+* `Authorization`: `Bearer <access-token-de-auth0>`
 * `Content-Type`: `application/json`
 
 **Body:**
@@ -94,7 +94,7 @@ Inicia un proceso de votación manual enviando alternativas de reprogramación.
 
 **Headers:**
 
-* `X-User-Id`: `user-123`
+* `Authorization`: `Bearer <access-token-de-auth0>`
 * `Content-Type`: `application/json`
 
 **Body:**
@@ -130,7 +130,7 @@ Fuerza la expiración inmediata de la votación solicitando la transición de es
 
 **Headers:**
 
-* `X-User-Id`: `user-123`
+* `Authorization`: `Bearer <access-token-de-auth0>`
 
 **Body:**
 
