@@ -7,9 +7,17 @@ import { activityFixture } from './fixtures';
 
 const { getMock, postMock, deleteMock } = vi.hoisted(() => ({ getMock: vi.fn(), postMock: vi.fn(), deleteMock: vi.fn() }));
 
+vi.mock('@auth0/auth0-react', () => ({
+  useAuth0: () => ({
+    user: { sub: 'auth0|user-1', email: 'user1@example.com', name: 'User Uno' },
+    isAuthenticated: true,
+    getAccessTokenSilently: vi.fn(async () => 'token'),
+    logout: vi.fn(),
+  }),
+}));
+
 vi.mock('../src/services/api', () => ({
   default: { get: getMock, post: postMock, delete: deleteMock },
-  CURRENT_USER_ID: 'auth0|user-1',
   getApiErrorMessage: (error: unknown) => error instanceof Error ? error.message : 'Error',
 }));
 vi.mock('../src/components/WeatherPanel', () => ({ default: () => <div>Panel de clima</div> }));

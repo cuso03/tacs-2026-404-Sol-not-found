@@ -1,13 +1,12 @@
 import { createElement, type ComponentType } from 'react';
-import { Activity, BarChart3, BellRing, CalendarClock, CloudRain, LoaderCircle, RefreshCw, ShieldCheck, UsersRound } from 'lucide-react';
+import { Activity, BarChart3, BellRing, CalendarClock, CloudRain, LoaderCircle, RefreshCw, UsersRound } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
-import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
 import { useEstadisticas, useSimularMonitoreo } from '../hooks/useAdmin';
 import { formatMetricName } from '../lib/formatters';
-import { CURRENT_USER_ROLE, getApiErrorMessage } from '../services/api';
+import { getApiErrorMessage } from '../services/api';
 
 /** Panel administrativo para métricas acumuladas y simulación del monitoreo. */
 export default function Admin() {
@@ -24,7 +23,7 @@ export default function Admin() {
   return (
     <div className="space-y-8">
       <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-        <div><div className="flex items-center gap-2"><span className="text-sm font-semibold text-blue-700">Administración</span><Badge variant="outline"><ShieldCheck className="mr-1 size-3" />Rol {CURRENT_USER_ROLE}</Badge></div><h1 className="mt-2 text-3xl font-black tracking-tight">Estado de la plataforma</h1><p className="mt-2 text-sm text-slate-500">Métricas persistidas y herramientas operativas del entorno.</p></div>
+        <div><div className="flex items-center gap-2"><span className="text-sm font-semibold text-blue-700">Administración</span></div><h1 className="mt-2 text-3xl font-black tracking-tight">Estado de la plataforma</h1><p className="mt-2 text-sm text-slate-500">Métricas persistidas y herramientas operativas del entorno.</p></div>
         <Button variant="outline" disabled={loading} onClick={() => void statsQuery.refetch()}><RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />Actualizar</Button>
       </header>
 

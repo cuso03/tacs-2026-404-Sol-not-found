@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import { ArrowLeft, BellRing, CalendarClock, CalendarDays, CloudRain, LoaderCircle, LogIn, LogOut, MapPin, ShieldCheck, Thermometer, UsersRound, Wind } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import ActivityStatusBadge from '../components/ActivityStatusBadge';
@@ -12,12 +13,14 @@ import { Progress } from '../components/ui/progress';
 import { Skeleton } from '../components/ui/skeleton';
 import { useActividad, useSalirseActividad, useUnirseActividad } from '../hooks/useActividades';
 import { activityTypeLabels, formatDateTime, formatLocation } from '../lib/formatters';
-import { CURRENT_USER_ID, getApiErrorMessage } from '../services/api';
+import { getApiErrorMessage } from '../services/api';
 import type { Actividad } from '../types/api';
 
 /** Vista operativa de una actividad: cupos, clima, reglas y votaciones. */
 export default function ActivityDetail() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth0();
+  const currentUserId = user?.sub;
   const activityQuery = useActividad(id);
   const joinMutation = useUnirseActividad();
   const leaveMutation = useSalirseActividad();
@@ -43,8 +46,8 @@ export default function ActivityDetail() {
 
   if (!activity) return <div className="mx-auto max-w-xl py-16"><Alert><AlertTitle>No pudimos abrir la actividad</AlertTitle><AlertDescription>{error || 'La actividad no existe.'}</AlertDescription></Alert><div className="mt-5 flex flex-wrap items-center gap-4"><Button variant="outline" onClick={() => void activityQuery.refetch()}>Reintentar</Button><Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700"><ArrowLeft className="size-4" />Volver a descubrir</Link></div></div>;
 
-  const organizer = activity.creadorId === CURRENT_USER_ID;
-  const participant = activity.participantes.includes(CURRENT_USER_ID);
+  const organizer = !!currentUserId && activity.creadorId === currentUserId;
+  const participant = !!currentUserId && activity.participantes.includes(currentUserId);
   const full = activity.participantes.length >= activity.max_participantes;
   const terminal = activity.estado === 'CANCELADA' || activity.estado === 'FINALIZADA';
   const occupancy = activity.max_participantes ? activity.participantes.length / activity.max_participantes * 100 : 0;

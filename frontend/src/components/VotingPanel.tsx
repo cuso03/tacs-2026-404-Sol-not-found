@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import { CalendarPlus, CheckCircle2, Clock3, LoaderCircle, Lock, Plus, RefreshCw, Sparkles, Trash2, Vote } from 'lucide-react';
 import { useAbrirVotacion, useCerrarVotacion, useFechasDisponibles, useResultadosVotacion, useVotar } from '../hooks/useVotaciones';
 import { formatDateTime, toDateTimeLocal } from '../lib/formatters';
-import { CURRENT_USER_ID, getApiErrorMessage } from '../services/api';
+import { getApiErrorMessage } from '../services/api';
 import type { AbrirVotacionPayload } from '../services/votaciones';
 import type { Actividad, Votacion } from '../types/api';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
@@ -31,9 +32,11 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
   const abrirMutation = useAbrirVotacion();
   const votarMutation = useVotar();
   const cerrarMutation = useCerrarVotacion();
+  const { user } = useAuth0();
+  const currentUserId = user?.sub;
 
-  const organizer = activity.creadorId === CURRENT_USER_ID;
-  const participant = activity.participantes.includes(CURRENT_USER_ID);
+  const organizer = !!currentUserId && activity.creadorId === currentUserId;
+  const participant = !!currentUserId && activity.participantes.includes(currentUserId);
   const results = resultsQuery.data;
   const displayedVoting = results?.votacion ?? latestVoting;
   const resultsError = resultsQuery.isError ? getApiErrorMessage(resultsQuery.error) : '';
@@ -129,7 +132,7 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
             <div className="space-y-3">{displayedVoting.alternativas.map((alternative) => {
               const votes = results?.conteo[alternative.id] ?? Object.values(displayedVoting.votos).filter((id) => id === alternative.id).length;
               const percentage = activity.participantes.length ? votes / activity.participantes.length * 100 : 0;
-              const selected = displayedVoting.votos[CURRENT_USER_ID] === alternative.id;
+              const selected = !!currentUserId && displayedVoting.votos[currentUserId] === alternative.id;
               return <div key={alternative.id} className={`rounded-xl border p-4 ${selected ? 'border-blue-400 bg-blue-50/70' : 'border-slate-200'}`}><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><p className="font-semibold">{formatDateTime(alternative.fecha_horario)}</p><p className="mt-1 text-xs text-slate-500">{votes} {votes === 1 ? 'voto' : 'votos'}{selected ? ' · Tu elección' : ''}</p></div>{displayedVoting.estado === 'ABIERTA' && participant && <Button size="sm" variant={selected ? 'secondary' : 'outline'} disabled={actionPending} onClick={() => void castVote(displayedVoting, alternative.id)}>{pendingVoteId === alternative.id ? <LoaderCircle className="size-3.5 animate-spin" /> : selected ? <CheckCircle2 className="size-3.5" /> : <Vote className="size-3.5" />}{selected ? 'Votada' : 'Votar'}</Button>}</div><Progress value={percentage} className="mt-3" /></div>;
             })}</div>
             {displayedVoting.estado === 'ABIERTA' && !participant && <Alert><AlertDescription>Tenés que estar inscripto en la actividad para votar.</AlertDescription></Alert>}

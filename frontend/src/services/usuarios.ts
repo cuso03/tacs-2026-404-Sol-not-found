@@ -11,3 +11,16 @@ export async function getMisActividades(params: MisActividadesParams): Promise<P
   const { data } = await api.get<PaginatedResponse<ActividadResumenUsuario>>('/usuarios/me/actividades', { params });
   return data;
 }
+
+export interface PerfilAuth0 {
+  email: string;
+  nombre?: string;
+}
+
+/**
+ * Crea o actualiza el perfil del usuario autenticado en el backend usando su
+ * `sub` de Auth0 (upsert idempotente). Se invoca tras el primer login.
+ */
+export async function sincronizarPerfil(perfil: PerfilAuth0): Promise<void> {
+  await api.post('/usuarios/sync', perfil);
+}

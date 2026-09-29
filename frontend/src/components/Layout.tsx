@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Compass, Gauge, Plus, ShieldCheck, SunMedium, UserRound } from 'lucide-react';
+import { useAuth0 } from '@auth0/auth0-react';
+import { Compass, Gauge, LogOut, Plus, ShieldCheck, SunMedium, UserRound } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { CURRENT_USER_ID } from '../services/api';
+import useIsAdmin from '../auth/useIsAdmin';
 import CreateActivityModal from './CreateActivityModal';
 import { Button } from './ui/Button';
 
@@ -14,6 +15,12 @@ const navigation = [
 /** Marco principal y navegación persistente de la aplicación. */
 export default function Layout() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user, logout } = useAuth0();
+  const isAdmin = useIsAdmin();
+
+  const nombreUsuario = user?.name ?? user?.email ?? 'Sesión';
+  // La pestaña de administración solo se muestra si el token tiene el rol.
+  const navigationVisible = navigation.filter((item) => item.to !== '/admin' || isAdmin);
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -28,21 +35,30 @@ export default function Layout() {
           </NavLink>
 
           <nav className="hidden items-center gap-1 md:flex" aria-label="Navegación principal">
-            {navigation.map(({ to, label, icon: Icon, end }) => (
+            {navigationVisible.map(({ to, label, icon: Icon, end }) => (
               <NavLink key={to} to={to} end={end} className={({ isActive }) => `inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium transition ${isActive ? 'bg-slate-100 text-slate-950' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
                 <Icon className="size-4" />{label}
               </NavLink>
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 lg:flex" title={CURRENT_USER_ID}>
-            <UserRound className="size-3.5" /><span>Usuario demo</span>
+          <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 lg:flex" title={user?.email}>
+            <UserRound className="size-3.5" />
+            <span className="max-w-40 truncate" data-testid="usuario-autenticado">{nombreUsuario}</span>
           </div>
           <Button size="sm" onClick={() => setIsModalOpen(true)}><Plus className="size-4" /><span className="hidden sm:inline">Nueva actividad</span></Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+            aria-label="Cerrar sesión"
+          >
+            <LogOut className="size-4" /><span className="hidden sm:inline">Salir</span>
+          </Button>
         </div>
 
         <nav className="mx-auto flex max-w-7xl border-t border-slate-100 px-4 md:hidden" aria-label="Navegación móvil">
-          {navigation.map(({ to, label, icon: Icon, end }) => (
+          {navigationVisible.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={({ isActive }) => `flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2.5 text-xs font-semibold ${isActive ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500'}`}>
               <Icon className="size-3.5" />{label}
             </NavLink>
@@ -57,7 +73,7 @@ export default function Layout() {
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-5 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
           <span>Sol Not Found · Gestión climática de actividades</span>
-          <span>Identidad simulada mediante X-User-Id</span>
+          <span>Sesión iniciada con Auth0</span>
         </div>
       </footer>
 
