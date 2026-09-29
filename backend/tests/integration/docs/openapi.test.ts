@@ -2,6 +2,49 @@ import { describe, expect, it } from 'vitest';
 import { openApiDocument } from '../../../src/openapi';
 
 describe('OpenAPI Documentation & Contracts', () => {
+  describe('Esquema de autenticación', () => {
+    it('declara bearerAuth y no documenta los headers legacy', () => {
+      const document = openApiDocument as {
+        components: { securitySchemes: Record<string, { type: string; scheme: string; bearerFormat?: string }> };
+        security: Array<Record<string, string[]>>;
+        paths: Record<string, Record<string, { parameters?: Array<{ name: string }>; security?: Array<Record<string, string[]>> }>>;
+      };
+
+      expect(document.components.securitySchemes.bearerAuth).toMatchObject({
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      });
+      expect(document.security).toEqual([{ bearerAuth: [] }]);
+
+      const operations = Object.values(document.paths).flatMap((pathItem) => Object.values(pathItem));
+      for (const operation of operations) {
+        const names = (operation.parameters ?? []).map((parameter) => parameter.name);
+        expect(names).not.toContain('X-User-Id');
+        expect(names).not.toContain('X-User-Role');
+      }
+    });
+
+    it('las operaciones públicas anulan la seguridad y las protegidas exigen el bearer', () => {
+      const document = openApiDocument as unknown as {
+        security: Array<Record<string, string[]>>;
+        paths: Record<string, Record<string, { security?: Array<Record<string, string[]>> }>>;
+      };
+      const paths = document.paths;
+
+      expect(paths['/api/actividades'].get.security).toEqual([]);
+      expect(paths['/api/actividades/{id}/clima'].get.security).toEqual([]);
+      expect(paths['/api/notificaciones/simular-inicio'].post.security).toEqual([]);
+
+      // Las protegidas no declaran security propio: heredan el de la raíz.
+      const effective = (operation: { security?: Array<Record<string, string[]>> }) => operation.security ?? document.security;
+      expect(effective(paths['/api/actividades'].post)).toEqual([{ bearerAuth: [] }]);
+      expect(effective(paths['/api/usuarios/me/actividades'].get)).toEqual([{ bearerAuth: [] }]);
+      expect(effective(paths['/api/usuarios/sync'].post)).toEqual([{ bearerAuth: [] }]);
+      expect(effective(paths['/api/admin/estadisticas'].get)).toEqual([{ bearerAuth: [] }]);
+    });
+  });
+
   describe('Contratos de Participantes', () => {
     it('documenta rutas, autenticación, respuestas y esquema de participantes', () => {
       const paths = openApiDocument.paths;
@@ -9,9 +52,9 @@ describe('OpenAPI Documentation & Contracts', () => {
       const remove = paths['/api/actividades/{id}/participantes/me'].delete;
       const actividad = openApiDocument.components.schemas.Actividad;
 
-      expect(add.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Id', required: true }));
+      expect(add.security).toBeUndefined();
       expect(Object.keys(add.responses)).toEqual(expect.arrayContaining(['201', '401', '404', '409']));
-      expect(remove.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Id', required: true }));
+      expect(remove.security).toBeUndefined();
       expect(Object.keys(remove.responses)).toEqual(expect.arrayContaining(['200', '401', '404', '409']));
       expect(actividad.required).toContain('participantes');
       expect(actividad.properties.participantes).toMatchObject({
@@ -28,8 +71,8 @@ describe('OpenAPI Documentation & Contracts', () => {
 
       expect(paths['/api/actividades'].get.parameters).toContainEqual(expect.objectContaining({ name: 'page', in: 'query' }));
       expect(paths['/api/actividades'].get.responses).toHaveProperty('200');
-      expect(paths['/api/usuarios/me/actividades'].get.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Id', required: true }));
-      expect(paths['/api/admin/estadisticas'].get.parameters).toContainEqual(expect.objectContaining({ name: 'X-User-Role', required: true }));
+      expect(paths['/api/usuarios/me/actividades'].get.parameters).toContainEqual(expect.objectContaining({ name: 'page', in: 'query' }));
+      expect(paths['/api/admin/estadisticas'].get.responses).toHaveProperty('403');
       expect(paths['/api/notificaciones/simular-inicio'].post.responses).toHaveProperty('200');
     });
   });
