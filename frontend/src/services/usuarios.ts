@@ -12,15 +12,19 @@ export async function getMisActividades(params: MisActividadesParams): Promise<P
   return data;
 }
 
-export interface PerfilAuth0 {
-  email: string;
-  nombre?: string;
+export interface MiPerfil {
+  sub: string;
+  email: string | null;
+  nombre: string | null;
+  roles: string[];
 }
 
 /**
- * Crea o actualiza el perfil del usuario autenticado en el backend usando su
- * `sub` de Auth0 (upsert idempotente). Se invoca tras el primer login.
+ * Sincroniza el perfil del usuario autenticado (upsert). El backend lo resuelve
+ * desde el access token verificado, asi que no se envia email ni nombre: no hay
+ * nada que el navegador pueda falsear. Se invoca tras el primer login.
  */
-export async function sincronizarPerfil(perfil: PerfilAuth0): Promise<void> {
-  await api.post('/usuarios/sync', perfil);
+export async function sincronizarPerfil(): Promise<MiPerfil> {
+  const { data } = await api.patch<MiPerfil>('/usuarios/me');
+  return data;
 }

@@ -34,13 +34,12 @@ describe('OpenAPI Documentation & Contracts', () => {
 
       expect(paths['/api/actividades'].get.security).toEqual([]);
       expect(paths['/api/actividades/{id}/clima'].get.security).toEqual([]);
-      expect(paths['/api/notificaciones/simular-inicio'].post.security).toEqual([]);
 
       // Las protegidas no declaran security propio: heredan el de la raíz.
       const effective = (operation: { security?: Array<Record<string, string[]>> }) => operation.security ?? document.security;
       expect(effective(paths['/api/actividades'].post)).toEqual([{ bearerAuth: [] }]);
       expect(effective(paths['/api/usuarios/me/actividades'].get)).toEqual([{ bearerAuth: [] }]);
-      expect(effective(paths['/api/usuarios/sync'].post)).toEqual([{ bearerAuth: [] }]);
+      expect(effective(paths['/api/usuarios/me'].patch)).toEqual([{ bearerAuth: [] }]);
       expect(effective(paths['/api/admin/estadisticas'].get)).toEqual([{ bearerAuth: [] }]);
     });
   });
@@ -66,14 +65,28 @@ describe('OpenAPI Documentation & Contracts', () => {
   });
 
   describe('Contratos de Rutas Generales y Métricas', () => {
-    it('documenta búsqueda, dashboard, estadísticas y simulación de notificaciones', () => {
+    it('documenta búsqueda, dashboard, perfil y estadísticas', () => {
       const paths = openApiDocument.paths;
 
       expect(paths['/api/actividades'].get.parameters).toContainEqual(expect.objectContaining({ name: 'page', in: 'query' }));
       expect(paths['/api/actividades'].get.responses).toHaveProperty('200');
       expect(paths['/api/usuarios/me/actividades'].get.parameters).toContainEqual(expect.objectContaining({ name: 'page', in: 'query' }));
       expect(paths['/api/admin/estadisticas'].get.responses).toHaveProperty('403');
-      expect(paths['/api/notificaciones/simular-inicio'].post.responses).toHaveProperty('200');
+    });
+
+    it('el perfil se documenta como PATCH sin body y la simulación de notificaciones ya no existe', () => {
+      const paths = openApiDocument.paths;
+
+      // Sin requestBody: la identidad sale del token verificado, no del cliente.
+      expect(paths['/api/usuarios/me'].patch).not.toHaveProperty('requestBody');
+      expect(paths['/api/usuarios/me'].patch.responses).toHaveProperty('200');
+      // Escribe, asi que no puede declararse como GET.
+      expect(paths['/api/usuarios/me']).not.toHaveProperty('get');
+      expect(paths).not.toHaveProperty('/api/usuarios/sync');
+      expect(paths).not.toHaveProperty('/api/notificaciones/simular-inicio');
+      expect(openApiDocument.components.schemas).not.toHaveProperty('SimulacionMonitoreoResponse');
+      // Un tag sin operaciones es ruido en Swagger.
+      expect(openApiDocument.tags.map((tag) => tag.name)).not.toContain('notificaciones');
     });
   });
 });

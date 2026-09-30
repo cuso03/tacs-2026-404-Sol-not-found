@@ -7,8 +7,7 @@ export const openApiDocument = {
     { name: 'votaciones', description: 'Votaciones de reprogramación' },
     { name: 'clima', description: 'Consultas climáticas' },
     { name: 'admin', description: 'Métricas y administración' },
-    { name: 'notificaciones', description: 'Simulación de notificaciones' },
-    { name: 'usuarios', description: 'Dashboard de usuario' },
+    { name: 'usuarios', description: 'Perfil y dashboard del usuario' },
   ],
   /** Por defecto todas las operaciones exigen JWT de Auth0; las públicas lo anulan con `security: []`. */
   security: [{ bearerAuth: [] }],
@@ -383,33 +382,6 @@ export const openApiDocument = {
         },
       },
     },
-    '/api/notificaciones/simular-inicio': {
-      post: {
-        tags: ['notificaciones'],
-        operationId: 'simularMonitoreo',
-        summary: 'Simula el monitoreo climático de una actividad',
-        description: 'Ejecuta manualmente una simulación del monitoreo climático utilizando servicios mock de clima y notificaciones.',
-        security: [],
-        responses: {
-          '200': {
-            description: 'Monitoreo simulado correctamente',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/SimulacionMonitoreoResponse' },
-                example: {
-                  mensaje: 'Monitoreo simulado ejecutado. Revisa la consola de Docker para ver las notificaciones.',
-                  actividadEvaluada: 'Partido de Futbol 5',
-                },
-              },
-            },
-          },
-          '500': {
-            description: 'Error al ejecutar la simulación',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
-          },
-        },
-      },
-    },
     '/api/usuarios/me/actividades': {
       get: {
         tags: ['usuarios'],
@@ -444,34 +416,25 @@ export const openApiDocument = {
         },
       },
     },
-    '/api/usuarios/sync': {
-      post: {
+    '/api/usuarios/me': {
+      patch: {
         tags: ['usuarios'],
         operationId: 'sincronizarPerfil',
         summary: 'Crea o actualiza el perfil del usuario autenticado',
-        description: 'Upsert del usuario en base a su `sub` de Auth0. El frontend lo invoca tras el primer login.',
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['email'],
-                properties: {
-                  email: { type: 'string', format: 'email', example: 'persona@example.com' },
-                  nombre: { type: 'string', example: 'Ana Pérez' },
-                },
-              },
-            },
-          },
-        },
+        description:
+          'Upsert del usuario tomando `sub`, `email`, `nombre` y `roles` del access token verificado, y devuelve el perfil resultante. No acepta body: la identidad nunca proviene del cliente. Es PATCH y no GET porque escribe. Requiere que el access token incluya los claims `email` y `name` (Action de Auth0).',
         responses: {
           '200': {
             description: 'Perfil sincronizado localmente',
             content: {
               'application/json': {
-                schema: { type: 'object', properties: { status: { type: 'string' } } },
-                example: { status: 'Perfil sincronizado localmente' },
+                schema: { $ref: '#/components/schemas/PerfilUsuario' },
+                example: {
+                  sub: 'auth0|65a1f2c3d4e5f60718293a4b',
+                  email: 'ana@example.com',
+                  nombre: 'Ana Pérez',
+                  roles: ['participante'],
+                },
               },
             },
           },
@@ -657,12 +620,19 @@ export const openApiDocument = {
           actividad_cancelada: 3,
         },
       },
-      SimulacionMonitoreoResponse: {
+      PerfilUsuario: {
         type: 'object',
-        required: ['mensaje', 'actividadEvaluada'],
+        required: ['sub', 'roles'],
         properties: {
-          mensaje: { type: 'string', example: 'Monitoreo simulado ejecutado. Revisa la consola de Docker para ver las notificaciones.' },
-          actividadEvaluada: { type: 'string', example: 'Partido de Futbol 5' },
+          sub: { type: 'string', example: 'auth0|65a1f2c3d4e5f60718293a4b' },
+          email: { type: 'string', format: 'email', nullable: true, example: 'ana@example.com' },
+          nombre: { type: 'string', nullable: true, example: 'Ana Pérez' },
+          roles: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['participante'],
+            description: 'Roles tomados del claim de roles del token verificado.',
+          },
         },
       },
       DashboardUsuario: {

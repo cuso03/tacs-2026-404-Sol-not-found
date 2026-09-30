@@ -111,11 +111,16 @@ export async function requireAuthenticatedUser(req: Request, res: Response, next
  * El rol nunca se acepta desde un header del cliente.
  */
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  const claim = req.auth?.[rolesClaim()];
-  const isAdmin = Array.isArray(claim) && claim.includes('admin');
-  if (!isAdmin) {
+  if (!rolesDelToken(req.auth).includes('admin')) {
     res.status(403).json({ error: 'Requiere rol admin' });
     return;
   }
   next();
+}
+
+/** Roles del claim configurado, leídos de un payload ya verificado. */
+export function rolesDelToken(payload: JwtPayload | undefined): string[] {
+  const claim = payload?.[rolesClaim()];
+  if (!Array.isArray(claim)) return [];
+  return claim.filter((rol): rol is string => typeof rol === 'string');
 }
