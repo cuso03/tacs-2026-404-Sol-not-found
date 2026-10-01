@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import notificacionesRoutes from './routes/notificacionesRoutes';
+//import notificacionesRoutes from './routes/notificacionesRoutes';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './openapi';
 import { ActividadMongoRepository } from './repositories/actividadMongoRepository';
@@ -95,7 +95,7 @@ export function createApp(
   // 4. Configurar Rutas
   app.use('/api/actividades', createActividadesRoutes(actividadesRepository, actividadesService, votacionService, weatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
-  app.use('/api/notificaciones', notificacionesRoutes);
+ // app.use('/api/notificaciones', notificacionesRoutes);
   app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService))
 
   app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
