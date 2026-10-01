@@ -1,8 +1,9 @@
 # ---- Etapa 1: compilar el frontend ----
 FROM node:22-alpine AS front
 WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm install
+RUN corepack enable
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 ARG VITE_API_URL=/api
 ARG VITE_USER_ID=auth0|user-1
@@ -12,8 +13,7 @@ ENV VITE_USER_ID=$VITE_USER_ID
 ENV VITE_USER_ROLE=$VITE_USER_ROLE
 
 COPY frontend/ .
-RUN npm run build
-
+RUN pnpm build
 # ---- Etapa 2: imagen final (nginx + backend) ----
 FROM node:22-alpine
 RUN apk add --no-cache nginx redis && mkdir -p /run/nginx
