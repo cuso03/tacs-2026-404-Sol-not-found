@@ -16,7 +16,7 @@ RUN npm run build
 
 # ---- Etapa 2: imagen final (nginx + backend) ----
 FROM node:22-alpine
-RUN apk add --no-cache nginx && mkdir -p /run/nginx
+RUN apk add --no-cache nginx redis && mkdir -p /run/nginx
 
 # Backend
 WORKDIR /app
@@ -31,5 +31,5 @@ RUN sed -i 's#http://backend:3000#http://127.0.0.1:3000#; s#listen 80;#listen 10
 
 ENV NODE_ENV=production
 EXPOSE 10000
-CMD ["sh", "-c", "export PORT=3000 && nginx && exec npm start"]
+CMD ["sh", "-c", "export PORT=3000 && redis-server --daemonize yes --save '' --appendonly no --maxmemory 100mb --maxmemory-policy noeviction && nginx && exec npm start"]
 
