@@ -13,7 +13,7 @@ ENV VITE_USER_ID=$VITE_USER_ID
 ENV VITE_USER_ROLE=$VITE_USER_ROLE
 
 COPY frontend/ .
-RUN pnpm build
+RUN pnpm exec vite build
 # ---- Etapa 2: imagen final (nginx + backend) ----
 FROM node:22-alpine
 RUN apk add --no-cache nginx redis && mkdir -p /run/nginx
