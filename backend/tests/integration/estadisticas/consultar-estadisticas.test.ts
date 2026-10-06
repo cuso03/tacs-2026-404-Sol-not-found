@@ -16,11 +16,10 @@ describe('GET /api/admin/estadisticas', () => {
     expect(response.body).toEqual({ error: 'Requiere rol admin' });
   });
 
-  it('rechaza con 403 si la petición no incluye ningún header de autenticación', async () => {
+  it('rechaza con 401 si la petición no incluye token de autenticación', async () => {
     const response = await request(app).get('/api/admin/estadisticas');
 
-    expect(response.status).toBe(403);
-    expect(response.body).toEqual({ error: 'Requiere rol admin' });
+    expect(response.status).toBe(401);
   });
 
   it('retorna 200 con un objeto vacío cuando no hay métricas registradas en MongoDB', async () => {

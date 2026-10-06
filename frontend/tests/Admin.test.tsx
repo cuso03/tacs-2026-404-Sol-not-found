@@ -6,7 +6,6 @@ import { renderWithProviders } from './renderWithProviders';
 const { getMock, postMock } = vi.hoisted(() => ({ getMock: vi.fn(), postMock: vi.fn() }));
 vi.mock('../src/services/api', () => ({
   default: { get: getMock, post: postMock },
-  CURRENT_USER_ROLE: 'admin',
   getApiErrorMessage: () => 'Error',
 }));
 
@@ -22,7 +21,7 @@ describe('Admin', () => {
     renderWithProviders(<Admin />);
     expect(await screen.findByText('Actividad creada')).toBeTruthy();
     expect(screen.getByText('10')).toBeTruthy();
-    expect(getMock).toHaveBeenCalledWith('/admin/estadisticas', expect.objectContaining({ headers: { 'X-User-Role': 'admin' } }));
+    expect(getMock).toHaveBeenCalledWith('/admin/estadisticas');
     await userEvent.click(screen.getByRole('button', { name: 'Ejecutar simulación' }));
     expect(postMock).toHaveBeenCalledWith('/notificaciones/simular-inicio');
     expect(await screen.findByText('Partido de Fútbol 5')).toBeTruthy();

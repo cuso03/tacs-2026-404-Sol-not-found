@@ -6,9 +6,18 @@ import { toDateTimeLocal } from '../src/lib/formatters';
 import { activityFixture, openVoting, resultsFixture } from './fixtures';
 
 const { getMock, postMock, putMock, patchMock } = vi.hoisted(() => ({ getMock: vi.fn(), postMock: vi.fn(), putMock: vi.fn(), patchMock: vi.fn() }));
+
+vi.mock('@auth0/auth0-react', () => ({
+  useAuth0: () => ({
+    user: { sub: 'auth0|organizador', email: 'org@example.com', name: 'Org' },
+    isAuthenticated: true,
+    getAccessTokenSilently: vi.fn(async () => 'token'),
+    logout: vi.fn(),
+  }),
+}));
+
 vi.mock('../src/services/api', () => ({
   default: { get: getMock, post: postMock, put: putMock, patch: patchMock },
-  CURRENT_USER_ID: 'auth0|organizador',
   getApiErrorMessage: (error: unknown) => error instanceof Error ? error.message : 'Error',
 }));
 

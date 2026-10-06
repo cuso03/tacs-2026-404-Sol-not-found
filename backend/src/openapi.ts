@@ -7,15 +7,17 @@ export const openApiDocument = {
     { name: 'votaciones', description: 'Votaciones de reprogramación' },
     { name: 'clima', description: 'Consultas climáticas' },
     { name: 'admin', description: 'Métricas y administración' },
-    { name: 'notificaciones', description: 'Simulación de notificaciones' },
-    { name: 'usuarios', description: 'Dashboard de usuario' },
+    { name: 'usuarios', description: 'Perfil y dashboard del usuario' },
   ],
+  /** Por defecto todas las operaciones exigen JWT de Auth0; las públicas lo anulan con `security: []`. */
+  security: [{ bearerAuth: [] }],
   paths: {
     '/api/actividades': {
       get: {
         tags: ['actividades'],
         operationId: 'buscarActividades',
         summary: 'Busca actividades con filtros y paginación',
+        security: [],
         parameters: [
           { name: 'page', in: 'query', required: false, schema: { type: 'integer', minimum: 1, default: 1 }, description: 'Número de página' },
           { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 }, description: 'Cantidad de resultados por página' },
@@ -49,7 +51,6 @@ export const openApiDocument = {
         tags: ['actividades'],
         operationId: 'crearActividad',
         summary: 'Crea una actividad',
-        parameters: [{ name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } }],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CrearActividad' } } } },
         responses: {
           '201': {
@@ -76,7 +77,6 @@ export const openApiDocument = {
         description: 'Permite recuperar una actividad aunque esté llena y no figure en la búsqueda.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
           '200': { description: 'Actividad obtenida', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
@@ -93,7 +93,6 @@ export const openApiDocument = {
         description: 'PUT idempotente de reemplazo completo. Sustituye la configuración de reglas existente por la recibida.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ReglasClima' } } } },
         responses: {
@@ -123,6 +122,7 @@ export const openApiDocument = {
         operationId: 'consultarClima',
         summary: 'Consulta el clima actual y pronóstico para una actividad',
         description: 'Retorna las condiciones climáticas actuales y el pronóstico para la hora de la actividad (probabilidad de lluvia, temperatura, viento y condición).',
+        security: [],
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           '200': { description: 'Clima obtenido', content: { 'application/json': { schema: { $ref: '#/components/schemas/ClimaResponse' } } } },
@@ -144,7 +144,6 @@ export const openApiDocument = {
         summary: 'Inscribe al usuario en una actividad',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
           '201': { description: 'Participante inscripto', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
@@ -170,7 +169,6 @@ export const openApiDocument = {
         summary: 'Da de baja al usuario de una actividad',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
           '200': { description: 'Participante dado de baja', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
@@ -197,7 +195,6 @@ export const openApiDocument = {
         description: 'Retorna fechas futuras que tienen pronóstico disponible y cumplen las reglas climáticas de la actividad.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
           '200': {
@@ -227,7 +224,6 @@ export const openApiDocument = {
         description: 'Si el body viene vacío, el sistema genera las alternativas automáticamente basándose en el pronóstico. Si se proveen alternativas, se usan las provistas por el organizador.',
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AbrirVotacion' } } } },
         responses: {
@@ -264,7 +260,6 @@ export const openApiDocument = {
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/EmitirVoto' } } } },
         responses: {
@@ -300,7 +295,6 @@ export const openApiDocument = {
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         responses: {
           '200': {
@@ -325,7 +319,6 @@ export const openApiDocument = {
         parameters: [
           { name: 'id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'votacionId', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' } },
         ],
         requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CerrarVotacion' } } } },
         responses: {
@@ -359,9 +352,6 @@ export const openApiDocument = {
         operationId: 'obtenerEstadisticas',
         summary: 'Obtiene las estadísticas del sistema',
         description: 'Devuelve todas las métricas registradas en el sistema. Requiere permisos de administrador.',
-        parameters: [
-          { name: 'X-User-Role', in: 'header', required: true, schema: { type: 'string' } },
-        ],
         responses: {
           '200': {
             description: 'Estadísticas obtenidas correctamente',
@@ -392,32 +382,6 @@ export const openApiDocument = {
         },
       },
     },
-    '/api/notificaciones/simular-inicio': {
-      post: {
-        tags: ['notificaciones'],
-        operationId: 'simularMonitoreo',
-        summary: 'Simula el monitoreo climático de una actividad',
-        description: 'Ejecuta manualmente una simulación del monitoreo climático utilizando servicios mock de clima y notificaciones.',
-        responses: {
-          '200': {
-            description: 'Monitoreo simulado correctamente',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/SimulacionMonitoreoResponse' },
-                example: {
-                  mensaje: 'Monitoreo simulado ejecutado. Revisa la consola de Docker para ver las notificaciones.',
-                  actividadEvaluada: 'Partido de Futbol 5',
-                },
-              },
-            },
-          },
-          '500': {
-            description: 'Error al ejecutar la simulación',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
-          },
-        },
-      },
-    },
     '/api/usuarios/me/actividades': {
       get: {
         tags: ['usuarios'],
@@ -425,7 +389,6 @@ export const openApiDocument = {
         summary: 'Obtiene las actividades del usuario autenticado',
         description: 'Devuelve las actividades asociadas al usuario autenticado utilizando paginación.',
         parameters: [
-          { name: 'X-User-Id', in: 'header', required: true, schema: { type: 'string' }, description: 'Identificador del usuario autenticado.' },
           { name: 'page', in: 'query', required: false, schema: { type: 'integer', minimum: 1, default: 1, example: 1 }, description: 'Número de página.' },
           { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, default: 10, example: 10 }, description: 'Cantidad máxima de actividades por página.' },
         ],
@@ -453,8 +416,45 @@ export const openApiDocument = {
         },
       },
     },
+    '/api/usuarios/me': {
+      patch: {
+        tags: ['usuarios'],
+        operationId: 'sincronizarPerfil',
+        summary: 'Crea o actualiza el perfil del usuario autenticado',
+        description:
+          'Upsert del usuario tomando `sub`, `email`, `nombre` y `roles` del access token verificado, y devuelve el perfil resultante. No acepta body: la identidad nunca proviene del cliente. Es PATCH y no GET porque escribe. Requiere que el access token incluya los claims `email` y `name` (Action de Auth0).',
+        responses: {
+          '200': {
+            description: 'Perfil sincronizado localmente',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/PerfilUsuario' },
+                example: {
+                  sub: 'auth0|65a1f2c3d4e5f60718293a4b',
+                  email: 'ana@example.com',
+                  nombre: 'Ana Pérez',
+                  roles: ['participante'],
+                },
+              },
+            },
+          },
+          '401': {
+            description: 'Usuario no autenticado',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
   },
   components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Access token de Auth0. Se obtiene con `getAccessTokenSilently({ authorizationParams: { audience } })` y se envía como `Authorization: Bearer <token>`.',
+      },
+    },
     schemas: {
       CrearActividad: {
         type: 'object',
@@ -620,12 +620,19 @@ export const openApiDocument = {
           actividad_cancelada: 3,
         },
       },
-      SimulacionMonitoreoResponse: {
+      PerfilUsuario: {
         type: 'object',
-        required: ['mensaje', 'actividadEvaluada'],
+        required: ['sub', 'roles'],
         properties: {
-          mensaje: { type: 'string', example: 'Monitoreo simulado ejecutado. Revisa la consola de Docker para ver las notificaciones.' },
-          actividadEvaluada: { type: 'string', example: 'Partido de Futbol 5' },
+          sub: { type: 'string', example: 'auth0|65a1f2c3d4e5f60718293a4b' },
+          email: { type: 'string', format: 'email', nullable: true, example: 'ana@example.com' },
+          nombre: { type: 'string', nullable: true, example: 'Ana Pérez' },
+          roles: {
+            type: 'array',
+            items: { type: 'string' },
+            example: ['participante'],
+            description: 'Roles tomados del claim de roles del token verificado.',
+          },
         },
       },
       DashboardUsuario: {

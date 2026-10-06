@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
 import { IWeatherProvider } from '../src/interfaces/services/IWeatherProvider';
 import { MockWeatherService } from '../src/services/mockWeatherService';
+import { authHeader } from './helpers/fixtures/auth.fixture';
 
 const validPayloadCoordenadas = {
   titulo: 'Caminata urbana',
@@ -22,7 +23,7 @@ const validPayloadCiudad = {
 describe('GET /api/actividades/:id/clima', () => {
   async function createActividadConClima(payload: typeof validPayloadCoordenadas | typeof validPayloadCiudad = validPayloadCoordenadas) {
     const app = createApp();
-    const created = await request(app).post('/api/actividades').set('X-User-Id', 'auth0|organizador-1').send(payload);
+    const created = await request(app).post('/api/actividades').set(authHeader('auth0|organizador-1')).send(payload);
     return { app, id: created.body.id as string, created };
   }
 
@@ -70,7 +71,7 @@ describe('GET /api/actividades/:id/clima', () => {
 
   it('es determinístico: misma actividad retorna mismo clima', async () => {
     const app = createApp();
-    const created = await request(app).post('/api/actividades').set('X-User-Id', 'auth0|organizador-1').send(validPayloadCoordenadas);
+    const created = await request(app).post('/api/actividades').set(authHeader('auth0|organizador-1')).send(validPayloadCoordenadas);
     const id = created.body.id as string;
     const primerLlamado = await request(app).get(`/api/actividades/${id}/clima`);
     const segundoLlamado = await request(app).get(`/api/actividades/${id}/clima`);
@@ -92,7 +93,7 @@ describe('GET /api/actividades/:id/clima', () => {
       obtenerPronostico: async (ubicacion: any, fechaDesde: any, dias: any) => [],
     } as unknown as IWeatherProvider;
     const app = createApp(fakeProvider);
-    const created = await request(app).post('/api/actividades').set('X-User-Id', 'auth0|organizador-1').send(validPayloadCoordenadas);
+    const created = await request(app).post('/api/actividades').set(authHeader('auth0|organizador-1')).send(validPayloadCoordenadas);
     const response = await request(app).get(`/api/actividades/${created.body.id}/clima`);
     expect(response.status).toBe(200);
     expect(fueInvocado).toBe(true);

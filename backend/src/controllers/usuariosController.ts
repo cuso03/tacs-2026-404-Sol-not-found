@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ActividadesService } from '../services/actividadesService';
 import { paginacionSchema } from '../dtos/busquedaDto';
 import { UsuarioMongoRepository } from '../repositories/usuarioMongoRepository';
+import { rolesDelToken } from '../middleware/authenticatedUser';
 
 export function createUsuariosController(
   service: ActividadesService, 
@@ -28,14 +29,26 @@ export function createUsuariosController(
   }
 
   // 2. Agregamos la palabra clave 'async function'
+  /**
+   * Sincroniza el perfil del usuario autenticado (upsert). `email` y `nombre`
+   * salen del access token ya verificado, nunca del body: el cliente no decide
+   * qué se persiste. El `sub` es la unica identidad aceptada.
+   *
+   * Es PATCH y no GET porque escribe: un GET debe ser seguro y repeatable sin
+   * efectos, y un prefetch o crawler no debe poder disparar la escritura.
+   */
   async function syncPerfil(req: Request, res: Response): Promise<void> {
-    const auth0Id = req.userId!;
-    const { email, nombre } = req.body; 
+    const email = typeof req.auth?.email === 'string' ? req.auth.email : undefined;
+    const nombre = typeof req.auth?.name === 'string' ? req.auth.name : undefined;
 
-    // Ahora usuarioRepo existe en el alcance de este archivo
-    await usuarioRepo.sincronizarPerfil(auth0Id, email, nombre);
-    
-    res.status(200).json({ status: 'Perfil sincronizado localmente' });
+    await usuarioRepo.sincronizarPerfil(req.userId!, email, nombre);
+
+    res.status(200).json({
+      sub: req.userId,
+      email: email ?? null,
+      nombre: nombre ?? null,
+      roles: rolesDelToken(req.auth),
+    });
   }
 
   // 3. Exportamos ambas funciones para que el router las vea

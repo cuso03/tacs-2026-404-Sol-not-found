@@ -1,6 +1,9 @@
 # ADR 0001: Gestión de participantes en memoria
 
-- Estado: Aceptado
+- Estado: Aceptado — la identidad por header `X-User-Id` descrita aquí fue
+  reemplazada por JWT de Auth0 (`Authorization: Bearer`, claim `sub`) en la
+  Spec 001, Entrega 3. El ADR se conserva como registro histórico de la
+  decisión de resolver participantes en memoria.
 - Fecha: 2026-08-29
 - Alcance: Feature 4, Entrega 1
 

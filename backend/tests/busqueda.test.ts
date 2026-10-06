@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
+import { AUTH_ORGANIZADOR, authHeader } from './helpers/fixtures/auth.fixture';
 
 const basePayload = {
   descripcion: 'Prueba de feature 3',
@@ -14,11 +15,11 @@ describe('Feature 3: Búsqueda y Dashboard', () => {
 
   beforeEach(async () => {
     await request(app).post('/api/actividades')
-      .set('X-User-Id', 'auth0|organizador-1')
+      .set(authHeader('auth0|organizador-1'))
       .send({ ...basePayload, titulo: 'Partido en Capital', tipo: 'aire_libre', ubicacion: { tipo: 'ciudad', ciudad: 'Buenos Aires', pais: 'AR' } });
 
     await request(app).post('/api/actividades')
-      .set('X-User-Id', 'auth0|organizador-2')
+      .set(authHeader('auth0|organizador-2'))
       .send({ ...basePayload, titulo: 'Torneo techado', tipo: 'techada', ubicacion: { tipo: 'ciudad', ciudad: 'Cordoba', pais: 'AR' } });
   });
 
@@ -49,7 +50,7 @@ describe('Feature 3: Búsqueda y Dashboard', () => {
 
   describe('GET /api/usuarios/me/actividades (Dashboard Personal)', () => {
     it('retorna el dashboard mapeado para el usuario solicitado', async () => {
-      const response = await request(app).get('/api/usuarios/me/actividades').set('X-User-Id', 'auth0|organizador-1');
+      const response = await request(app).get('/api/usuarios/me/actividades').set(authHeader(AUTH_ORGANIZADOR));
       
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(1);

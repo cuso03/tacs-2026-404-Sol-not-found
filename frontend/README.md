@@ -11,8 +11,9 @@ El botón **Nueva actividad** abre un flujo de dos pasos:
 2. Límites climáticos, anticipación y ventana de reprogramación.
 
 El cliente ejecuta `POST /api/actividades` y luego
-`PUT /api/actividades/{id}/reglas`. En desarrollo utiliza `VITE_USER_ID` como
-identidad simulada y, si no se define, usa `auth0|user-1`.
+`PUT /api/actividades/{id}/reglas`. La identidad la entrega Auth0: el backend
+recibe el access token como `Authorization: Bearer` y resuelve el usuario a
+partir del claim `sub` del JWT.
 
 El proxy de Vite dirige `/api` al backend. Docker Compose configura el destino
 interno mediante `VITE_PROXY_TARGET=http://backend:3000`.
@@ -40,9 +41,29 @@ y de [mosaicos](https://operations.osmfoundation.org/policies/tiles/).
 - Dashboard personal con roles, estados y votaciones abiertas.
 - Panel administrativo con métricas y simulación del monitoreo de notificaciones.
 
-Las rutas autenticadas usan temporalmente `VITE_USER_ID` y el panel administrativo
-usa `VITE_USER_ROLE`. Estos valores simulan los claims que posteriormente entregará
-Auth0; no constituyen autenticación válida para producción.
+## Autenticación (Auth0)
+
+La SPA usa [@auth0/auth0-react](https://github.com/auth0/auth0-react). El
+proveedor (`src/auth/AppAuth0Provider.tsx`) requiere tres variables de entorno
+de build (ver `.env.example`):
+
+| Variable | Descripción |
+|---|---|
+| `VITE_AUTH0_DOMAIN` | Dominio del tenant (ej. `tu-tenant.us.auth0.com`) |
+| `VITE_AUTH0_CLIENT_ID` | Client ID de la aplicación SPA |
+| `VITE_AUTH0_AUDIENCE` | Identificador de la API (debe coincidir con `AUTH0_AUDIENCE` del backend) |
+
+Si falta alguna, la app muestra una pantalla de configuración en lugar de
+arrancar en blanco.
+
+`src/auth/AuthBridge.tsx` registra el getter de tokens para que el interceptor
+de `src/services/api.ts` envíe `Authorization: Bearer` en cada request, y tras
+el primer login sincroniza email/nombre en `POST /api/usuarios/sync` (upsert
+idempotente en Mongo con `auth0Id = sub`). El botón **Salir** del header cierra
+la sesión con Auth0 (`logout({ returnTo: origin })`).
+
+El panel administrativo no usa un rol local: exige el claim de roles que
+inyecta el Action del dashboard de Auth0 (ver guía en el README de la raíz).
 
 ```bash
 pnpm install --no-frozen-lockfile

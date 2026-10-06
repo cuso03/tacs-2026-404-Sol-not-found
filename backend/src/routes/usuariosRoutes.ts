@@ -14,9 +14,8 @@ export function createUsuariosRoutes(
   const controller = createUsuariosController(service, usuarioRepo);
 
   router.get('/me/actividades', requireAuthenticatedUser, controller.getDashboard);
-  
-  // 3. Registramos la ruta nueva
-  router.post('/sync', requireAuthenticatedUser, controller.syncPerfil);
+  // PATCH (no GET): el upsert escribe, y un GET debe ser seguro.
+  router.patch('/me', requireAuthenticatedUser, controller.syncPerfil);
 
   return router;
 }
