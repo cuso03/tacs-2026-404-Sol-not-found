@@ -41,6 +41,22 @@ function createJobQueue(): IVotingJobQueue {
   return new InMemoryVotingJobQueue();
 }
 
+/** Allowlist de origenes permitidos: CORS_ORIGINS (separado por comas) o defaults. */
+function corsAllowlist(): string[] {
+  const raw = process.env.CORS_ORIGINS?.trim();
+  if (raw) return raw.split(',').map((o) => o.trim()).filter(Boolean);
+  if (process.env.NODE_ENV === 'production') return ['https://tacs-2026-404-sol-not-found.onrender.com'];
+  return ['http://localhost:5173'];
+}
+
+/** La documentacion esta habilitada salvo ENABLE_SWAGGER=false o produccion sin habilitar explicitamente. */
+function swaggerEnabled(): boolean {
+  const flag = process.env.ENABLE_SWAGGER?.trim().toLowerCase();
+  if (flag === 'false' || flag === '0') return false;
+  if (flag === 'true' || flag === '1') return true;
+  return process.env.NODE_ENV !== 'production';
+}
+
 export function createApp(
   weatherProvider: IWeatherProvider = process.env.WEATHER_PROVIDER === 'OPENWEATHER'
     ? new OpenWeatherAdapter()
@@ -89,7 +105,7 @@ export function createApp(
   }
 
   const app = express();
-  app.use(cors());
+  app.use(cors((_req, cb) => cb(null, { origin: corsAllowlist() })));
   app.use(express.json({ limit: '100kb' }));
 
   // 4. Configurar Rutas
@@ -98,8 +114,10 @@ export function createApp(
  // app.use('/api/notificaciones', notificacionesRoutes);
   app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService))
 
-  app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  if (swaggerEnabled()) {
+    app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  }
 
   // 5. Manejo centralizado de errores: siempre al final, después de las rutas.
   app.use(errorHandler);
