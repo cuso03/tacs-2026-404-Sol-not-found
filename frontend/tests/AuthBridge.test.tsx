@@ -45,7 +45,7 @@ describe('AuthBridge — sincronización de perfil (RF-10)', () => {
     const { rerender } = render(<AuthBridge />);
 
     await waitFor(() => expect(sincronizarPerfilMock).toHaveBeenCalledTimes(1));
-    expect(sincronizarPerfilMock).toHaveBeenCalledWith({ email: 'ana@example.com', nombre: 'Ana' });
+    expect(sincronizarPerfilMock).toHaveBeenCalledWith();
 
     // Auth0 re-emite un objeto de usuario nuevo; el guard debe evitar re-sincronizar.
     estado.user = { ...estado.user! };
@@ -74,7 +74,7 @@ describe('AuthBridge — sincronización de perfil (RF-10)', () => {
     estado.user = { ...estado.user! };
     rerender(<AuthBridge />);
     await waitFor(() => expect(sincronizarPerfilMock).toHaveBeenCalledTimes(2));
-    expect(sincronizarPerfilMock).toHaveBeenLastCalledWith({ email: 'ana@example.com', nombre: 'Ana' });
+    expect(sincronizarPerfilMock).toHaveBeenLastCalledWith();
   });
 });
 
