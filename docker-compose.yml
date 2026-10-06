@@ -3,7 +3,7 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=/api
+        - VITE_API_URL=http://localhost:3000/api
         - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
         - VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
         - VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE}
@@ -26,6 +26,7 @@ services:
       - ./backend/.env
     environment:
       - PORT=3000
+      - CORS_ORIGINS=http://localhost:5173,https://tacs-2026-404-sol-not-found.onrender.com
       - RABBITMQ_URL=amqp://rabbitmq:5672
       - REDIS_URL=redis://redis:6379
       - MONGODB_URI=mongodb://${MONGO_USER:-root}:${MONGO_PASSWORD:-root}@mongo:27017/${MONGO_DATABASE:-solnotfound}?authSource=admin
