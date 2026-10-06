@@ -114,7 +114,7 @@ export default function AuthBridge() {
   useEffect(() => {
     if (!isAuthenticated || !user?.email || perfilSincronizadoRef.current) return;
     perfilSincronizadoRef.current = true;
-    sincronizarPerfil({ email: user.email, nombre: user.name }).catch((error: unknown) => {
+    sincronizarPerfil().catch((error: unknown) => {
       perfilSincronizadoRef.current = false;
       console.error('No se pudo sincronizar el perfil de Auth0:', error);
     });
