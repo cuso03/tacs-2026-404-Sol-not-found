@@ -28,8 +28,14 @@ export class ActividadInMemoryRepository implements ActividadRepository {
     return actividad ? this.copy(actividad) : undefined;
   }
 
+  async delete(id: string): Promise<boolean> {
+    return this.actividades.delete(id);
+  }
+
   async findAll(filtros: BuscarActividadesDto): Promise<{ data: Actividad[], total: number }> {
-    let resultados = Array.from(this.actividades.values());
+    let resultados = Array.from(this.actividades.values()).filter(a =>
+      new Date(a.fecha_horario).getTime() > Date.now() &&
+      a.estado !== 'CANCELADA' && a.estado !== 'FINALIZADA');
 
     if (filtros.tipo) {
       resultados = resultados.filter(a => a.tipo === filtros.tipo);

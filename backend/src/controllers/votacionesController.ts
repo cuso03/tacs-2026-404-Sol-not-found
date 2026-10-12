@@ -59,6 +59,8 @@ export function createVotacionesController(service: VotacionService) {
       return;
     }
 
+    if (result.status === 'no_alternatives') { res.status(409).json({ error: 'No hay fechas con pronóstico adecuado para abrir una votación' }); return; }
+    if (result.status === 'inactive') { res.status(409).json({ error: 'La actividad ya no está activa' }); return; }
     res.status(201).json(result.actividad);
   }
 

@@ -31,8 +31,9 @@ export class ActividadesService {
       estado: 'PROPUESTA',
       participantes: [creadorId],
     };
+    const creada = await this.repository.create(actividadParaGuardar);
     await this.statsStore.incrementar('Actividad_Creada');
-    return this.repository.create(actividadParaGuardar);
+    return creada;
   }
 
   // Ahora retorna directamente la promesa con { data, total }
@@ -59,6 +60,32 @@ export class ActividadesService {
     }));
 
     return { data: mappedData, total: result.total };
+  }
+
+  async modificarActividad(id: string, datos: DatosCreacionActividad, userId: string) {
+    const actividad = await this.repository.findById(id);
+    if (!actividad) return { status: 'not_found' } as const;
+    if (actividad.creadorId !== userId) return { status: 'forbidden' } as const;
+    if (datos.max_participantes < actividad.participantes.length) return { status: 'capacity_conflict' } as const;
+    // Una edición invalida la votación pendiente, pero conserva su historial.
+    const updated = await this.repository.update({
+      ...actividad, ...datos,
+      estado: actividad.estado === 'EN_VOTACION' ? 'PROPUESTA' : actividad.estado,
+      votaciones: actividad.votaciones.map(v => v.estado === 'ABIERTA'
+        ? { ...v, estado: 'CERRADA', cerradaEn: new Date().toISOString() } : v),
+    });
+    if (!updated) return { status: 'not_found' } as const;
+    await this.statsStore.incrementar('Actividad_Modificada');
+    return { status: 'updated', actividad: updated } as const;
+  }
+
+  async eliminarActividad(id: string, userId: string) {
+    const actividad = await this.repository.findById(id);
+    if (!actividad) return { status: 'not_found' } as const;
+    if (actividad.creadorId !== userId) return { status: 'forbidden' } as const;
+    if (!await this.repository.delete(id)) return { status: 'not_found' } as const;
+    await this.statsStore.incrementar('Actividad_Eliminada');
+    return { status: 'deleted' } as const;
   }
 
   async configurarReglasClima(actividadId: string, reglasClima: ReglasClima, solicitanteId: string): Promise<ConfigurarReglasResult> {
@@ -93,6 +120,12 @@ export class ActividadesService {
     const updated = await this.repository.update({
       ...actividad,
       participantes: actividad.participantes.filter((participante) => participante !== userId),
+      votaciones: actividad.votaciones.map(v => {
+        if (v.estado !== 'ABIERTA') return v;
+        const votos = { ...v.votos };
+        delete votos[userId];
+        return { ...v, votos };
+      }),
     });
     if (!updated) return { status: 'not_found' };
     return { status: 'removed', actividad: updated };

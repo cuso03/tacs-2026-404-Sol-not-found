@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { ArrowLeft, BellRing, CalendarClock, CalendarDays, CloudRain, LoaderCircle, LogIn, LogOut, MapPin, ShieldCheck, Thermometer, UsersRound, Wind } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import EditActivityModal from '../components/EditActivityModal';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import ActivityStatusBadge from '../components/ActivityStatusBadge';
 import VotingPanel from '../components/VotingPanel';
 import WeatherPanel from '../components/WeatherPanel';
@@ -11,7 +13,7 @@ import { Button } from '../components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Progress } from '../components/ui/progress';
 import { Skeleton } from '../components/ui/skeleton';
-import { useActividad, useSalirseActividad, useUnirseActividad } from '../hooks/useActividades';
+import { useActividad, useEliminarActividad, useSalirseActividad, useUnirseActividad } from '../hooks/useActividades';
 import { activityTypeLabels, formatDateTime, formatLocation } from '../lib/formatters';
 import { getApiErrorMessage } from '../services/api';
 import type { Actividad } from '../types/api';
@@ -24,6 +26,10 @@ export default function ActivityDetail() {
   const activityQuery = useActividad(id);
   const joinMutation = useUnirseActividad();
   const leaveMutation = useSalirseActividad();
+  const navigate = useNavigate();
+  const deleteMutation = useEliminarActividad();
+  const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [feedback, setFeedback] = useState('');
 
   const activity = activityQuery.data;
@@ -54,10 +60,12 @@ export default function ActivityDetail() {
 
   return (
     <div className="space-y-6">
+      {editing && <EditActivityModal activity={activity} onClose={() => setEditing(false)} />}
+      <Dialog open={deleting} onOpenChange={open => !deleteMutation.isPending && setDeleting(open)}><DialogContent><DialogHeader><DialogTitle>Eliminar actividad</DialogTitle><DialogDescription>Se eliminará “{activity.titulo}”, junto con sus inscripciones y votaciones. Esta acción no se puede deshacer.</DialogDescription></DialogHeader>{deleteMutation.isError && <Alert><AlertDescription>{getApiErrorMessage(deleteMutation.error)}</AlertDescription></Alert>}<DialogFooter><Button variant="outline" disabled={deleteMutation.isPending} onClick={() => setDeleting(false)}>Volver</Button><Button disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate(activity.id, { onSuccess: () => navigate('/') })}>{deleteMutation.isPending ? 'Eliminando…' : 'Confirmar eliminación'}</Button></DialogFooter></DialogContent></Dialog>
       <Link to="/" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-900"><ArrowLeft className="size-4" />Volver a actividades</Link>
 
       {error && <Alert><AlertTitle>No pudimos completar la acción</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-      {feedback && <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800"><AlertDescription>{feedback}</AlertDescription></Alert>}
+      {feedback && <Alert variant="success"><AlertDescription>{feedback}</AlertDescription></Alert>}
 
       <Card className="overflow-hidden rounded-3xl border-slate-200 shadow-sm">
         <div className="h-2 bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-400" />
@@ -68,7 +76,8 @@ export default function ActivityDetail() {
               <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">{activity.titulo}</h1>
               <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-600 sm:text-base">{activity.descripcion}</p>
             </div>
-            <div className="shrink-0 lg:w-52">
+            <div className="shrink-0 space-y-3 lg:w-52">
+              {organizer && <><Button variant="outline" className="w-full" onClick={() => setEditing(true)}>Modificar actividad</Button><Button variant="outline" className="w-full text-rose-700" onClick={() => setDeleting(true)}>Eliminar actividad</Button></>}
               {organizer ? <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900"><p className="font-semibold">Sos el organizador</p><p className="mt-1 text-xs text-blue-700">Administrá la votación más abajo.</p></div> : participant ? <Button variant="outline" className="w-full" disabled={loadingParticipation || terminal} onClick={() => changeParticipation('leave')}>{loadingParticipation ? <LoaderCircle className="size-4 animate-spin" /> : <LogOut className="size-4" />}Bajarme</Button> : <Button className="w-full" disabled={loadingParticipation || full || terminal} onClick={() => changeParticipation('join')}>{loadingParticipation ? <LoaderCircle className="size-4 animate-spin" /> : <LogIn className="size-4" />}{full ? 'Sin cupos' : 'Sumarme'}</Button>}
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/queryClient';
 import * as actividades from '../services/actividades';
-import type { ReglasClimaPayload } from '../types/api';
+import type { CrearActividadPayload, ReglasClimaPayload } from '../types/api';
 
 /** Busca actividades del catálogo con filtros y paginación. */
 export function useActividades(params: Record<string, string | number>) {
@@ -27,6 +27,8 @@ export function useCrearActividad() {
     mutationFn: actividades.createActividad,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.actividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.misActividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.estadisticas });
     },
   });
 }
@@ -38,6 +40,8 @@ export function useConfigurarReglas() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.actividad(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.actividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.misActividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.estadisticas });
     },
   });
 }
@@ -49,6 +53,8 @@ export function useUnirseActividad() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.actividad(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.misActividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.actividades });
+      queryClient.invalidateQueries({ queryKey: ['resultados-votacion', id] });
     },
   });
 }
@@ -60,6 +66,35 @@ export function useSalirseActividad() {
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.actividad(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.misActividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.actividades });
+      queryClient.invalidateQueries({ queryKey: ['resultados-votacion', id] });
+    },
+  });
+}
+
+export function useModificarActividad() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: CrearActividadPayload }) => actividades.updateActividad(id, payload),
+    onSuccess: (_data, { id }) => {
+      client.invalidateQueries({ queryKey: queryKeys.actividad(id) });
+      client.invalidateQueries({ queryKey: queryKeys.actividades });
+      client.invalidateQueries({ queryKey: queryKeys.misActividades });
+      client.invalidateQueries({ queryKey: queryKeys.clima(id) });
+      client.invalidateQueries({ queryKey: ['resultados-votacion', id] });
+      client.invalidateQueries({ queryKey: queryKeys.estadisticas });
+    },
+  });
+}
+
+export function useEliminarActividad() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: actividades.deleteActividad,
+    onSuccess: () => {
+      client.invalidateQueries({ queryKey: queryKeys.actividades });
+      client.invalidateQueries({ queryKey: queryKeys.misActividades });
+      client.invalidateQueries({ queryKey: queryKeys.estadisticas });
     },
   });
 }

@@ -30,7 +30,7 @@ export default function ActivityCard(activity: Actividad) {
         <div className="flex items-start gap-2.5"><CalendarDays className="mt-0.5 size-4 shrink-0 text-slate-400" /><span>{formatDateTime(activity.fecha_horario)}</span></div>
         <div className="flex items-start gap-2.5"><MapPin className="mt-0.5 size-4 shrink-0 text-slate-400" /><span className="line-clamp-2">{formatLocation(activity.ubicacion)}</span></div>
         <div className="space-y-2 pt-1">
-          <div className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5"><UsersRound className="size-3.5 text-slate-400" />{occupied} participantes</span><span className={isFull ? 'font-semibold text-rose-600' : 'text-slate-400'}>{isFull ? 'Sin cupos' : `${activity.max_participantes - occupied} disponibles`}</span></div>
+          <div className="flex items-center justify-between text-xs"><span className="flex items-center gap-1.5"><UsersRound className="size-3.5 text-slate-400" />{occupied} participantes</span><span className={isFull ? 'font-semibold text-amber-700' : 'text-slate-400'}>{isFull ? 'Sin cupos' : `${activity.max_participantes - occupied} disponibles`}</span></div>
           <Progress value={percentage} />
         </div>
       </CardContent>

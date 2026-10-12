@@ -17,9 +17,10 @@ export class ClimaMonitorService {
 
   async checkActividadWeather(actividad: Actividad): Promise<void> {
     try {
-      if (!actividad.reglasClima) return;
+      if (!actividad.reglasClima || !['PROPUESTA', 'CONFIRMADA', 'REPROGRAMADA'].includes(actividad.estado)) return;
 
       const horasHastaLaActividad = (new Date(actividad.fecha_horario).getTime() - Date.now()) / (1000 * 60 * 60);
+      if (horasHastaLaActividad <= 0) return;
       if (horasHastaLaActividad > actividad.reglasClima.horas_anticipacion) return;
 
       const pronostico = await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
@@ -28,13 +29,16 @@ export class ClimaMonitorService {
       const climaFavorable = pronosticoEsAdecuado(pronostico.pronostico_actividad, actividad.reglasClima);
 
       if (!climaFavorable) {
+        let votacionAbierta = false;
         if (this.votacionService) {
-          await this.votacionService.abrirVotacion(actividad.id, actividad.creadorId, {
+          const result = await this.votacionService.abrirVotacion(actividad.id, actividad.creadorId, {
             duracion_horas: Math.min(actividad.reglasClima.horas_anticipacion, 168),
           });
+          if (result.status === 'already_voting') return;
+          votacionAbierta = result.status === 'opened';
         }
 
-        const mensaje = `ALERTA: El pronóstico para "${actividad.titulo}" no cumple las condiciones (Condición: ${pronostico.pronostico_actividad.condicion}). Se abrió una votación para reprogramar.`;
+        const mensaje = `ALERTA: El pronóstico para "${actividad.titulo}" no cumple las condiciones (Condición: ${pronostico.pronostico_actividad.condicion}). ${votacionAbierta ? 'Se abrió una votación para reprogramar.' : 'No se abrió una votación: no hay alternativas disponibles.'}`;
 
         // Guardamos la auditoría en MongoDB antes de mandar el mensaje
         if (this.notificacionRepo) {
