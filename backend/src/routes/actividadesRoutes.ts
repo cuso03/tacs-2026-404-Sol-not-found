@@ -8,14 +8,14 @@ import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 import { ActividadesService } from '../services/actividadesService';
 import { VotacionService } from '../services/votacionService';
 import { ClimaService } from '../services/climaService';
-import { OpenMeteoAdapter } from '../utils/openMeteoAdapter';
+import { VisualCrossingAdapter } from '../utils/visualCrossingAdapter';
 
 /** Registra las rutas de actividades usando el servicio y proveedor de clima indicados. */
 export function createActividadesRoutes(
   repository: ActividadRepository,
   actividadesService: ActividadesService,
   votacionService: VotacionService,
-  weatherProvider: IWeatherProvider = new OpenMeteoAdapter(),
+  weatherProvider: IWeatherProvider = new VisualCrossingAdapter(),
 ): Router {
   const router = Router();
   const controller = createActividadesController(actividadesService);

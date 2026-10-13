@@ -24,6 +24,7 @@ describe('WeatherPanel', () => {
     renderWithProviders(<WeatherPanel activity={activityFixture} />);
     expect(await screen.findByRole('alert')).toBeTruthy();
     expect(screen.queryByText(/16 días/)).toBeNull();
+    expect(getMock).toHaveBeenCalledTimes(1);
   });
 
 });

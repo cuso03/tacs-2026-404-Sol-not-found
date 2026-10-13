@@ -50,7 +50,7 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
   return (
     <Card className="rounded-2xl">
       <CardHeader className="flex-row items-start justify-between space-y-0 p-6 pb-4">
-        <div><CardTitle className="text-lg">Clima de la actividad</CardTitle><p className="mt-1 text-xs text-slate-500">Datos actuales y pronóstico para el horario programado.</p></div>
+        <div><CardTitle className="text-lg">Clima de la actividad</CardTitle><p className="mt-1 text-xs text-slate-500">Datos actuales y pronóstico para el horario programado, hasta 15 días.</p></div>
         <Button variant="ghost" size="icon" aria-label="Actualizar clima" disabled={weatherQuery.isFetching} onClick={() => void weatherQuery.refetch()}><RefreshCw className={`size-4 ${weatherQuery.isFetching ? 'animate-spin' : ''}`} /></Button>
       </CardHeader>
       <CardContent className="space-y-4 px-6 pb-6">
@@ -67,7 +67,7 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
           ]} />
         </div>
         {suitable !== undefined && <div className={`flex items-center justify-between rounded-xl border p-3 ${suitable ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}><div><p className="text-sm font-semibold">{suitable ? 'Pronóstico dentro de las reglas' : 'Pronóstico fuera de las reglas'}</p><p className="mt-0.5 text-xs text-slate-600">Comparado con los límites definidos por el organizador.</p></div><Badge variant={suitable ? 'success' : 'warning'}>{suitable ? 'Favorable' : 'Revisar'}</Badge></div>}
-        <p className="text-xs text-slate-500">Datos meteorológicos de <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="underline">Open-Meteo</a>.</p>
+        <p className="text-xs text-slate-500">Datos meteorológicos de <a href="https://www.visualcrossing.com/" target="_blank" rel="noreferrer" className="underline">Visual Crossing</a>.</p>
       </CardContent>
     </Card>
   );
