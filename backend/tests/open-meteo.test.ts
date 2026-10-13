@@ -50,4 +50,10 @@ describe('Open-Meteo real adapter', () => {
     await adapter.obtenerPronostico({ tipo: 'ciudad', ciudad: 'Buenos Aires', pais: 'AR' }, new Date().toISOString(), 3);
     await expect(adapter.obtenerPronostico({ tipo: 'ciudad', ciudad: 'Buenos Aires', pais: 'US' }, new Date().toISOString(), 3)).rejects.toThrow('No se encontró');
   });
+  it('clasifica la ausencia de current como datos incompletos, no como fecha fuera de rango', async () => {
+    const time = Math.ceil(Date.now() / 3600000) * 3600 + 3600;
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ...response(time), current: undefined }) })));
+    await expect(new OpenMeteoAdapter().getClima(location, new Date(time * 1000).toISOString())).rejects.toMatchObject({ code: 'WEATHER_INVALID_RESPONSE' });
+  });
+
 });

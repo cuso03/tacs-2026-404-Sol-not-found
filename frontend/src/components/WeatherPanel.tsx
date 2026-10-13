@@ -34,7 +34,7 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
 
   if (loading && !weather) return <Card className="rounded-2xl"><CardContent className="space-y-4 p-6"><Skeleton className="h-6 w-40" /><Skeleton className="h-32 w-full" /></CardContent></Card>;
 
-  if (error && !weather) return <Alert><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}. El pronóstico está disponible para fechas futuras dentro de los próximos 16 días.</span><Button variant="outline" size="sm" onClick={() => void weatherQuery.refetch()}><RefreshCw className="size-3.5" />Reintentar</Button></AlertDescription></Alert>;
+  if (error && !weather) return <Alert><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}</span><Button variant="outline" size="sm" onClick={() => void weatherQuery.refetch()}><RefreshCw className="size-3.5" />Reintentar</Button></AlertDescription></Alert>;
   if (!weather) return null;
 
   const CurrentIcon = weatherIcons[weather.clima_actual.condicion];
