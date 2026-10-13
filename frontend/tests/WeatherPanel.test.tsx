@@ -19,4 +19,11 @@ describe('WeatherPanel', () => {
     expect(screen.getByText('Pronóstico dentro de las reglas')).toBeTruthy();
     expect(getMock).toHaveBeenCalledWith('/actividades/actividad-1/clima');
   });
+  it('no atribuye un error genérico al horizonte de fechas', async () => {
+    getMock.mockRejectedValue(new Error('Servicio no disponible'));
+    renderWithProviders(<WeatherPanel activity={activityFixture} />);
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.queryByText(/16 días/)).toBeNull();
+  });
+
 });

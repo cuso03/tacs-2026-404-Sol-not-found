@@ -1,3 +1,4 @@
+import { WeatherError } from '../src/utils/weatherError';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app';
@@ -131,5 +132,27 @@ describe('MockWeatherService', () => {
     expect(climaBuenosAires).not.toEqual(climaCordobaMismaFecha);
     expect(climaBuenosAires).not.toEqual(climaBuenosAiresDiaSiguiente);
     expect(climaBuenosAires).toMatchObject({ ubicacion: expect.any(String), fecha_horario: expect.any(String) });
+  });
+});
+
+
+describe('Diagnóstico de errores de clima', () => {
+  it.each([
+    [new WeatherError('WEATHER_RATE_LIMITED', 'HTTP 429', 429), 'WEATHER_RATE_LIMITED', 'límite de consultas'],
+    [new DOMException('timeout', 'TimeoutError'), 'WEATHER_TIMEOUT', 'tardó demasiado'],
+    [new WeatherError('WEATHER_DATE_UNAVAILABLE', 'sin horas'), 'WEATHER_DATE_UNAVAILABLE', '16 días'],
+    [new WeatherError('WEATHER_INVALID_RESPONSE', 'sin current'), 'WEATHER_INVALID_RESPONSE', 'incompletos'],
+    [new Error('fetch failed'), 'WEATHER_PROVIDER_UNAVAILABLE', 'conectar'],
+  ])('distingue %s sin atribuir todos los fallos a la fecha', async (error, code, message) => {
+    const provider: IWeatherProvider = {
+      getClima: async () => { throw error; }, obtenerPronostico: async () => [],
+    };
+    const app = createApp(provider);
+    const created = await request(app).post('/api/actividades').set(authHeader('auth0|organizador-1')).send(validPayloadCoordenadas);
+    const result = await request(app).get(`/api/actividades/${created.body.id}/clima`);
+    expect(result.status).toBe(503);
+    expect(result.body.code).toBe(code);
+    expect(result.body.error).toContain(message);
+    if (code !== 'WEATHER_DATE_UNAVAILABLE') expect(result.body.error).not.toContain('16 días');
   });
 });

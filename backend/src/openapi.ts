@@ -147,8 +147,8 @@ export const openApiDocument = {
             content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
           },
           '503': {
-            description: 'Servicio de clima no disponible',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+            description: 'Clima no disponible. code distingue fecha sin cobertura, ubicación no encontrada, límite de consultas, timeout, respuesta inválida o proveedor inaccesible.',
+            content: { 'application/json': { schema: { type: 'object', required: ['error', 'code'], properties: { error: { type: 'string' }, code: { type: 'string', enum: ['WEATHER_DATE_UNAVAILABLE', 'WEATHER_LOCATION_NOT_FOUND', 'WEATHER_RATE_LIMITED', 'WEATHER_TIMEOUT', 'WEATHER_INVALID_RESPONSE', 'WEATHER_PROVIDER_UNAVAILABLE'] } } } } },
           },
         },
       },
