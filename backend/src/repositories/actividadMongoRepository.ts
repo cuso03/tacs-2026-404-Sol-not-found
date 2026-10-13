@@ -34,11 +34,13 @@ export class ActividadMongoRepository implements ActividadRepository {
         const { id: vId, ...vRest } = v;
         return {
           ...vRest,
+          id: vId,
           ...(vId && isValidObjectId(vId) ? { _id: vId } : {}),
           alternativas: (v.alternativas ?? []).map((a: any) => {
             const { id: aId, ...aRest } = a;
             return {
               ...aRest,
+              id: aId,
               ...(aId && isValidObjectId(aId) ? { _id: aId } : {}),
             };
           }),
@@ -55,9 +57,15 @@ export class ActividadMongoRepository implements ActividadRepository {
     return toActividad(doc);
   }
 
+  async delete(id: string): Promise<boolean> {
+    if (!isValidObjectId(id)) return false;
+    return (await ActividadModel.deleteOne({ _id: id })).deletedCount === 1;
+  }
+
   async findAll(filtros: BuscarActividadesDto): Promise<{ data: Actividad[]; total: number }> {
-    const query: any = {};
+    const query: any = { estado: { $nin: ['CANCELADA', 'FINALIZADA'] } };
     const exprConditions: any[] = [
+      { $gt: [{ $toDate: '$fecha_horario' }, new Date()] },
       { $lt: [{ $size: { $ifNull: ['$participantes', []] } }, '$max_participantes'] },
     ];
 

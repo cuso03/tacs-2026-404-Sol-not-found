@@ -36,3 +36,12 @@ export async function leaveActividad(id: string): Promise<Actividad> {
   const { data } = await api.delete<Actividad>(`/actividades/${encodeURIComponent(id)}/participantes/me`);
   return data;
 }
+
+export async function updateActividad(id: string, payload: CrearActividadPayload): Promise<Actividad> {
+  const { data } = await api.put<Actividad>(`/actividades/${encodeURIComponent(id)}`, payload);
+  return data;
+}
+
+export async function deleteActividad(id: string): Promise<void> {
+  await api.delete(`/actividades/${encodeURIComponent(id)}`);
+}

@@ -5,7 +5,7 @@ import { AUTH_ORGANIZADOR, authHeader } from './helpers/fixtures/auth.fixture';
 
 const basePayload = {
   descripcion: 'Prueba de feature 3',
-  fecha_horario: '2026-10-10T14:00:00-03:00',
+  fecha_horario: new Date(Date.now() + 86400000).toISOString(),
   min_participantes: 2,
   max_participantes: 10,
 };

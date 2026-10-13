@@ -1,29 +1,26 @@
 import { createElement, type ComponentType } from 'react';
-import { Activity, BarChart3, BellRing, CalendarClock, CloudRain, LoaderCircle, RefreshCw, UsersRound } from 'lucide-react';
+import { Activity, BarChart3, CalendarClock, CloudRain, RefreshCw, UsersRound } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { Button } from '../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
-import { useEstadisticas, useSimularMonitoreo } from '../hooks/useAdmin';
+import { useEstadisticas } from '../hooks/useAdmin';
 import { formatMetricName } from '../lib/formatters';
 import { getApiErrorMessage } from '../services/api';
 
-/** Panel administrativo para métricas acumuladas y simulación del monitoreo. */
+/** Panel administrativo para métricas acumuladas. */
 export default function Admin() {
   const statsQuery = useEstadisticas();
-  const simulateMutation = useSimularMonitoreo();
   const metrics = statsQuery.data ?? {};
   const loading = statsQuery.isPending;
-  const simulating = simulateMutation.isPending;
-  const error = statsQuery.isError ? getApiErrorMessage(statsQuery.error) : simulateMutation.isError ? getApiErrorMessage(simulateMutation.error) : '';
-  const simulation = simulateMutation.data;
+  const error = statsQuery.isError ? getApiErrorMessage(statsQuery.error) : '';
 
   const entries = Object.entries(metrics).sort(([left], [right]) => left.localeCompare(right));
 
   return (
     <div className="space-y-8">
       <header className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-        <div><div className="flex items-center gap-2"><span className="text-sm font-semibold text-blue-700">Administración</span></div><h1 className="mt-2 text-3xl font-black tracking-tight">Estado de la plataforma</h1><p className="mt-2 text-sm text-slate-500">Métricas persistidas y herramientas operativas del entorno.</p></div>
+        <div><div className="flex items-center gap-2"><span className="text-sm font-semibold text-blue-700">Administración</span></div><h1 className="mt-2 text-3xl font-black tracking-tight">Estado de la plataforma</h1><p className="mt-2 text-sm text-slate-500">Contadores históricos de eventos. Se actualizan automáticamente cada 15 segundos.</p></div>
         <Button variant="outline" disabled={loading} onClick={() => void statsQuery.refetch()}><RefreshCw className={`size-4 ${loading ? 'animate-spin' : ''}`} />Actualizar</Button>
       </header>
 
@@ -33,13 +30,6 @@ export default function Admin() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{entries.map(([name, value]) => <MetricCard key={name} name={name} value={value} />)}</div>
       ) : !error && <Card className="rounded-2xl border-dashed"><CardContent className="flex flex-col items-center py-14 text-center"><BarChart3 className="mb-3 size-9 text-slate-300" /><h2 className="font-semibold">Todavía no hay métricas</h2><p className="mt-1 text-sm text-slate-500">Los contadores aparecerán cuando se utilicen las funciones del sistema.</p></CardContent></Card>}
 
-      <Card className="rounded-2xl border-blue-100 bg-gradient-to-br from-white to-blue-50/60">
-        <CardHeader className="p-6 pb-3"><CardTitle className="flex items-center gap-2 text-lg"><BellRing className="size-5 text-blue-600" />Simulación de monitoreo</CardTitle><p className="mt-1 max-w-2xl text-sm text-slate-500">Ejecuta el escenario mock del backend para comprobar la evaluación climática y el envío de notificaciones sin esperar al cronjob.</p></CardHeader>
-        <CardContent className="flex flex-col items-start justify-between gap-5 px-6 pb-6 sm:flex-row sm:items-end">
-          <div>{simulation ? <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800"><AlertTitle>{simulation.actividadEvaluada}</AlertTitle><AlertDescription>{simulation.mensaje}</AlertDescription></Alert> : <p className="text-xs text-slate-500">El resultado se muestra aquí y los mensajes simulados también quedan visibles en la consola del backend.</p>}</div>
-          <Button className="shrink-0" disabled={simulating} onClick={() => simulateMutation.mutate()}>{simulating ? <LoaderCircle className="size-4 animate-spin" /> : <Activity className="size-4" />}Ejecutar simulación</Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

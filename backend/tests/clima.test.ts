@@ -22,13 +22,13 @@ const validPayloadCiudad = {
 
 describe('GET /api/actividades/:id/clima', () => {
   async function createActividadConClima(payload: typeof validPayloadCoordenadas | typeof validPayloadCiudad = validPayloadCoordenadas) {
-    const app = createApp();
+    const app = createApp(new MockWeatherService());
     const created = await request(app).post('/api/actividades').set(authHeader('auth0|organizador-1')).send(payload);
     return { app, id: created.body.id as string, created };
   }
 
   it('retorna 404 si la actividad no existe', async () => {
-    const response = await request(createApp()).get('/api/actividades/id-inexistente/clima');
+    const response = await request(createApp(new MockWeatherService())).get('/api/actividades/id-inexistente/clima');
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: 'Actividad no encontrada' });
   });
@@ -70,7 +70,7 @@ describe('GET /api/actividades/:id/clima', () => {
   });
 
   it('es determinístico: misma actividad retorna mismo clima', async () => {
-    const app = createApp();
+    const app = createApp(new MockWeatherService());
     const created = await request(app).post('/api/actividades').set(authHeader('auth0|organizador-1')).send(validPayloadCoordenadas);
     const id = created.body.id as string;
     const primerLlamado = await request(app).get(`/api/actividades/${id}/clima`);

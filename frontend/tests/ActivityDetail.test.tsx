@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { renderWithProviders } from './renderWithProviders';
 import { activityFixture } from './fixtures';
 
-const { getMock, postMock, deleteMock } = vi.hoisted(() => ({ getMock: vi.fn(), postMock: vi.fn(), deleteMock: vi.fn() }));
+const { getMock, postMock, deleteMock, putMock } = vi.hoisted(() => ({ getMock: vi.fn(), postMock: vi.fn(), deleteMock: vi.fn(), putMock: vi.fn() }));
 
 vi.mock('@auth0/auth0-react', () => ({
   useAuth0: () => ({
@@ -17,9 +17,10 @@ vi.mock('@auth0/auth0-react', () => ({
 }));
 
 vi.mock('../src/services/api', () => ({
-  default: { get: getMock, post: postMock, delete: deleteMock },
+  default: { get: getMock, post: postMock, delete: deleteMock, put: putMock },
   getApiErrorMessage: (error: unknown) => error instanceof Error ? error.message : 'Error',
 }));
+vi.mock('../src/components/LocationPicker', () => ({ default: () => <div>Selector de ubicación</div> }));
 vi.mock('../src/components/WeatherPanel', () => ({ default: () => <div>Panel de clima</div> }));
 vi.mock('../src/components/VotingPanel', () => ({ default: () => <div>Panel de votación</div> }));
 
@@ -36,7 +37,7 @@ function renderDetail() {
 }
 
 describe('ActivityDetail - participantes', () => {
-  beforeEach(() => { getMock.mockReset(); postMock.mockReset(); deleteMock.mockReset(); });
+  beforeEach(() => { getMock.mockReset(); postMock.mockReset(); deleteMock.mockReset(); putMock.mockReset(); });
   afterEach(cleanup);
 
   it('permite sumarse si hay cupo y actualiza la actividad', async () => {
@@ -50,6 +51,9 @@ describe('ActivityDetail - participantes', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Sumarme' }));
     expect(postMock).toHaveBeenCalledWith('/actividades/actividad-1/participantes');
+    const feedback = await screen.findByRole('status');
+    expect(feedback.className).toContain('text-emerald-800');
+    expect(feedback.className).not.toContain('text-rose-800');
     expect(await screen.findByRole('button', { name: 'Bajarme' })).toBeTruthy();
   });
 
@@ -97,4 +101,28 @@ describe('ActivityDetail - participantes', () => {
     expect(screen.queryByRole('button', { name: 'Sumarme' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Bajarme' })).toBeNull();
   });
+  it('permite modificar los datos desde el detalle del organizador', async () => {
+    let current = { ...activityFixture, creadorId: 'auth0|user-1', participantes: ['auth0|user-1'] };
+    getMock.mockImplementation(async () => ({ data: current }));
+    putMock.mockImplementation(async (_url, payload) => { current = { ...current, ...payload }; return { data: current }; });
+    renderDetail();
+    await userEvent.click(await screen.findByRole('button', { name: 'Modificar actividad' }));
+    const title = screen.getByLabelText('Título');
+    await userEvent.clear(title);
+    await userEvent.type(title, 'Nuevo título');
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    expect(await screen.findByRole('heading', { name: 'Nuevo título' })).toBeTruthy();
+    expect(putMock).toHaveBeenCalledWith('/actividades/actividad-1', expect.objectContaining({ titulo: 'Nuevo título', ubicacion: activityFixture.ubicacion }));
+  });
+
+  it('pide confirmar antes de eliminar la actividad', async () => {
+    getMock.mockResolvedValue({ data: { ...activityFixture, creadorId: 'auth0|user-1' } });
+    deleteMock.mockResolvedValue({});
+    renderDetail();
+    await userEvent.click(await screen.findByRole('button', { name: 'Eliminar actividad' }));
+    expect(deleteMock).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar eliminación' }));
+    expect(deleteMock).toHaveBeenCalledWith('/actividades/actividad-1');
+  });
+
 });

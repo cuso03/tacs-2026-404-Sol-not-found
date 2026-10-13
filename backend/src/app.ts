@@ -9,8 +9,7 @@ import { connectToMongo } from './infrastructure/mongo/connection';
 import { IWeatherProvider } from './interfaces/services/IWeatherProvider';
 import { createActividadesRoutes } from './routes/actividadesRoutes';
 import { VotacionService } from './services/votacionService';
-import { MockWeatherService } from './services/mockWeatherService';
-import { OpenWeatherAdapter } from './utils/openWeatherAdapter';
+import { OpenMeteoAdapter } from './utils/openMeteoAdapter';
 import { InMemoryVotingJobQueue } from './services/inMemoryVotingJobQueue';
 import { IVotingJobQueue } from './interfaces/services/votingJobQueue';
 import { Redis } from 'ioredis';
@@ -58,9 +57,7 @@ function swaggerEnabled(): boolean {
 }
 
 export function createApp(
-  weatherProvider: IWeatherProvider = process.env.WEATHER_PROVIDER === 'OPENWEATHER'
-    ? new OpenWeatherAdapter()
-    : new MockWeatherService(),
+  weatherProvider: IWeatherProvider = new OpenMeteoAdapter(),
   jobQueue: IVotingJobQueue = createJobQueue(),
   estadisticas: IEstadisticasStore = new EstadisticasMongoStore(),
 ) {

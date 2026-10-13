@@ -34,7 +34,7 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
 
   if (loading && !weather) return <Card className="rounded-2xl"><CardContent className="space-y-4 p-6"><Skeleton className="h-6 w-40" /><Skeleton className="h-32 w-full" /></CardContent></Card>;
 
-  if (error && !weather) return <Alert><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}</span><Button variant="outline" size="sm" onClick={() => void weatherQuery.refetch()}><RefreshCw className="size-3.5" />Reintentar</Button></AlertDescription></Alert>;
+  if (error && !weather) return <Alert><AlertDescription className="flex flex-wrap items-center justify-between gap-3"><span>{error}. El pronóstico está disponible para fechas futuras dentro de los próximos 16 días.</span><Button variant="outline" size="sm" onClick={() => void weatherQuery.refetch()}><RefreshCw className="size-3.5" />Reintentar</Button></AlertDescription></Alert>;
   if (!weather) return null;
 
   const CurrentIcon = weatherIcons[weather.clima_actual.condicion];
@@ -67,6 +67,7 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
           ]} />
         </div>
         {suitable !== undefined && <div className={`flex items-center justify-between rounded-xl border p-3 ${suitable ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}><div><p className="text-sm font-semibold">{suitable ? 'Pronóstico dentro de las reglas' : 'Pronóstico fuera de las reglas'}</p><p className="mt-0.5 text-xs text-slate-600">Comparado con los límites definidos por el organizador.</p></div><Badge variant={suitable ? 'success' : 'warning'}>{suitable ? 'Favorable' : 'Revisar'}</Badge></div>}
+        <p className="text-xs text-slate-500">Datos meteorológicos de <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className="underline">Open-Meteo</a>.</p>
       </CardContent>
     </Card>
   );

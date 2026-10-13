@@ -17,6 +17,7 @@ describe('Métricas de Monitoreo de Clima', () => {
     const store = new EstadisticasMongoStore();
 
     const actividadDoc = await seedActividad({
+      fecha_horario: new Date(Date.now() + 3600000).toISOString(),
       reglasClima: createReglasPayload(),
     });
     const actividad = toActividad(actividadDoc);
@@ -40,6 +41,7 @@ describe('Métricas de Monitoreo de Clima', () => {
     const store = new EstadisticasMongoStore();
 
     const actividadDoc = await seedActividad({
+      fecha_horario: new Date(Date.now() + 3600000).toISOString(),
       reglasClima: createReglasPayload({ probabilidad_lluvia_max: 20 }),
     });
     const actividad = toActividad(actividadDoc);

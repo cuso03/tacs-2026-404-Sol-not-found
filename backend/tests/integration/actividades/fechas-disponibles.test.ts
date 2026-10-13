@@ -1,3 +1,4 @@
+import { MockWeatherService } from '../../../src/services/mockWeatherService';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../../src/app';
@@ -6,7 +7,7 @@ import { createReglasPayload } from '../../helpers/fixtures/regla.fixture';
 import { authHeader, AUTH_ORGANIZADOR } from '../../helpers/fixtures/auth.fixture';
 
 describe('GET /api/actividades/:id/fechas-disponibles', () => {
-  const app = createApp();
+  const app = createApp(new MockWeatherService());
 
   it('retorna fechas con pronóstico adecuado para una actividad con reglas configuradas', async () => {
     const actividad = await seedActividad({

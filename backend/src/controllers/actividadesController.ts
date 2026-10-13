@@ -18,6 +18,26 @@ export function createActividadesController(service: ActividadesService) {
     res.status(201).json(actividad);
   }
 
+  async function update(req: Request, res: Response): Promise<void> {
+    const parsed = crearActividadSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Datos de actividad inválidos', details: parsed.error.issues });
+      return;
+    }
+    const result = await service.modificarActividad(String(req.params.id), parsed.data, req.userId!);
+    if (result.status === 'not_found') { res.status(404).json({ error: 'Actividad no encontrada' }); return; }
+    if (result.status === 'forbidden') { res.status(403).json({ error: 'Solo el organizador puede modificar la actividad' }); return; }
+    if (result.status === 'capacity_conflict') { res.status(409).json({ error: 'El cupo no puede ser menor que la cantidad de inscriptos' }); return; }
+    res.json(result.actividad);
+  }
+
+  async function remove(req: Request, res: Response): Promise<void> {
+    const result = await service.eliminarActividad(String(req.params.id), req.userId!);
+    if (result.status === 'not_found') { res.status(404).json({ error: 'Actividad no encontrada' }); return; }
+    if (result.status === 'forbidden') { res.status(403).json({ error: 'Solo el organizador puede eliminar la actividad' }); return; }
+    res.sendStatus(204);
+  }
+
   /** Recupera una actividad por su id para el usuario autenticado. */
   async function getById(req: Request, res: Response): Promise<void> {
     const actividadId = req.params.id;
@@ -129,5 +149,5 @@ export function createActividadesController(service: ActividadesService) {
     });
   }
 
-  return { create, getById, configureRules, addParticipant, removeParticipant, search };
+  return { create, update, remove, getById, configureRules, addParticipant, removeParticipant, search };
 }

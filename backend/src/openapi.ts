@@ -72,6 +72,22 @@ export const openApiDocument = {
       },
     },
     '/api/actividades/{id}': {
+      put: {
+        tags: ['actividades'], operationId: 'modificarActividad',
+        summary: 'Modifica los datos de una actividad propia',
+        description: 'Conserva inscripciones y reglas. Cierra sin resolver una votación pendiente. No permite reducir el cupo por debajo de los inscriptos.',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CrearActividad' } } } },
+        responses: {
+          '200': { description: 'Actividad modificada', content: { 'application/json': { schema: { $ref: '#/components/schemas/Actividad' } } } },
+          '400': { description: 'Datos inválidos' }, '401': { description: 'No autenticado' }, '403': { description: 'No es el organizador' }, '404': { description: 'Actividad inexistente' }, '409': { description: 'Cupo insuficiente' },
+        },
+      },
+      delete: {
+        tags: ['actividades'], operationId: 'eliminarActividad', summary: 'Elimina una actividad propia y sus inscripciones y votaciones',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: { '204': { description: 'Actividad eliminada' }, '401': { description: 'No autenticado' }, '403': { description: 'No es el organizador' }, '404': { description: 'Actividad inexistente' } },
+      },
       get: {
         summary: 'Recupera una actividad por su id',
         description: 'Permite recuperar una actividad aunque esté llena y no figure en la búsqueda.',

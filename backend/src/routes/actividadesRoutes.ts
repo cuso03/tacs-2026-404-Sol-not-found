@@ -8,14 +8,14 @@ import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 import { ActividadesService } from '../services/actividadesService';
 import { VotacionService } from '../services/votacionService';
 import { ClimaService } from '../services/climaService';
-import { MockWeatherService } from '../services/mockWeatherService';
+import { OpenMeteoAdapter } from '../utils/openMeteoAdapter';
 
 /** Registra las rutas de actividades usando el servicio y proveedor de clima indicados. */
 export function createActividadesRoutes(
   repository: ActividadRepository,
   actividadesService: ActividadesService,
   votacionService: VotacionService,
-  weatherProvider: IWeatherProvider = new MockWeatherService(),
+  weatherProvider: IWeatherProvider = new OpenMeteoAdapter(),
 ): Router {
   const router = Router();
   const controller = createActividadesController(actividadesService);
@@ -24,6 +24,8 @@ export function createActividadesRoutes(
 
   router.get('/', controller.search);
   router.get('/:id', requireAuthenticatedUser, controller.getById);
+  router.put('/:id', requireAuthenticatedUser, controller.update);
+  router.delete('/:id', requireAuthenticatedUser, controller.remove);
   router.post('/', requireAuthenticatedUser, controller.create);
   router.put('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
   router.get('/:id/clima', climaController.getClima);
