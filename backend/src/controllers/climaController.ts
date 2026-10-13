@@ -17,7 +17,7 @@ export function createClimaController(service: ClimaService) {
       return;
     }
     if (result.status === 'weather_unavailable') {
-      res.status(503).json({ error: 'Servicio de clima no disponible' });
+      res.status(503).json({ error: result.message, code: result.code });
       return;
     }
 

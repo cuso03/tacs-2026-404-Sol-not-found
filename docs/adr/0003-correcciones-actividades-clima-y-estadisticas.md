@@ -164,3 +164,24 @@ También se realizó una consulta real para Buenos Aires: respuesta HTTP 200,
 384 horas de pronóstico, unidades esperadas y zona
 `America/Argentina/Buenos_Aires`. Esta comprobación puntual no sustituye una
 prueba visual de la aplicación completa, que queda pendiente.
+
+
+## Seguimiento: diagnóstico de clima en producción (2026-10-13)
+
+Se reprodujo HTTP 503 para una actividad del 15 de octubre en Render, mientras
+la consulta directa con la misma fecha y coordenadas funcionó desde el entorno
+local. Esa comparación confirma cobertura para la fecha, pero no determina el
+motivo del fallo desde producción.
+
+Se conserva HTTP 503 y se agrega un código estable y un mensaje específico para
+fecha sin cobertura, ubicación no encontrada, límite del proveedor, timeout,
+respuesta incompleta o fallo de conexión. La ausencia de clima actual no se
+clasifica como fecha fuera de rango. El backend registra el id de actividad,
+código, estado HTTP del proveedor y código de red cuando existen, sin registrar
+tokens, URLs completas ni cuerpos de respuesta. El frontend deja de atribuir
+cualquier error al horizonte de 16 días.
+
+Las pruebas de clima verifican los códigos y mensajes; el frontend comprueba
+que no agrega el aviso de 16 días a un error genérico. Esta mejora permite
+identificar la causa tras desplegarla; no demuestra que la falla de producción
+haya sido resuelta ni introduce un respaldo con datos simulados.
