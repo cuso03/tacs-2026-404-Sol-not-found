@@ -140,7 +140,7 @@ describe('Diagnóstico de errores de clima', () => {
   it.each([
     [new WeatherError('WEATHER_RATE_LIMITED', 'HTTP 429', 429), 'WEATHER_RATE_LIMITED', 'límite de consultas'],
     [new DOMException('timeout', 'TimeoutError'), 'WEATHER_TIMEOUT', 'tardó demasiado'],
-    [new WeatherError('WEATHER_DATE_UNAVAILABLE', 'sin horas'), 'WEATHER_DATE_UNAVAILABLE', '16 días'],
+    [new WeatherError('WEATHER_DATE_UNAVAILABLE', 'sin horas'), 'WEATHER_DATE_UNAVAILABLE', '15 días'],
     [new WeatherError('WEATHER_INVALID_RESPONSE', 'sin current'), 'WEATHER_INVALID_RESPONSE', 'incompletos'],
     [new Error('fetch failed'), 'WEATHER_PROVIDER_UNAVAILABLE', 'conectar'],
   ])('distingue %s sin atribuir todos los fallos a la fecha', async (error, code, message) => {
@@ -153,6 +153,6 @@ describe('Diagnóstico de errores de clima', () => {
     expect(result.status).toBe(503);
     expect(result.body.code).toBe(code);
     expect(result.body.error).toContain(message);
-    if (code !== 'WEATHER_DATE_UNAVAILABLE') expect(result.body.error).not.toContain('16 días');
+    if (code !== 'WEATHER_DATE_UNAVAILABLE') expect(result.body.error).not.toContain('15 días');
   });
 });

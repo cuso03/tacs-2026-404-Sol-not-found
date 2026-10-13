@@ -5,7 +5,7 @@ const location = { tipo: 'coordenadas' as const, latitud: -34.6, longitud: -58.4
 function response(time: number) {
   return { timezone: 'America/Argentina/Buenos_Aires', current: { time, temperature_2m: 20, relative_humidity_2m: 70, wind_speed_10m: 36, weather_code: 0 }, hourly: { time: [time], temperature_2m: [20], precipitation_probability: [10], wind_speed_10m: [36], weather_code: [0] } };
 }
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('Open-Meteo real adapter', () => {
   it('consulta el proveedor real sin key y conserva km/h y hora local con offset', async () => {
@@ -34,7 +34,7 @@ describe('Open-Meteo real adapter', () => {
     const incomplete = response(time);
     incomplete.hourly.temperature_2m = [];
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => incomplete })));
-    await expect(adapter.getClima(location, new Date(time * 1000).toISOString())).rejects.toThrow('incompleto');
+    await expect(new OpenMeteoAdapter().getClima(location, new Date(time * 1000).toISOString())).rejects.toThrow('incompleto');
   });
 
   it('propaga errores del proveedor sin recurrir al mock', async () => {
@@ -54,6 +54,40 @@ describe('Open-Meteo real adapter', () => {
     const time = Math.ceil(Date.now() / 3600000) * 3600 + 3600;
     vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => ({ ...response(time), current: undefined }) })));
     await expect(new OpenMeteoAdapter().getClima(location, new Date(time * 1000).toISOString())).rejects.toMatchObject({ code: 'WEATHER_INVALID_RESPONSE' });
+  });
+
+  it('comparte consultas simultáneas y reutiliza el pronóstico durante diez minutos', async () => {
+    const now = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+    const time = Math.ceil(now / 3600000) * 3600 + 86400;
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => response(time) }));
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new OpenMeteoAdapter();
+    const date = new Date(time * 1000).toISOString();
+    await Promise.all([adapter.getClima(location, date), adapter.getClima(location, date)]);
+    await adapter.obtenerPronostico(location, new Date(now).toISOString(), 3);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    clock.mockReturnValue(now + 600001);
+    await adapter.getClima(location, date);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([undefined, '120', new Date(Date.now() + 120000).toUTCString()])('respeta la pausa por 429 y Retry-After %s', async retryAfter => {
+    const now = Date.now();
+    const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+    const time = Math.ceil(now / 3600000) * 3600 + 86400;
+    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: false, status: 429, headers: new Headers(retryAfter ? { 'retry-after': retryAfter } : {}) })
+      .mockResolvedValue({ ok: true, json: async () => response(time) });
+    vi.stubGlobal('fetch', fetchMock);
+    const adapter = new OpenMeteoAdapter();
+    const date = new Date(time * 1000).toISOString();
+    await expect(adapter.getClima(location, date)).rejects.toMatchObject({ code: 'WEATHER_RATE_LIMITED' });
+    clock.mockReturnValue(now + 30000);
+    await expect(adapter.getClima({ ...location, latitud: -35 }, date)).rejects.toMatchObject({ code: 'WEATHER_RATE_LIMITED' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    clock.mockReturnValue(now + 121000);
+    await adapter.getClima(location, date);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
 });

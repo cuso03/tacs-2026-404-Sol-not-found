@@ -9,7 +9,7 @@ import { connectToMongo } from './infrastructure/mongo/connection';
 import { IWeatherProvider } from './interfaces/services/IWeatherProvider';
 import { createActividadesRoutes } from './routes/actividadesRoutes';
 import { VotacionService } from './services/votacionService';
-import { OpenMeteoAdapter } from './utils/openMeteoAdapter';
+import { VisualCrossingAdapter } from './utils/visualCrossingAdapter';
 import { InMemoryVotingJobQueue } from './services/inMemoryVotingJobQueue';
 import { IVotingJobQueue } from './interfaces/services/votingJobQueue';
 import { Redis } from 'ioredis';
@@ -57,7 +57,7 @@ function swaggerEnabled(): boolean {
 }
 
 export function createApp(
-  weatherProvider: IWeatherProvider = new OpenMeteoAdapter(),
+  weatherProvider: IWeatherProvider = new VisualCrossingAdapter(),
   jobQueue: IVotingJobQueue = createJobQueue(),
   estadisticas: IEstadisticasStore = new EstadisticasMongoStore(),
 ) {
