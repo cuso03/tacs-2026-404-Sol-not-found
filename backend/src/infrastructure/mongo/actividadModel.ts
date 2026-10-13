@@ -38,10 +38,12 @@ const reglasClimaSchema = new Schema(
 
 // Subdocumentos embebidos con identificador nativo de MongoDB (_id)
 const alternativaSchema = new Schema({
+  id: { type: String },
   fecha_horario: { type: String, required: true },
 });
 
 const votacionSchema = new Schema({
+  id: { type: String },
   abiertaEn: { type: String, required: true },
   cierraEn: { type: String, required: true },
   duracionHoras: { type: Number, required: true },
@@ -115,14 +117,14 @@ export function toActividad(doc: ActividadDocument): Actividad {
     participantes: Array.isArray(raw.participantes) ? [...raw.participantes] : [],
     votaciones: Array.isArray(raw.votaciones)
       ? raw.votaciones.map((v: any) => ({
-          id: v._id?.toString() ?? v.id,
+          id: v.id ?? v._id?.toString(),
           abiertaEn: v.abiertaEn,
           cierraEn: v.cierraEn,
           duracionHoras: v.duracionHoras,
           automatica: v.automatica,
           alternativas: Array.isArray(v.alternativas)
             ? v.alternativas.map((a: any) => ({
-                id: a._id?.toString() ?? a.id,
+                id: a.id ?? a._id?.toString(),
                 fecha_horario: a.fecha_horario,
               }))
             : [],

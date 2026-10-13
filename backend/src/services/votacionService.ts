@@ -20,6 +20,8 @@ export type AbrirVotacionResult =
   | { status: 'not_found' }
   | { status: 'forbidden' }
   | { status: 'already_voting' }
+  | { status: 'no_alternatives' }
+  | { status: 'inactive' }
   | { status: 'no_rules' }
   | { status: 'opened'; actividad: Actividad };
 
@@ -83,10 +85,9 @@ export class VotacionService {
 
     const fechas: string[] = [];
     for (const [fecha, horas] of horasAdecuadas) {
-      const fechaDate = new Date(fecha + 'T12:00:00');
-      if (fechaDate <= ahora) continue;
 
       const horasEnRango = horas.filter((h) => {
+        if (new Date(h.fecha) <= ahora) return false;
         const horaStr = h.fecha.slice(11, 16);
         return (
           horaStr >= actividad.reglasClima!.rango_horario.horario_min &&
@@ -111,6 +112,7 @@ export class VotacionService {
     const actividad = await this.repository.findById(actividadId);
     if (!actividad) return { status: 'not_found' };
     if (actividad.creadorId !== organizadorId) return { status: 'forbidden' };
+    if (actividad.estado === 'CANCELADA' || actividad.estado === 'FINALIZADA') return { status: 'inactive' };
     if (actividad.estado === 'EN_VOTACION') return { status: 'already_voting' };
     if (!actividad.reglasClima) return { status: 'no_rules' };
 
@@ -124,6 +126,8 @@ export class VotacionService {
       alternativas = await this.generarAlternativasAutomaticas(actividad);
       automatica = true;
     }
+
+    if (alternativas.length === 0) return { status: 'no_alternatives' };
 
     const ahora = new Date();
     const cierraEn = new Date(ahora.getTime() + dto.duracion_horas * 60 * 60 * 1000);
@@ -149,7 +153,7 @@ export class VotacionService {
 
     if (!updated) return { status: 'not_found' };
 
-    await this.jobQueue.programarCierreVotacion(actividadId, votacion.id, cierraEn);
+    await this.jobQueue.programarCierreVotacion(actividadId, updated.votaciones[updated.votaciones.length - 1].id, cierraEn);
 
     return { status: 'opened', actividad: updated };
   }
@@ -288,27 +292,24 @@ export class VotacionService {
 
     // Resolución y Notificación Síncrona
     if (ganadora && !empate && maxVotos >= actividad.min_participantes) {
-      await this.repository.update({
+      const updated = await this.repository.update({
         ...actividad,
         estado: 'REPROGRAMADA',
         fecha_horario: ganadora.fecha_horario,
         votaciones,
       });
-      // US 13: Disparar alerta de reprogramación
-      await this.eventNotifier.notificarReprogramacion(actividad, ganadora.fecha_horario);
-      // US 14: guardar Estadistica
+      if (!updated) return;
       await this.statsStore.incrementar('Actividad_Reprogramada');
+      await this.eventNotifier.notificarReprogramacion(actividad, ganadora.fecha_horario);
     } else {
-      await this.repository.update({
+      const updated = await this.repository.update({
         ...actividad,
         estado: 'CANCELADA',
         votaciones,
       });
-      // US 13: Disparar alerta de cancelación
-      await this.eventNotifier.notificarCancelacion(actividad);
-
-      // US 14: guardar Estadistica
+      if (!updated) return;
       await this.statsStore.incrementar('Actividad_Cancelada');
+      await this.eventNotifier.notificarCancelacion(actividad);
     }
   }
 
@@ -333,10 +334,9 @@ export class VotacionService {
     const candidatas: Array<{ fecha: string; hora: PronosticoHora; esMismoDia: boolean; distancia: number }> = [];
 
     for (const [fecha, horas] of horasAdecuadas) {
-      const fechaDate = new Date(fecha + 'T12:00:00');
-      if (fechaDate <= ahora) continue;
 
       const horasEnRango = horas.filter((h) => {
+        if (new Date(h.fecha) <= ahora) return false;
         const horaStr = h.fecha.slice(11, 16);
         return horaStr >= reglas.rango_horario.horario_min && horaStr <= reglas.rango_horario.horario_max;
       });

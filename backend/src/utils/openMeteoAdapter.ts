@@ -1,595 +1,100 @@
-import { Ubicacion } from "../interfaces/models/actividad";
-import { PronosticoHora } from "../interfaces/models/pronostico";
-import {
-  ClimaResponseDto,
-  ClimaActualDto,
-  PronosticoActividadDto,
-} from "../dtos/climaDto";
-import { IWeatherProvider } from "../interfaces/services/IWeatherProvider";
+import { Ubicacion } from '../interfaces/models/actividad';
+import { PronosticoHora } from '../interfaces/models/pronostico';
+import { ClimaResponseDto } from '../dtos/climaDto';
+import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 
-/**
- * Respuesta de la API de Forecast de Open-Meteo.
- */
-interface OpenMeteoForecastResponse {
-  current: {
-    time: string;
-    temperature_2m: number;
-    relative_humidity_2m: number;
-    wind_speed_10m: number;
-    weather_code: number;
-  };
-
-  hourly: {
-    time: string[];
-    temperature_2m: number[];
-    relative_humidity_2m?: number[];
-    precipitation_probability: number[];
-    wind_speed_10m: number[];
-    weather_code: number[];
-  };
+interface Forecast {
+  timezone: string;
+  current?: { time: number; temperature_2m: number; relative_humidity_2m: number; wind_speed_10m: number; weather_code: number };
+  hourly: { time: number[]; temperature_2m: number[]; precipitation_probability: number[]; wind_speed_10m: number[]; weather_code: number[] };
 }
+interface Coordinates { latitude: number; longitude: number }
+interface City extends Coordinates { country: string; country_code: string }
 
-/**
- * Respuesta de la API de Geocoding de Open-Meteo.
- */
-interface OpenMeteoGeocodingResponse {
-  results?: OpenMeteoGeocodingResult[];
-}
-
-/**
- * Resultado individual de una búsqueda de ciudad.
- */
-interface OpenMeteoGeocodingResult {
-  latitude: number;
-  longitude: number;
-  name: string;
-  country: string;
-}
-
-/**
- * Coordenadas utilizadas internamente por el adapter.
- */
-interface Coordenadas {
-  latitud: number;
-  longitud: number;
-}
-
-/**
- * Se encarga de:
- *
- * - Resolver ubicaciones por coordenadas.
- * - Geocodificar ubicaciones por ciudad.
- * - Consultar el pronóstico.
- * - Transformar la respuesta de Open-Meteo
- *   a los modelos propios de la aplicación.
- */
+/** Pronóstico real: temperaturas en °C, viento en km/h y fechas con offset explícito. */
 export class OpenMeteoAdapter implements IWeatherProvider {
-  private readonly forecastUrl =
-    "https://api.open-meteo.com/v1/forecast";
+  private readonly cities = new Map<string, Coordinates>();
 
-  private readonly geocodingUrl =
-    "https://geocoding-api.open-meteo.com/v1/search";
-
-  /**
-   * Cache simple de coordenadas.
-   *
-   * Evita consultar Geocoding repetidamente
-   * para la misma ciudad.
-   */
-  private readonly cacheGeocoding =
-    new Map<string, Coordenadas>();
-
-  /**
-   * Obtiene clima actual y pronóstico
-   * para la fecha/hora de una actividad.
-   */
-  async getClima(
-    ubicacion: Ubicacion,
-    fecha_horario: string
-  ): Promise<ClimaResponseDto> {
-    const coordenadas =
-      await this.resolverUbicacion(ubicacion);
-
-    const fecha = new Date(fecha_horario);
-
-    if (Number.isNaN(fecha.getTime())) {
-      throw new Error(
-        `Fecha inválida: ${fecha_horario}`
-      );
+  async getClima(ubicacion: Ubicacion, fecha_horario: string): Promise<ClimaResponseDto> {
+    const target = new Date(fecha_horario).getTime();
+    if (!Number.isFinite(target) || target < Date.now()) throw new Error('La fecha no tiene pronóstico futuro disponible');
+    const data = await this.forecast(ubicacion);
+    const index = data.hourly.time.findIndex(time => target >= time * 1000 && target < (time + 3600) * 1000);
+    if (index < 0 || !data.current) throw new Error('Pronóstico no disponible: Open-Meteo cubre hasta 16 días');
+    const current = data.current;
+    const hour = this.hour(data, index);
+    if (![current.temperature_2m, current.relative_humidity_2m, current.wind_speed_10m, current.weather_code, data.hourly.weather_code[index]].every(v => typeof v === 'number' && Number.isFinite(v))) {
+      throw new Error('Open-Meteo devolvió datos incompletos');
     }
-
-    const fechaInicio =
-      this.formatearFecha(fecha);
-
-    const fechaFin =
-      this.formatearFecha(fecha);
-
-    const params = new URLSearchParams({
-      latitude: coordenadas.latitud.toString(),
-      longitude: coordenadas.longitud.toString(),
-
-      current: [
-        "temperature_2m",
-        "relative_humidity_2m",
-        "wind_speed_10m",
-        "weather_code",
-      ].join(","),
-
-      hourly: [
-        "temperature_2m",
-        "precipitation_probability",
-        "wind_speed_10m",
-        "weather_code",
-      ].join(","),
-
-      start_date: fechaInicio,
-      end_date: fechaFin,
-
-      timezone: "auto",
-    });
-
-    const data =
-      await this.requestForecast(params);
-
-    const climaActual: ClimaActualDto = {
-      temperatura:
-        data.current.temperature_2m,
-
-      condicion:
-        this.mapCondicion(
-          data.current.weather_code
-        ),
-
-      viento:
-        data.current.wind_speed_10m,
-
-      humedad:
-        data.current.relative_humidity_2m,
-    };
-
-    const indice =
-      this.buscarHoraMasCercana(
-        data.hourly.time,
-        fecha
-      );
-
-    const pronosticoActividad: PronosticoActividadDto =
-      {
-        probabilidad_lluvia:
-          data.hourly
-            .precipitation_probability[indice],
-
-        temperatura:
-          data.hourly.temperature_2m[indice],
-
-        viento:
-          data.hourly.wind_speed_10m[indice],
-
-        condicion:
-          this.mapCondicion(
-            data.hourly.weather_code[indice]
-          ),
-      };
-
     return {
-      ubicacion:
-        this.descripcionUbicacion(ubicacion),
-
+      ubicacion: ubicacion.tipo === 'ciudad' ? `${ubicacion.ciudad}, ${ubicacion.pais}` : ubicacion.direccion ?? `${ubicacion.latitud}, ${ubicacion.longitud}`,
       fecha_horario,
-
-      clima_actual: climaActual,
-
-      pronostico_actividad:
-        pronosticoActividad,
+      clima_actual: { temperatura: current.temperature_2m, humedad: current.relative_humidity_2m, viento: current.wind_speed_10m, condicion: this.condition(current.weather_code) },
+      pronostico_actividad: { temperatura: hour.temperatura, viento: hour.viento, probabilidad_lluvia: hour.probabilidad_lluvia, condicion: this.condition(data.hourly.weather_code[index]) },
     };
   }
 
-  /**
-   * Obtiene el pronóstico hora a hora
-   * desde fechaDesde durante determinada
-   * cantidad de días.
-   */
-  async obtenerPronostico(
-    ubicacion: Ubicacion,
-    fechaDesde: string,
-    dias: number
-  ): Promise<PronosticoHora[]> {
-    if (dias <= 0) {
-      throw new Error(
-        "La cantidad de días debe ser mayor a 0"
-      );
-    }
-
-    const fechaInicio =
-      new Date(fechaDesde);
-
-    if (
-      Number.isNaN(
-        fechaInicio.getTime()
-      )
-    ) {
-      throw new Error(
-        `Fecha inválida: ${fechaDesde}`
-      );
-    }
-
-    const fechaFin =
-      this.sumarDias(
-        fechaInicio,
-        dias - 1
-      );
-
-    const coordenadas =
-      await this.resolverUbicacion(ubicacion);
-
-    const params = new URLSearchParams({
-      latitude:
-        coordenadas.latitud.toString(),
-
-      longitude:
-        coordenadas.longitud.toString(),
-
-      hourly: [
-        "temperature_2m",
-        "precipitation_probability",
-        "wind_speed_10m",
-      ].join(","),
-
-      start_date:
-        this.formatearFecha(fechaInicio),
-
-      end_date:
-        this.formatearFecha(fechaFin),
-
-      timezone: "auto",
+  async obtenerPronostico(ubicacion: Ubicacion, fechaDesde: string, dias: number): Promise<PronosticoHora[]> {
+    const start = new Date(fechaDesde).getTime();
+    if (!Number.isFinite(start) || !Number.isInteger(dias) || dias <= 0) throw new Error('Rango de pronóstico inválido');
+    const end = start + dias * 86400000;
+    const data = await this.forecast(ubicacion);
+    return data.hourly.time.flatMap((time, index) => {
+      if (time * 1000 < Math.max(start, Date.now()) || time * 1000 >= end) return [];
+      try { return [this.hour(data, index)]; } catch { return []; }
     });
-
-    const data =
-      await this.requestForecast(params);
-
-    return data.hourly.time.map(
-      (fecha, indice): PronosticoHora => ({
-        fecha,
-
-        probabilidad_lluvia:
-          data.hourly
-            .precipitation_probability[indice],
-
-        temperatura:
-          data.hourly
-            .temperature_2m[indice],
-
-        viento:
-          data.hourly
-            .wind_speed_10m[indice]/3.6,
-      })
-    );
   }
 
-  /**
-   * Resuelve cualquier tipo de Ubicacion
-   * de tu dominio.
-   *
-   * - Coordenadas: se utilizan directamente.
-   * - Ciudad: se consulta Geocoding.
-   */
-  private async resolverUbicacion(
-    ubicacion: Ubicacion
-  ): Promise<Coordenadas> {
-    if (ubicacion.tipo === "coordenadas") {
-      return {
-        latitud: ubicacion.latitud,
-        longitud: ubicacion.longitud,
-      };
-    }
-
-    return this.geocodificarCiudad(
-      ubicacion.ciudad,
-      ubicacion.pais
-    );
+  private hour(data: Forecast, index: number): PronosticoHora {
+    const temperatura = data.hourly.temperature_2m[index];
+    const viento = data.hourly.wind_speed_10m[index];
+    const probabilidad_lluvia = data.hourly.precipitation_probability[index];
+    if (![temperatura, viento, probabilidad_lluvia].every(v => typeof v === 'number' && Number.isFinite(v))) throw new Error('Pronóstico incompleto');
+    return { fecha: this.localISO(data.hourly.time[index], data.timezone), temperatura, viento, probabilidad_lluvia };
   }
 
-  /**
-   * Convierte ciudad + país en coordenadas
-   * utilizando el Geocoding API de Open-Meteo.
-   */
-  private async geocodificarCiudad(
-    ciudad: string,
-    pais: string
-  ): Promise<Coordenadas> {
-    const cacheKey =
-      `${ciudad.trim().toLowerCase()}|` +
-      `${pais.trim().toLowerCase()}`;
-
-    const cached =
-      this.cacheGeocoding.get(cacheKey);
-
-    if (cached) {
-      return cached;
-    }
-
-    const params = new URLSearchParams({
-      name: ciudad,
-      count: "10",
-      language: "es",
-      format: "json",
-    });
-
-    const response =
-      await fetch(
-        `${this.geocodingUrl}?${params}`
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        `Error consultando Geocoding de Open-Meteo: ` +
-        `${response.status} ${response.statusText}`
-      );
-    }
-
-    const data =
-      (await response.json()) as
-        OpenMeteoGeocodingResponse;
-
-    if (
-      !data.results ||
-      data.results.length === 0
-    ) {
-      throw new Error(
-        `No se encontró la ciudad ` +
-        `"${ciudad}, ${pais}"`
-      );
-    }
-
-    const resultado =
-      this.buscarResultadoPais(
-        data.results,
-        pais
-      );
-
-    if (!resultado) {
-      throw new Error(
-        `No se encontró "${ciudad}" ` +
-        `en el país "${pais}"`
-      );
-    }
-
-    const coordenadas: Coordenadas = {
-      latitud: resultado.latitude,
-      longitud: resultado.longitude,
-    };
-
-    this.cacheGeocoding.set(
-      cacheKey,
-      coordenadas
-    );
-
-    return coordenadas;
+  /** Conserva la hora local del lugar para evaluar las franjas, incluso al cambiar el horario de verano. */
+  private localISO(seconds: number, timeZone: string): string {
+    const date = new Date(seconds * 1000);
+    const parts = new Intl.DateTimeFormat('sv-SE', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(date);
+    const values = Object.fromEntries(parts.map(p => [p.type, p.value]));
+    const local = `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}:${values.second}`;
+    const offset = Math.round((Date.parse(`${local}Z`) - date.getTime()) / 60000);
+    const abs = Math.abs(offset);
+    return `${local}${offset >= 0 ? '+' : '-'}${String(Math.floor(abs / 60)).padStart(2, '0')}:${String(abs % 60).padStart(2, '0')}`;
   }
 
-  /**
-   * Intenta encontrar un resultado cuyo país
-   * coincida con el solicitado.
-   *
-   * Si no hay coincidencia exacta,
-   * devuelve el primer resultado.
-   */
-  private buscarResultadoPais(
-    resultados: OpenMeteoGeocodingResult[],
-    pais: string
-  ): OpenMeteoGeocodingResult | undefined {
-    const paisNormalizado =
-      this.normalizarTexto(pais);
-
-    return (
-      resultados.find(
-        (resultado) =>
-          this.normalizarTexto(
-            resultado.country
-          ) === paisNormalizado
-      ) ??
-      resultados[0]
-    );
+  private async forecast(ubicacion: Ubicacion): Promise<Forecast> {
+    const coords = await this.coordinates(ubicacion);
+    const params = new URLSearchParams({ latitude: String(coords.latitude), longitude: String(coords.longitude), timezone: 'auto', timeformat: 'unixtime', forecast_days: '16', wind_speed_unit: 'kmh', temperature_unit: 'celsius', current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code', hourly: 'temperature_2m,precipitation_probability,wind_speed_10m,weather_code' });
+    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error(`Error consultando Open-Meteo: ${response.status}`);
+    const data = await response.json() as Forecast;
+    if (!data.hourly?.time?.length || !data.timezone) throw new Error('Open-Meteo no devolvió pronóstico');
+    return data;
   }
 
-  /**
-   * Realiza la consulta a Forecast API.
-   */
-  private async requestForecast(
-    params: URLSearchParams
-  ): Promise<OpenMeteoForecastResponse> {
-    const response =
-      await fetch(
-        `${this.forecastUrl}?${params}`
-      );
-
-    if (!response.ok) {
-      throw new Error(
-        `Error consultando Open-Meteo: ` +
-        `${response.status} ${response.statusText}`
-      );
-    }
-
-    return (
-      await response.json()
-    ) as OpenMeteoForecastResponse;
+  private async coordinates(ubicacion: Ubicacion): Promise<Coordinates> {
+    if (ubicacion.tipo === 'coordenadas') return { latitude: ubicacion.latitud, longitude: ubicacion.longitud };
+    const normalize = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    const key = `${normalize(ubicacion.ciudad)}|${normalize(ubicacion.pais)}`;
+    const cached = this.cities.get(key);
+    if (cached) return cached;
+    const params = new URLSearchParams({ name: ubicacion.ciudad, count: '100', language: 'es', format: 'json' });
+    const response = await fetch(`https://geocoding-api.open-meteo.com/v1/search?${params}`, { signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error(`Error consultando Geocoding: ${response.status}`);
+    const data = await response.json() as { results?: City[] };
+    const city = data.results?.find(c => normalize(c.country) === normalize(ubicacion.pais) || normalize(c.country_code) === normalize(ubicacion.pais));
+    if (!city) throw new Error(`No se encontró ${ubicacion.ciudad} en ${ubicacion.pais}`);
+    this.cities.set(key, city);
+    return city;
   }
 
-  /**
-   * Traduce los weather_code de Open-Meteo
-   * a las condiciones aceptadas por tu dominio.
-   */
-  private mapCondicion(
-    weatherCode: number
-  ) {
-    // Cielo despejado
-    if (weatherCode === 0) {
-      return "SOLEADO" as const;
-    }
-
-    // Principalmente despejado,
-    // parcialmente nublado
-    if (
-      [1, 2].includes(weatherCode)
-    ) {
-      return "PARCIALMENTE_NUBLADO" as const;
-    }
-
-    // Niebla y cielo cubierto
-    if (
-      [3, 45, 48].includes(weatherCode)
-    ) {
-      return "NUBLADO" as const;
-    }
-
-    // Llovizna, lluvia y showers
-    if (
-      [
-        51,
-        53,
-        55,
-        56,
-        57,
-        61,
-        63,
-        65,
-        66,
-        67,
-        80,
-        81,
-        82,
-      ].includes(weatherCode)
-    ) {
-      return "LLUVIA" as const;
-    }
-
-    // Tormentas
-    if (
-      [95, 96, 99].includes(weatherCode)
-    ) {
-      return "TORMENTA" as const;
-    }
-
-    // Fallback
-    return "NUBLADO" as const;
-  }
-
-  /**
-   * Busca la hora del pronóstico más cercana
-   * a la fecha solicitada.
-   */
-  private buscarHoraMasCercana(
-    horas: string[],
-    fechaObjetivo: Date
-  ): number {
-    if (horas.length === 0) {
-      throw new Error(
-        "Open-Meteo no devolvió horas de pronóstico"
-      );
-    }
-
-    let mejorIndice = 0;
-    let menorDiferencia = Infinity;
-
-    for (
-      let i = 0;
-      i < horas.length;
-      i++
-    ) {
-      const fechaHora =
-        new Date(horas[i]);
-
-      const diferencia =
-        Math.abs(
-          fechaHora.getTime() -
-          fechaObjetivo.getTime()
-        );
-
-      if (
-        diferencia <
-        menorDiferencia
-      ) {
-        menorDiferencia = diferencia;
-        mejorIndice = i;
-      }
-    }
-
-    return mejorIndice;
-  }
-
-  /**
-   * Suma días manteniendo la fecha calendario.
-   */
-  private sumarDias(
-    fecha: Date,
-    dias: number
-  ): Date {
-    const resultado =
-      new Date(fecha);
-
-    resultado.setDate(
-      resultado.getDate() + dias
-    );
-
-    return resultado;
-  }
-
-  /**
-   * Formatea una fecha como YYYY-MM-DD,
-   * que es el formato utilizado por
-   * start_date/end_date de Open-Meteo.
-   */
-  private formatearFecha(
-    fecha: Date
-  ): string {
-    const year =
-      fecha.getFullYear();
-
-    const month =
-      String(
-        fecha.getMonth() + 1
-      ).padStart(2, "0");
-
-    const day =
-      String(
-        fecha.getDate()
-      ).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  }
-
-  /**
-   * Descripción legible de una ubicación
-   * para el DTO de respuesta.
-   */
-  private descripcionUbicacion(
-    ubicacion: Ubicacion
-  ): string {
-    if (
-      ubicacion.tipo === "ciudad"
-    ) {
-      return `${ubicacion.ciudad}, ${ubicacion.pais}`;
-    }
-
-    return (
-      ubicacion.direccion ??
-      `${ubicacion.latitud}, ${ubicacion.longitud}`
-    );
-  }
-
-  /**
-   * Normaliza texto para comparar países.
-   */
-  private normalizarTexto(
-    texto: string
-  ): string {
-    return texto
-      .normalize("NFD")
-      .replace(
-        /[\u0300-\u036f]/g,
-        ""
-      )
-      .trim()
-      .toLowerCase();
+  private condition(code: number): ClimaResponseDto['clima_actual']['condicion'] {
+    if (code === 0) return 'SOLEADO';
+    if ([1, 2].includes(code)) return 'PARCIALMENTE_NUBLADO';
+    if ([95, 96, 99].includes(code)) return 'TORMENTA';
+    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'LLUVIA';
+    return 'NUBLADO';
   }
 }

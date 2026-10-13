@@ -1,3 +1,4 @@
+import { MockWeatherService } from '../../../../src/services/mockWeatherService';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../../../src/app';
@@ -7,7 +8,7 @@ import { createReglasPayload } from '../../../helpers/fixtures/regla.fixture';
 import { authHeader, AUTH_ORGANIZADOR, AUTH_OTRO_USUARIO } from '../../../helpers/fixtures/auth.fixture';
 
 describe('POST /api/actividades/:id/votaciones', () => {
-  const app = createApp();
+  const app = createApp(new MockWeatherService());
 
   it('abre votación manual con alternativas provistas y actualiza el estado en MongoDB', async () => {
     const actividad = await seedActividad({

@@ -30,6 +30,10 @@ export function useAbrirVotacion() {
       abrirVotacion(activityId, payload),
     onSuccess: (_data, { activityId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.actividad(activityId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.actividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.misActividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clima(activityId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.estadisticas });
     },
   });
 }
@@ -52,6 +56,10 @@ export function useCerrarVotacion() {
       cerrarVotacion(activityId, votingId),
     onSuccess: (_data, { activityId, votingId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.actividad(activityId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.actividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.misActividades });
+      queryClient.invalidateQueries({ queryKey: queryKeys.clima(activityId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.estadisticas });
       queryClient.invalidateQueries({ queryKey: queryKeys.resultadosVotacion(activityId, votingId) });
     },
   });

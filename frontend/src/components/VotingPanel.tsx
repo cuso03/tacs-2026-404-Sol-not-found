@@ -28,6 +28,7 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
   const [manualDates, setManualDates] = useState(['']);
   const [error, setError] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [feedbackVariant, setFeedbackVariant] = useState<'success' | 'warning'>('success');
   const suggestionsMutation = useFechasDisponibles();
   const abrirMutation = useAbrirVotacion();
   const votarMutation = useVotar();
@@ -45,6 +46,7 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
   async function openVoting() {
     setError('');
     setFeedback('');
+    setFeedbackVariant('success');
     try {
       const payload: AbrirVotacionPayload = { duracion_horas: duration };
       if (mode === 'manual') {
@@ -62,6 +64,7 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
   async function castVote(voting: Votacion, alternativeId: string) {
     setError('');
     setFeedback('');
+    setFeedbackVariant('success');
     try {
       await votarMutation.mutateAsync({ activityId: activity.id, votingId: voting.id, alternativaId: alternativeId });
       setFeedback('Tu voto fue registrado. Podés cambiarlo mientras la votación siga abierta.');
@@ -73,8 +76,10 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
   async function closeVoting(voting: Votacion) {
     setError('');
     setFeedback('');
+    setFeedbackVariant('success');
     try {
       const result = await cerrarMutation.mutateAsync({ activityId: activity.id, votingId: voting.id });
+      setFeedbackVariant(result.estado === 'REPROGRAMADA' ? 'success' : 'warning');
       setFeedback(result.estado === 'REPROGRAMADA' ? 'La votación se resolvió y la actividad fue reprogramada.' : 'La votación se cerró y la actividad fue cancelada por falta de una alternativa ganadora con quórum.');
     } catch (cause) {
       setError(getApiErrorMessage(cause));
@@ -84,10 +89,12 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
   function loadSuggestedDates() {
     setError('');
     setFeedback('');
+    setFeedbackVariant('success');
     suggestionsMutation.mutate(activity.id, {
       onSuccess: (data) => {
         if (data.fechas.length === 0) {
-          setError('No se encontraron horarios favorables dentro del rango configurado.');
+          setFeedbackVariant('warning');
+          setFeedback('No se encontraron horarios favorables dentro del rango configurado.');
           return;
         }
         setManualDates(data.fechas.slice(0, 5).map(toDateTimeLocal));
@@ -110,7 +117,7 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
       <CardHeader className="p-6 pb-4"><div className="flex items-start justify-between gap-4"><div><CardTitle className="flex items-center gap-2 text-lg"><Vote className="size-5 text-blue-600" />Reprogramación</CardTitle><p className="mt-1 text-xs text-slate-500">Alternativas, votos y resolución de cambios de fecha.</p></div>{displayedVoting && <Badge variant={displayedVoting.estado === 'ABIERTA' ? 'warning' : 'secondary'}>{displayedVoting.estado === 'ABIERTA' ? 'Votación abierta' : 'Votación cerrada'}</Badge>}</div></CardHeader>
       <CardContent className="space-y-5 px-6 pb-6">
         {currentError && <Alert><AlertTitle>No pudimos completar la acción</AlertTitle><AlertDescription>{currentError}</AlertDescription></Alert>}
-        {feedback && <Alert className="border-emerald-200 bg-emerald-50 text-emerald-800"><AlertDescription>{feedback}</AlertDescription></Alert>}
+        {feedback && <Alert variant={feedbackVariant}><AlertDescription>{feedback}</AlertDescription></Alert>}
 
         {organizer && !activeVoting && (
           activity.reglasClima ? (
@@ -123,7 +130,7 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
               {mode === 'manual' && <div className="space-y-3"><div className="flex items-center justify-between"><Label>Alternativas</Label><Button variant="ghost" size="sm" disabled={suggestionsMutation.isPending} onClick={loadSuggestedDates}>{suggestionsMutation.isPending ? <LoaderCircle className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}Sugerir por clima</Button></div>{manualDates.map((date, index) => <div key={index} className="flex gap-2"><Input type="datetime-local" aria-label={`Alternativa ${index + 1}`} value={date} onChange={(event) => setManualDates((dates) => dates.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} /><Button variant="ghost" size="icon" aria-label={`Eliminar alternativa ${index + 1}`} disabled={manualDates.length === 1} onClick={() => setManualDates((dates) => dates.filter((_, itemIndex) => itemIndex !== index))}><Trash2 className="size-4" /></Button></div>)}{manualDates.length < 5 && <Button variant="outline" size="sm" onClick={() => setManualDates((dates) => [...dates, ''])}><Plus className="size-3.5" />Agregar alternativa</Button>}</div>}
               <div className="grid gap-4 sm:grid-cols-[180px_1fr] sm:items-end"><div className="space-y-2"><Label htmlFor="voting-duration">Duración (horas)</Label><Input id="voting-duration" type="number" min={1} max={168} value={duration} onChange={(event) => setDuration(Number(event.target.value))} /></div><Button disabled={abrirMutation.isPending} onClick={() => void openVoting()}>{abrirMutation.isPending ? <LoaderCircle className="size-4 animate-spin" /> : <Vote className="size-4" />}Abrir votación</Button></div>
             </div>
-          ) : <Alert><AlertDescription>Configurá primero las reglas climáticas para poder abrir una votación.</AlertDescription></Alert>
+          ) : <Alert variant="warning"><AlertDescription>Configurá primero las reglas climáticas para poder abrir una votación.</AlertDescription></Alert>
         )}
 
         {displayedVoting ? (
@@ -135,7 +142,7 @@ export default function VotingPanel({ activity }: VotingPanelProps) {
               const selected = !!currentUserId && displayedVoting.votos[currentUserId] === alternative.id;
               return <div key={alternative.id} className={`rounded-xl border p-4 ${selected ? 'border-blue-400 bg-blue-50/70' : 'border-slate-200'}`}><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><p className="font-semibold">{formatDateTime(alternative.fecha_horario)}</p><p className="mt-1 text-xs text-slate-500">{votes} {votes === 1 ? 'voto' : 'votos'}{selected ? ' · Tu elección' : ''}</p></div>{displayedVoting.estado === 'ABIERTA' && participant && <Button size="sm" variant={selected ? 'secondary' : 'outline'} disabled={actionPending} onClick={() => void castVote(displayedVoting, alternative.id)}>{pendingVoteId === alternative.id ? <LoaderCircle className="size-3.5 animate-spin" /> : selected ? <CheckCircle2 className="size-3.5" /> : <Vote className="size-3.5" />}{selected ? 'Votada' : 'Votar'}</Button>}</div><Progress value={percentage} className="mt-3" /></div>;
             })}</div>
-            {displayedVoting.estado === 'ABIERTA' && !participant && <Alert><AlertDescription>Tenés que estar inscripto en la actividad para votar.</AlertDescription></Alert>}
+            {displayedVoting.estado === 'ABIERTA' && !participant && <Alert variant="info"><AlertDescription>Tenés que estar inscripto en la actividad para votar.</AlertDescription></Alert>}
             <div className="flex flex-wrap justify-between gap-3"><Button variant="ghost" size="sm" onClick={() => void refreshResults()}><RefreshCw className={`size-3.5 ${resultsQuery.isFetching ? 'animate-spin' : ''}`} />Actualizar resultados</Button>{organizer && displayedVoting.estado === 'ABIERTA' && <Button variant="destructive" size="sm" disabled={actionPending} onClick={() => void closeVoting(displayedVoting)}>{cerrarMutation.isPending ? <LoaderCircle className="size-3.5 animate-spin" /> : <Lock className="size-3.5" />}Cerrar y resolver</Button>}</div>
           </div>
         ) : !organizer && <div className="rounded-xl border border-dashed border-slate-200 px-5 py-8 text-center"><Vote className="mx-auto mb-3 size-7 text-slate-300" /><p className="text-sm font-semibold">Todavía no hay votaciones</p><p className="mt-1 text-xs text-slate-500">El organizador podrá abrir una si necesita reprogramar.</p></div>}

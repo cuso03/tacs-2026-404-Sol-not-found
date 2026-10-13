@@ -20,8 +20,6 @@ cp backend/.env.example backend/.env
 | `TELEGRAM_BOT_TOKEN` | Token del bot de Telegram (obtenido via @BotFather) | Si |
 | `TELEGRAM_CHAT_ID` | ID del chat/grupo de Telegram | Si |
 | `RABBITMQ_URL` | URL de conexion a RabbitMQ (se sobreescribe en docker-compose) | Si |
-| `OPENWEATHER_API_KEY` | API key de OpenWeatherMap | Si |
-| `WEATHER_PROVIDER` | Proveedor de clima (`OPENWEATHER` para OpenWeather; cualquier otro valor usa el mock) | No |
 | `REDIS_URL` | URL de conexion a Redis (se sobreescribe en docker-compose) | Si |
 | `USE_BULLMQ` | Habilitar/deshabilitar colas con BullMQ (`true`/`false`) | No |
 | `AUTH0_DOMAIN` | Dominio del tenant Auth0 sin esquema (ej. `dev-abc123.us.auth0.com`) | Si |
@@ -186,3 +184,13 @@ Las propuestas generadas se revisan y validan por el equipo.
 ### Decisiones de arquitectura
 
 Las decisiones de arquitectura relevantes y su justificación se registran como ADR en [`docs/adr`](docs/adr/). Los ADR no forman parte del harness: conservan el contexto y el motivo de las decisiones tomadas por el equipo.
+
+### Correcciones de actividades y clima
+
+Las decisiones y su validación se documentan en el [ADR 0003: Correcciones de actividades, clima real y estadísticas](docs/adr/0003-correcciones-actividades-clima-y-estadisticas.md).
+
+El catálogo muestra actividades futuras con cupo y excluye canceladas/finalizadas; el dashboard conserva el historial. El organizador puede modificar (`PUT /api/actividades/:id`) o eliminar (`DELETE /api/actividades/:id`) sus actividades. La edición conserva inscriptos y reglas; cierra sin resolver cualquier votación abierta. La eliminación borra la actividad y sus datos embebidos. Al darse de baja, se anula el voto del participante en las votaciones abiertas; los resultados históricos cerrados se conservan.
+
+Open-Meteo es el proveedor predeterminado real: https://open-meteo.com/en/docs. Consulta hasta 16 días de pronóstico, sin inventar datos fuera del horizonte ni ante errores. Usa km/h y fechas con la zona horaria del lugar. Los mocks se inyectan únicamente en pruebas. Se atribuyen los datos a Open-Meteo en el panel de clima.
+
+Las estadísticas son contadores históricos de eventos, no cantidades por estado actual: eliminar una actividad no descuenta creaciones ni cancelaciones anteriores. Se registran creación, modificación, eliminación, cancelación y reprogramación después de persistir cada operación; el panel refresca cada 15 segundos y después de las acciones del usuario. No ofrece simulaciones.

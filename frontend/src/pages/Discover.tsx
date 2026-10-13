@@ -23,6 +23,7 @@ export default function Discover() {
   const [locationInput, setLocationInput] = useState('');
   const [location, setLocation] = useState('');
   const [type, setType] = useState('todos');
+  const today = new Date().toLocaleDateString('sv-SE');
   const [dateFrom, setDateFrom] = useState('');
   const [page, setPage] = useState(1);
 
@@ -72,7 +73,7 @@ export default function Discover() {
           <div className="grid gap-4 md:grid-cols-[1fr_220px_220px]">
             <div className="space-y-2"><Label htmlFor="location-filter">Ubicación</Label><div className="relative"><Search className="absolute left-3 top-3 size-4 text-slate-400" /><Input id="location-filter" value={locationInput} onChange={(event) => { setLocationInput(event.target.value); setPage(1); }} placeholder="Ciudad, parque o dirección" className="pl-9" /></div></div>
             <div className="space-y-2"><Label htmlFor="type-filter">Tipo</Label><NativeSelect id="type-filter" value={type} onChange={(event) => { setType(event.target.value); setPage(1); }}><option value="todos">Todos los tipos</option><option value="aire_libre">Aire libre</option><option value="techada">Techada</option><option value="mixta">Mixta</option></NativeSelect></div>
-            <div className="space-y-2"><Label htmlFor="date-filter">Desde</Label><div className="relative"><CalendarRange className="pointer-events-none absolute left-3 top-3 size-4 text-slate-400" /><Input id="date-filter" type="date" value={dateFrom} onChange={(event) => { setDateFrom(event.target.value); setPage(1); }} className="pl-9" /></div></div>
+            <div className="space-y-2"><Label htmlFor="date-filter">Desde</Label><div className="relative"><CalendarRange className="pointer-events-none absolute left-3 top-3 size-4 text-slate-400" /><Input id="date-filter" type="date" min={today} value={dateFrom} onChange={(event) => { setDateFrom(event.target.value); setPage(1); }} className="pl-9" /></div></div>
           </div>
         </CardContent>
       </Card>
