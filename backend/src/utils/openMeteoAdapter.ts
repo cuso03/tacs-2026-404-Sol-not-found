@@ -14,6 +14,9 @@ interface City extends Coordinates { country: string; country_code: string }
 
 /** Pronóstico real: temperaturas en °C, viento en km/h y fechas con offset explícito. */
 export class OpenMeteoAdapter implements IWeatherProvider {
+  private readonly forecasts = new Map<string, { data: Forecast; expires: number }>();
+  private readonly pendingForecasts = new Map<string, Promise<Forecast>>();
+  private retryAt = 0;
   private readonly cities = new Map<string, Coordinates>();
 
   async getClima(ubicacion: Ubicacion, fecha_horario: string): Promise<ClimaResponseDto> {
@@ -69,8 +72,27 @@ export class OpenMeteoAdapter implements IWeatherProvider {
   private async forecast(ubicacion: Ubicacion): Promise<Forecast> {
     const coords = await this.coordinates(ubicacion);
     const params = new URLSearchParams({ latitude: String(coords.latitude), longitude: String(coords.longitude), timezone: 'auto', timeformat: 'unixtime', forecast_days: '16', wind_speed_unit: 'kmh', temperature_unit: 'celsius', current: 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code', hourly: 'temperature_2m,precipitation_probability,wind_speed_10m,weather_code' });
-    const data = await this.request<Forecast>(`https://api.open-meteo.com/v1/forecast?${params}`);
-    if (!data.hourly?.time?.length || !data.timezone) throw new WeatherError('WEATHER_INVALID_RESPONSE', 'Open-Meteo no devolvió pronóstico');
+    const url = `https://api.open-meteo.com/v1/forecast?${params}`;
+    const cached = this.forecasts.get(url);
+    if (cached && cached.expires > Date.now()) return cached.data;
+    const pending = this.pendingForecasts.get(url);
+    if (pending) return pending;
+    const request = this.loadForecast(url);
+    this.pendingForecasts.set(url, request);
+    try { return await request; }
+    finally { this.pendingForecasts.delete(url); }
+  }
+
+  private async loadForecast(url: string): Promise<Forecast> {
+    const data = await this.request<Forecast>(url);
+    if (!data.hourly?.time?.length || !data.timezone || !data.current ||
+        !['temperature_2m', 'precipitation_probability', 'wind_speed_10m', 'weather_code'].every(key => Array.isArray(data.hourly[key as keyof Forecast['hourly']]))) {
+      throw new WeatherError('WEATHER_INVALID_RESPONSE', 'Open-Meteo devolvió pronóstico incompleto');
+    }
+    // Caché acotada por proceso; las consultas de clima y reprogramación la comparten.
+    for (const [key, value] of this.forecasts) if (value.expires <= Date.now()) this.forecasts.delete(key);
+    if (this.forecasts.size >= 100) this.forecasts.delete(this.forecasts.keys().next().value!);
+    this.forecasts.set(url, { data, expires: Date.now() + 10 * 60 * 1000 });
     return data;
   }
 
@@ -89,7 +111,14 @@ export class OpenMeteoAdapter implements IWeatherProvider {
   }
 
   private async request<T>(url: string): Promise<T> {
+    if (Date.now() < this.retryAt) throw new WeatherError('WEATHER_RATE_LIMITED', 'Pausa de consultas por límite del proveedor', 429);
     const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (response.status === 429) {
+      const retryAfter = response.headers?.get('retry-after');
+      const delay = retryAfter && /^\d+$/.test(retryAfter) ? Number(retryAfter) * 1000
+        : retryAfter ? Date.parse(retryAfter) - Date.now() : NaN;
+      this.retryAt = Date.now() + (Number.isFinite(delay) && delay > 0 ? delay : 60000);
+    }
     if (!response.ok) {
       throw new WeatherError(response.status === 429 ? 'WEATHER_RATE_LIMITED' : 'WEATHER_PROVIDER_UNAVAILABLE', `Open-Meteo HTTP ${response.status}`, response.status);
     }

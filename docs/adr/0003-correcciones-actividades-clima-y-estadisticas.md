@@ -185,3 +185,23 @@ Las pruebas de clima verifican los códigos y mensajes; el frontend comprueba
 que no agrega el aviso de 16 días a un error genérico. Esta mejora permite
 identificar la causa tras desplegarla; no demuestra que la falla de producción
 haya sido resuelta ni introduce un respaldo con datos simulados.
+
+
+### Límite de consultas confirmado (2026-10-13)
+
+Los logs de Render confirmaron `WEATHER_RATE_LIMITED` con HTTP 429 del proveedor.
+Se agrega una caché en memoria de diez minutos por coordenadas (hasta 100
+pronósticos) y se comparte la solicitud en curso para consultas simultáneas del
+mismo lugar. Clima y generación de alternativas usan esa misma caché. No se sirve
+un pronóstico vencido como respaldo.
+
+Ante 429 se respetan los segundos o la fecha de `Retry-After`; si no hay un valor
+válido, se pausa un minuto antes de permitir otra consulta. La pausa aplica al
+adaptador completo, no solo a una ubicación. El frontend deja de reintentar
+automáticamente la consulta fallida y considera fresco el clima durante diez
+minutos; conserva la actualización manual.
+
+Estas medidas reducen tráfico y respetan el límite, pero no restablecen una cuota
+agotada. La caché y la pausa son locales a cada proceso y se pierden al reiniciar.
+No se determinó si la cuota corresponde solo a esta aplicación o a una IP de
+salida compartida; se requiere evidencia del proveedor o del hosting.

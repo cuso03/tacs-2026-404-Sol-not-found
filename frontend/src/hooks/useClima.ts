@@ -7,5 +7,9 @@ export function useClimaActividad(activityId: string) {
     queryKey: queryKeys.clima(activityId),
     queryFn: () => getClimaActividad(activityId),
     enabled: !!activityId,
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }

@@ -1,4 +1,4 @@
-export type WeatherErrorCode = 'WEATHER_DATE_UNAVAILABLE' | 'WEATHER_LOCATION_NOT_FOUND' | 'WEATHER_RATE_LIMITED' | 'WEATHER_TIMEOUT' | 'WEATHER_INVALID_RESPONSE' | 'WEATHER_PROVIDER_UNAVAILABLE';
+export type WeatherErrorCode = 'WEATHER_CONFIGURATION_ERROR' | 'WEATHER_DATE_UNAVAILABLE' | 'WEATHER_LOCATION_NOT_FOUND' | 'WEATHER_RATE_LIMITED' | 'WEATHER_TIMEOUT' | 'WEATHER_INVALID_RESPONSE' | 'WEATHER_PROVIDER_UNAVAILABLE';
 
 export class WeatherError extends Error {
   constructor(public readonly code: WeatherErrorCode, message: string, public readonly upstreamStatus?: number) {
@@ -8,7 +8,8 @@ export class WeatherError extends Error {
 }
 
 export const weatherErrorMessages: Record<WeatherErrorCode, string> = {
-  WEATHER_DATE_UNAVAILABLE: 'No hay pronóstico disponible para esa fecha. Consultá una fecha futura dentro de los próximos 16 días.',
+  WEATHER_CONFIGURATION_ERROR: 'El servicio de clima no está configurado correctamente. Contactá al administrador.',
+  WEATHER_DATE_UNAVAILABLE: 'No hay pronóstico disponible para esa fecha. Consultá una fecha futura dentro de los próximos 15 días.',
   WEATHER_LOCATION_NOT_FOUND: 'No se pudo encontrar la ubicación para consultar el clima. Revisá la ciudad y el país o elegí un punto en el mapa.',
   WEATHER_RATE_LIMITED: 'El proveedor de clima alcanzó temporalmente su límite de consultas. Intentá nuevamente más tarde.',
   WEATHER_TIMEOUT: 'El proveedor de clima tardó demasiado en responder. Intentá nuevamente.',
