@@ -7,6 +7,7 @@ import { CircuitBreaker, CircuitBreakerOpenError } from './CircuitBreaker';
 import { TokenBucketRateLimiter, UserRateLimiter } from './RateLimiter';
 import { IEstadisticasStore } from '../../utils/IEstadisticasStore';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 
 export interface LegacyWeatherOptions {
   baseUrl?: string;
@@ -259,7 +260,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
   }
 
   private async callRpc(lat: number, lon: number, timestamp: string): Promise<LegacyForecastResult> {
-    const requestId = `req-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const requestId = randomUUID();
     const url = `${this.baseUrl.replace(/\/$/, '')}/rpc`;
 
     const body = JSON.stringify({
