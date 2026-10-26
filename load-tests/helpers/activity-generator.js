@@ -11,6 +11,30 @@ const CIUDADES_MOCK = [
 const TIPOS_ACTIVIDAD = ['aire_libre', 'techada', 'mixta'];
 
 /**
+ * Configura la preferencia de clima del usuario autenticado a 'legacy'
+ * llamando al endpoint PATCH /api/usuarios/me/preferencias.
+ */
+export function configurarProveedorLegacy(baseUrl, token) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  };
+
+  const payload = JSON.stringify({ proveedorClima: 'legacy' });
+  console.log('[setup] Configurando preferencia de proveedor de clima a "legacy"...');
+
+  const res = http.patch(`${baseUrl}/api/usuarios/me/preferencias`, payload, { headers });
+
+  if (res.status === 200) {
+    console.log('[setup] ✓ Proveedor de clima "legacy" seleccionado exitosamente.');
+    return true;
+  } else {
+    console.warn(`[setup] ⚠️ Advertencia al seleccionar proveedor legacy: HTTP ${res.status} - ${res.body}`);
+    return false;
+  }
+}
+
+/**
  * Genera y crea 'count' actividades en MongoDB a través de la API REST del backend.
  * Devuelve un array de strings con los IDs generados.
  */

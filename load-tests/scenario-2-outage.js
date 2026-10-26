@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Counter, Rate } from 'k6/metrics';
-import { crearActividadesEnLote, limpiarActividadesEnLote } from './helpers/activity-generator.js';
+import { crearActividadesEnLote, limpiarActividadesEnLote, configurarProveedorLegacy } from './helpers/activity-generator.js';
 
 /**
  * Escenario 2: Servicio Legacy Caído (Outage / Degradado - Dinámico)
@@ -54,6 +54,9 @@ export function setup() {
   if (!token) {
     throw new Error('❌ Se requiere la variable AUTH_TOKEN con el JWT de usuario para ejecutar la prueba.');
   }
+
+  // Asegura que el usuario tenga configurado el proveedor legacy
+  configurarProveedorLegacy(baseUrl, token);
 
   const ids = crearActividadesEnLote(baseUrl, token, count);
   if (ids.length === 0) {
