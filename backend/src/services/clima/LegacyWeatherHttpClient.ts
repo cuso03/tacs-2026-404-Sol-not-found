@@ -116,21 +116,10 @@ export class LegacyWeatherHttpClient implements ILegacyWeatherHttpClient {
     }
 
     let json: unknown;
-    if (typeof response.text === 'function') {
-      const text = await response.text();
-      try {
-        json = JSON.parse(text);
-      } catch {
-        // Intentar sanitizar por si el motor de caos del binario inyectó '=' en lugar de ':'
-        try {
-          const sanitized = text.replace(/"(\w+)"\s*=\s*/g, '"$1": ');
-          json = JSON.parse(sanitized);
-        } catch {
-          throw new WeatherError('WEATHER_INVALID_RESPONSE', `El servicio legacy devolvió un cuerpo no parseable como JSON: ${text.slice(0, 200)}`);
-        }
-      }
-    } else {
+    try {
       json = await response.json();
+    } catch {
+      throw new WeatherError('WEATHER_INVALID_RESPONSE', 'El servicio legacy devolvió un cuerpo no parseable como JSON');
     }
 
     // Validación estricta con Zod
