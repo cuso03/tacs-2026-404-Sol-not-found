@@ -30,6 +30,7 @@ services:
       - RABBITMQ_URL=amqp://rabbitmq:5672
       - REDIS_URL=redis://redis:6379
       - MONGODB_URI=mongodb://${MONGO_USER:-root}:${MONGO_PASSWORD:-root}@mongo:27017/${MONGO_DATABASE:-solnotfound}?authSource=admin
+      - LEGACY_WEATHER_URL=http://legacy-weather:8080
     depends_on:
       rabbitmq:
         condition: service_started
@@ -37,6 +38,16 @@ services:
         condition: service_started
       mongo:
         condition: service_healthy
+      legacy-weather:
+        condition: service_started
+
+  legacy-weather:
+    build:
+      context: ./legacy-weather
+    container_name: tacs-legacy-weather
+    restart: unless-stopped
+    expose:
+      - "8080"
 
   redis:
     image: redis:8.10.1-alpine

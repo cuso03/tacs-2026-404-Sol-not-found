@@ -1,0 +1,5 @@
+# Sesión y credenciales que no se versionan
+.tacs/
+*.token
+session.token
+private.json
