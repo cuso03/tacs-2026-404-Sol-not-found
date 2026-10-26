@@ -6,8 +6,21 @@ import { WeatherError } from '../../utils/weatherError';
 import { CircuitBreaker, CircuitBreakerOpenError } from './CircuitBreaker';
 import { TokenBucketRateLimiter, UserRateLimiter } from './RateLimiter';
 import { IEstadisticasStore } from '../../utils/IEstadisticasStore';
-import { z } from 'zod';
-import { randomUUID } from 'crypto';
+import {
+  ILegacyWeatherHttpClient,
+  LegacyWeatherHttpClient,
+  LegacyForecastResult,
+  legacyForecastResultSchema,
+  legacyRpcResponseSchema,
+} from './LegacyWeatherHttpClient';
+
+export {
+  ILegacyWeatherHttpClient,
+  LegacyWeatherHttpClient,
+  LegacyForecastResult,
+  legacyForecastResultSchema,
+  legacyRpcResponseSchema,
+};
 
 export interface LegacyWeatherOptions {
   baseUrl?: string;
@@ -20,35 +33,8 @@ export interface LegacyWeatherOptions {
   statsStore?: IEstadisticasStore;
   cacheTtlMs?: number;
   maxCacheSize?: number;
+  httpClient?: ILegacyWeatherHttpClient;
 }
-
-const legacyForecastResultSchema = z.object({
-  condition: z.string().min(1),
-  temperature_c: z.number().finite().min(-60).max(60),
-  feels_like_c: z.number().finite().optional(),
-  humidity_pct: z.number().finite().min(0).max(100),
-  precipitation_probability_pct: z.number().finite().min(0).max(100),
-  precipitation_mm: z.number().finite().min(0).optional(),
-  wind_kph: z.number().finite().min(0),
-  wind_direction: z.string().optional(),
-  timestamp: z.string().optional(),
-  location: z.object({
-    lat: z.number().finite(),
-    lon: z.number().finite(),
-  }).optional(),
-});
-
-const legacyRpcResponseSchema = z.object({
-  id: z.union([z.string(), z.number()]),
-  status: z.string().optional(),
-  result: legacyForecastResultSchema.optional(),
-  error: z.object({
-    code: z.number().optional(),
-    message: z.string().optional(),
-  }).optional(),
-});
-
-type LegacyForecastResult = z.infer<typeof legacyForecastResultSchema>;
 
 interface CachedForecast {
   data: LegacyForecastResult;
@@ -56,9 +42,7 @@ interface CachedForecast {
 }
 
 export class LegacyWeatherAdapter implements IWeatherProvider {
-  private readonly baseUrl: string;
-  private readonly token: string;
-  private readonly timeoutMs: number;
+  public readonly httpClient: ILegacyWeatherHttpClient;
   private readonly maxRetries: number;
   private readonly cacheTtlMs: number;
   private readonly maxCacheSize: number;
@@ -73,9 +57,13 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
   private readonly cityCoords = new Map<string, { lat: number; lon: number }>();
 
   constructor(options: LegacyWeatherOptions = {}) {
-    this.baseUrl = options.baseUrl ?? (process.env.LEGACY_WEATHER_URL?.trim() || 'http://localhost:8080');
-    this.token = options.token ?? '';
-    this.timeoutMs = options.timeoutMs ?? 3000;
+    this.httpClient = options.httpClient ?? new LegacyWeatherHttpClient({
+      baseUrl: options.baseUrl,
+      token: options.token,
+      timeoutMs: options.timeoutMs,
+      statsStore: options.statsStore,
+    });
+
     this.maxRetries = options.maxRetries ?? 2;
     this.cacheTtlMs = options.cacheTtlMs ?? 10 * 60 * 1000; // 10 minutos
     this.maxCacheSize = options.maxCacheSize ?? 200; // Máximo 200 pronósticos en memoria
@@ -233,7 +221,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
       try {
         // Rate Limiter
         await this.rateLimiter.acquire(1, 4000);
-        return await this.callRpc(lat, lon, timestamp);
+        return await this.httpClient.fetchForecast(lat, lon, timestamp);
       } catch (error) {
         const isTransient = this.isTransientError(error);
         if (attempt > this.maxRetries || !isTransient) {
@@ -259,108 +247,8 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     }
   }
 
-  private async callRpc(lat: number, lon: number, timestamp: string): Promise<LegacyForecastResult> {
-    const requestId = randomUUID();
-    const url = `${this.baseUrl.replace(/\/$/, '')}/rpc`;
-
-    const body = JSON.stringify({
-      id: requestId,
-      method: 'weather.forecast',
-      params: {
-        location: { lat, lon },
-        timestamp,
-      },
-    });
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-
-    let response: Response;
-    try {
-      if (this.statsStore) {
-        await this.statsStore.incrementar('legacy_requests_total').catch(() => {});
-      }
-      response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body,
-        signal: controller.signal,
-      });
-    } catch (err: unknown) {
-      if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
-        throw new WeatherError('WEATHER_TIMEOUT', `El servicio legacy no respondió en ${this.timeoutMs}ms`, 504);
-      }
-      throw new WeatherError('WEATHER_PROVIDER_UNAVAILABLE', `Fallo de conexión hacia servicio legacy: ${err instanceof Error ? err.message : String(err)}`, 503);
-    } finally {
-      clearTimeout(timer);
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      throw new WeatherError('WEATHER_CONFIGURATION_ERROR', 'El servicio legacy rechazó la autenticación (Bearer token institucional inválido o expirado)', response.status);
-    }
-
-    if (response.status >= 500) {
-      throw new WeatherError('WEATHER_PROVIDER_UNAVAILABLE', `Servicio legacy devolvió HTTP ${response.status}`, response.status);
-    }
-
-    if (!response.ok) {
-      throw new WeatherError('WEATHER_PROVIDER_UNAVAILABLE', `Servicio legacy respondió con HTTP ${response.status}`, response.status);
-    }
-
-    let json: unknown;
-    try {
-      json = await response.json();
-    } catch {
-      throw new WeatherError('WEATHER_INVALID_RESPONSE', 'El servicio legacy devolvió un cuerpo no parseable como JSON');
-    }
-
-    // Validación estricta con Zod
-    const parsed = legacyRpcResponseSchema.safeParse(json);
-    if (!parsed.success || !parsed.data.result) {
-      throw new WeatherError('WEATHER_INVALID_RESPONSE', `La respuesta del servicio legacy no cumple el contrato esperado: ${parsed.error?.message ?? 'sin result'}`);
-    }
-
-    if (this.statsStore) {
-      await this.statsStore.incrementar('legacy_requests_success').catch(() => {});
-    }
-
-    return parsed.data.result;
-  }
-
   public async checkHealth(): Promise<{ status: 'OK' | 'DEGRADED' | 'OUTAGE'; ready: boolean; live: boolean }> {
-    const livenessUrl = `${this.baseUrl.replace(/\/$/, '')}/healthz`;
-    const readinessUrl = `${this.baseUrl.replace(/\/$/, '')}/readyz`;
-
-    let live = false;
-    let ready = false;
-
-    try {
-      const resLive = await fetch(livenessUrl, { signal: AbortSignal.timeout(2000) });
-      live = resLive.ok;
-    } catch {
-      live = false;
-    }
-
-    if (!live) {
-      return { status: 'OUTAGE', ready: false, live: false };
-    }
-
-    try {
-      const resReady = await fetch(readinessUrl, { signal: AbortSignal.timeout(2000) });
-      ready = resReady.ok;
-    } catch {
-      ready = false;
-    }
-
-    const status = ready ? 'OK' : 'DEGRADED';
-    return { status, ready, live };
+    return await this.httpClient.checkHealth();
   }
 
   private isTransientError(error: unknown): boolean {
