@@ -1,11 +1,7 @@
 #!/bin/sh
 set -e
 
-HOME_DIR="${HOME:-/root}"
-
-if [ -n "$SESSION_TOKEN" ]; then
-  mkdir -p "$HOME_DIR/.tacs"
-  printf '%s' "$SESSION_TOKEN" > "$HOME_DIR/.tacs/session.token"
-fi
+# Reenviar el puerto público 8080 hacia el puerto 127.0.0.1:9977 donde escucha el binario legacy
+socat TCP-LISTEN:8080,fork,reuseaddr TCP:127.0.0.1:9977 &
 
 exec /app/tacs-linux-amd64 "$@"

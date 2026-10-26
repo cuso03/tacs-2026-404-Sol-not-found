@@ -56,7 +56,7 @@ export class LegacyWeatherHttpClient implements ILegacyWeatherHttpClient {
   constructor(options: LegacyWeatherHttpClientOptions = {}) {
     this.baseUrl = options.baseUrl ?? (process.env.LEGACY_WEATHER_URL?.trim() || 'http://localhost:8080');
     this.token = options.token ?? (process.env.LEGACY_WEATHER_TOKEN?.trim() || process.env.SESSION_TOKEN?.trim() || '');
-    this.timeoutMs = options.timeoutMs ?? 3000;
+    this.timeoutMs = options.timeoutMs ?? 5000;
     this.statsStore = options.statsStore;
   }
 
@@ -116,10 +116,21 @@ export class LegacyWeatherHttpClient implements ILegacyWeatherHttpClient {
     }
 
     let json: unknown;
-    try {
+    if (typeof response.text === 'function') {
+      const text = await response.text();
+      try {
+        json = JSON.parse(text);
+      } catch {
+        // Intentar sanitizar por si el motor de caos del binario inyectó '=' en lugar de ':'
+        try {
+          const sanitized = text.replace(/"(\w+)"\s*=\s*/g, '"$1": ');
+          json = JSON.parse(sanitized);
+        } catch {
+          throw new WeatherError('WEATHER_INVALID_RESPONSE', `El servicio legacy devolvió un cuerpo no parseable como JSON: ${text.slice(0, 200)}`);
+        }
+      }
+    } else {
       json = await response.json();
-    } catch {
-      throw new WeatherError('WEATHER_INVALID_RESPONSE', 'El servicio legacy devolvió un cuerpo no parseable como JSON');
     }
 
     // Validación estricta con Zod

@@ -1,7 +1,7 @@
 FROM alpine:3.20
 
-# Dependencias para certificados HTTPS y healthcheck
-RUN apk add --no-cache curl ca-certificates tzdata
+# Dependencias para certificados HTTPS, healthcheck y reenvío de puertos
+RUN apk add --no-cache curl ca-certificates tzdata socat
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 # Otorgar permisos de ejecución
 RUN chmod +x /app/tacs-linux-amd64 /app/entrypoint.sh
 
-# Puerto en el que escucha el servicio RPC y probes
+# Puerto en el que escucha el servicio RPC y probes hacia otros contenedores
 EXPOSE 8080
 
 # Healthcheck usando liveness probe /healthz

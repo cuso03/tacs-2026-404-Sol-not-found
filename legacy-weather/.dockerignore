@@ -1,4 +1,6 @@
 .tacs/
 *.token
 session.token
+token.json
+.config/
 private.json
