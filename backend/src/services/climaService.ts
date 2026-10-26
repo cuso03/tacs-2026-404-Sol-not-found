@@ -2,7 +2,6 @@ import { WeatherError, WeatherErrorCode, weatherErrorMessages } from '../utils/w
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { ClimaResponseDto, climaResponseSchema } from '../dtos/climaDto';
 import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
-import { ResilientWeatherRouter } from './clima/ResilientWeatherRouter';
 
 /** Resultado de la consulta de clima para una actividad. */
 export type ConsultarClimaResult =
@@ -27,16 +26,11 @@ export class ClimaService {
       // Priorizar el usuario consultante, o el creador de la actividad (User Story 2)
       const targetUser = userId || actividad.creadorId;
 
-      let raw: ClimaResponseDto;
-      if (this.weatherProvider instanceof ResilientWeatherRouter) {
-        raw = await this.weatherProvider.getClimaForUser(
-          actividad.ubicacion,
-          actividad.fecha_horario,
-          targetUser,
-        );
-      } else {
-        raw = await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
-      }
+      const raw = await this.weatherProvider.getClima(
+        actividad.ubicacion,
+        actividad.fecha_horario,
+        targetUser,
+      );
 
       const parsed = climaResponseSchema.safeParse(raw);
       if (!parsed.success) {

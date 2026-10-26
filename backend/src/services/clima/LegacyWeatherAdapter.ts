@@ -4,7 +4,7 @@ import { ClimaResponseDto } from '../../dtos/climaDto';
 import { IWeatherProvider } from '../../interfaces/services/IWeatherProvider';
 import { WeatherError } from '../../utils/weatherError';
 import { CircuitBreaker, CircuitBreakerOpenError } from './CircuitBreaker';
-import { TokenBucketRateLimiter } from './RateLimiter';
+import { TokenBucketRateLimiter, UserRateLimiter } from './RateLimiter';
 import { IEstadisticasStore } from '../../utils/IEstadisticasStore';
 import { z } from 'zod';
 
@@ -15,6 +15,7 @@ export interface LegacyWeatherOptions {
   maxRetries?: number;
   circuitBreaker?: CircuitBreaker;
   rateLimiter?: TokenBucketRateLimiter;
+  userRateLimiter?: UserRateLimiter;
   statsStore?: IEstadisticasStore;
   cacheTtlMs?: number;
   maxCacheSize?: number;
@@ -63,6 +64,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
   private readonly maxCityCoordsSize = 100;
   public readonly circuitBreaker: CircuitBreaker;
   public readonly rateLimiter: TokenBucketRateLimiter;
+  public readonly userRateLimiter?: UserRateLimiter;
   private readonly statsStore?: IEstadisticasStore;
 
   // Colecciones acotadas con límite máximo y expulsión para prevenir memory leaks
@@ -90,9 +92,11 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
       intervalMs: 1000,
       maxTokens: 10,
     });
+
+    this.userRateLimiter = options.userRateLimiter;
   }
 
-  public async getClima(ubicacion: Ubicacion, fecha_horario: string): Promise<ClimaResponseDto> {
+  public async getClima(ubicacion: Ubicacion, fecha_horario: string, userId?: string): Promise<ClimaResponseDto> {
     const target = Date.parse(fecha_horario);
     if (!Number.isFinite(target)) {
       throw new WeatherError('WEATHER_DATE_UNAVAILABLE', 'Fecha u horario inválido');
@@ -102,9 +106,9 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     const nowIso = new Date().toISOString();
 
     // 1. Clima actual (timestamp actual)
-    const currentRaw = await this.getForecast(coords.lat, coords.lon, nowIso);
+    const currentRaw = await this.getForecast(coords.lat, coords.lon, nowIso, userId);
     // 2. Pronóstico para la fecha de la actividad
-    const targetRaw = await this.getForecast(coords.lat, coords.lon, fecha_horario);
+    const targetRaw = await this.getForecast(coords.lat, coords.lon, fecha_horario, userId);
 
     const ubicacionStr = ubicacion.tipo === 'ciudad'
       ? `${ubicacion.ciudad}, ${ubicacion.pais}`
@@ -128,7 +132,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     };
   }
 
-  public async obtenerPronostico(ubicacion: Ubicacion, fechaDesde: string, dias: number): Promise<PronosticoHora[]> {
+  public async obtenerPronostico(ubicacion: Ubicacion, fechaDesde: string, dias: number, userId?: string): Promise<PronosticoHora[]> {
     const start = Date.parse(fechaDesde);
     if (!Number.isFinite(start) || !Number.isInteger(dias) || dias <= 0) {
       throw new WeatherError('WEATHER_DATE_UNAVAILABLE', 'Rango de pronóstico inválido');
@@ -159,7 +163,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
       const batch = timestamps.slice(i, i + concurrency);
       const batchResults = await Promise.all(
         batch.map(async (ts) => {
-          const forecast = await this.getForecast(coords.lat, coords.lon, ts);
+          const forecast = await this.getForecast(coords.lat, coords.lon, ts, userId);
           return {
             fecha: ts,
             temperatura: forecast.temperature_c,
@@ -177,7 +181,14 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
   /**
    * Realiza la consulta protegida con Caché, Circuit Breaker, Rate Limiter, Retries y Timeouts.
    */
-  public async getForecast(lat: number, lon: number, timestamp: string): Promise<LegacyForecastResult> {
+  public async getForecast(lat: number, lon: number, timestamp: string, userId?: string): Promise<LegacyForecastResult> {
+    if (userId && this.userRateLimiter) {
+      const allowed = await this.userRateLimiter.consume(userId, 500);
+      if (!allowed) {
+        throw new WeatherError('WEATHER_RATE_LIMITED', `Límite de tasa por usuario excedido para ${userId}`);
+      }
+    }
+
     const roundedHour = this.roundToHourIso(timestamp);
     const cacheKey = `${lat.toFixed(3)}_${lon.toFixed(3)}_${roundedHour}`;
 

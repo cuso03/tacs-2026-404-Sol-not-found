@@ -5,7 +5,6 @@ import { pronosticoEsAdecuado } from '../../domain/clima';
 import { IEstadisticasStore } from "../../utils/IEstadisticasStore";
 import { VotacionService } from '../votacionService';
 import { NotificacionMongoRepository } from '../../repositories/notificacionMongoRepository';
-import { ResilientWeatherRouter } from './ResilientWeatherRouter';
 
 export class ClimaMonitorService {
   constructor(
@@ -25,9 +24,11 @@ export class ClimaMonitorService {
       if (horasHastaLaActividad > actividad.reglasClima.horas_anticipacion) return;
 
       // Respetar el proveedor preferido por el creador de la actividad (User Story 2)
-      const pronostico = this.weatherProvider instanceof ResilientWeatherRouter
-        ? await this.weatherProvider.getClimaForUser(actividad.ubicacion, actividad.fecha_horario, actividad.creadorId)
-        : await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
+      const pronostico = await this.weatherProvider.getClima(
+        actividad.ubicacion,
+        actividad.fecha_horario,
+        actividad.creadorId,
+      );
 
       await this.statsStore.incrementar('consultas_clima');
 

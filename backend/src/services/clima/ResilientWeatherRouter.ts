@@ -22,23 +22,11 @@ export class ResilientWeatherRouter implements IWeatherProvider {
 
   /**
    * Implementación de la interfaz unificada IWeatherProvider.
-   * Utiliza el proveedor default por defecto, o el legacy si no hay usuario especificado.
-   */
-  public async getClima(ubicacion: Ubicacion, fecha_horario: string): Promise<ClimaResponseDto> {
-    const res = await this.getClimaForUser(ubicacion, fecha_horario);
-    return res;
-  }
-
-  public async obtenerPronostico(ubicacion: Ubicacion, fechaDesde: string, dias: number): Promise<PronosticoHora[]> {
-    return this.obtenerPronosticoForUser(ubicacion, fechaDesde, dias);
-  }
-
-  /**
    * Consulta el clima considerando la preferencia del usuario especificado.
    * Si el usuario eligió 'legacy', consulta el servicio legacy con protección de resiliencia.
    * Si el legacy falla o su Circuit Breaker está abierto, aplica Fallback automático a Visual Crossing.
    */
-  public async getClimaForUser(
+  public async getClima(
     ubicacion: Ubicacion,
     fecha_horario: string,
     userId?: string,
@@ -48,7 +36,7 @@ export class ResilientWeatherRouter implements IWeatherProvider {
 
     if (targetProvider === 'legacy') {
       try {
-        const legacyData = await this.legacyProvider.getClima(ubicacion, fecha_horario);
+        const legacyData = await this.legacyProvider.getClima(ubicacion, fecha_horario, userId);
         return {
           ...legacyData,
           proveedor: 'legacy',
@@ -69,7 +57,7 @@ export class ResilientWeatherRouter implements IWeatherProvider {
         });
 
         // Fallback al proveedor por defecto (Visual Crossing)
-        const fallbackData = await this.defaultProvider.getClima(ubicacion, fecha_horario);
+        const fallbackData = await this.defaultProvider.getClima(ubicacion, fecha_horario, userId);
         return {
           ...fallbackData,
           proveedor: 'legacy',
@@ -79,7 +67,7 @@ export class ResilientWeatherRouter implements IWeatherProvider {
     }
 
     // Proveedor por defecto
-    const defaultData = await this.defaultProvider.getClima(ubicacion, fecha_horario);
+    const defaultData = await this.defaultProvider.getClima(ubicacion, fecha_horario, userId);
     return {
       ...defaultData,
       proveedor: 'default',
@@ -88,9 +76,21 @@ export class ResilientWeatherRouter implements IWeatherProvider {
   }
 
   /**
+   * Alias de conveniencia retrocompatible para getClima con usuario explícito.
+   */
+  public async getClimaForUser(
+    ubicacion: Ubicacion,
+    fecha_horario: string,
+    userId?: string,
+    forcedProvider?: 'default' | 'legacy',
+  ): Promise<ResilientClimaResult> {
+    return this.getClima(ubicacion, fecha_horario, userId, forcedProvider);
+  }
+
+  /**
    * Obtiene pronóstico horario considerando la preferencia del usuario con fallback.
    */
-  public async obtenerPronosticoForUser(
+  public async obtenerPronostico(
     ubicacion: Ubicacion,
     fechaDesde: string,
     dias: number,
@@ -101,24 +101,42 @@ export class ResilientWeatherRouter implements IWeatherProvider {
 
     if (targetProvider === 'legacy') {
       try {
-        return await this.legacyProvider.obtenerPronostico(ubicacion, fechaDesde, dias);
+        return await this.legacyProvider.obtenerPronostico(ubicacion, fechaDesde, dias, userId);
       } catch (legacyError) {
         if (this.statsStore) {
           await this.statsStore.incrementar('legacy_fallbacks_total').catch(() => {});
         }
         console.warn('[ResilientWeatherRouter] Fallo en pronóstico legacy. Aplicando fallback a proveedor por defecto:', legacyError);
-        return await this.defaultProvider.obtenerPronostico(ubicacion, fechaDesde, dias);
+        return await this.defaultProvider.obtenerPronostico(ubicacion, fechaDesde, dias, userId);
       }
     }
 
-    return await this.defaultProvider.obtenerPronostico(ubicacion, fechaDesde, dias);
+    return await this.defaultProvider.obtenerPronostico(ubicacion, fechaDesde, dias, userId);
   }
 
+  /**
+   * Alias de conveniencia retrocompatible para obtenerPronostico con usuario explícito.
+   */
+  public async obtenerPronosticoForUser(
+    ubicacion: Ubicacion,
+    fechaDesde: string,
+    dias: number,
+    userId?: string,
+    forcedProvider?: 'default' | 'legacy',
+  ): Promise<PronosticoHora[]> {
+    return this.obtenerPronostico(ubicacion, fechaDesde, dias, userId, forcedProvider);
+  }
+
+  /**
+   * Resuelve el proveedor preferido para un usuario desde la base de datos.
+   * Si no se especifica usuario o no tiene preferencia configurada, devuelve 'default'.
+   */
   private async resolveProviderForUser(userId?: string): Promise<'default' | 'legacy'> {
     if (!userId || !this.usuarioRepo) return 'default';
     try {
       return await this.usuarioRepo.obtenerProveedorClima(userId);
-    } catch {
+    } catch (error) {
+      console.warn(`[ResilientWeatherRouter] Error al consultar preferencia de usuario ${userId}:`, error);
       return 'default';
     }
   }
