@@ -39,8 +39,12 @@ const successRate = new Rate('successful_requests');
 const cacheHitGuess = new Counter('fast_responses_cache');
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const ACTIVIDAD_ID = __ENV.ACTIVIDAD_ID || 'test-actividad-id';
+const ACTIVIDAD_ID = __ENV.ACTIVIDAD_ID || '';
 const TOKEN = __ENV.AUTH_TOKEN || '';
+
+if (!TOKEN || !ACTIVIDAD_ID) {
+  console.warn('⚠️ AVISO: Se requiere definir ACTIVIDAD_ID y AUTH_TOKEN (JWT de usuario) para ejecutar las pruebas de carga contra /api/actividades/:id/clima.');
+}
 
 export default function () {
   const headers = {
