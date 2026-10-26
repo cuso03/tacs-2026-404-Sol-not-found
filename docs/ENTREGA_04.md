@@ -113,14 +113,10 @@ flowchart TB
 
 ---
 
-## 5. Cuentas Institucionales Utilizadas
+## 5. Cuenta Institucional Utilizada
 
-Para el flujo de autenticación y operación del servicio legacy de UTN FRBA:
-- **Dominio requerido:** `@frba.utn.edu.ar`
-- **Client ID de Google OIDC:** `235030233089-137pks34ei7rahu2mu2t02mh1917139k.apps.googleusercontent.com`
-- **Cuentas institucionales de prueba:**
-  - `alumno.tacs@frba.utn.edu.ar`
-  - `docente.tacs@frba.utn.edu.ar`
+Para el flujo de autenticación y operación del servicio legacy:
+- `fnegri@frba.utn.edu.ar`
 
 ---
 
