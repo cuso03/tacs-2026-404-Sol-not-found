@@ -133,23 +133,25 @@ npm --prefix backend test tests/resilience/
 ```
 Verifica unitariamente el Circuit Breaker, Retries con Jitter, Timeouts, Caché en memoria y Fallback sin requerir el binario real.
 
-### Tests de Carga Reales (Load Testing con k6)
-Las pruebas de carga se ejecutan mediante scripts de **Grafana k6** contra los contenedores reales levantados con `docker compose up -d` (requieren pasar `ACTIVIDAD_ID` y `AUTH_TOKEN`):
+### Tests de Carga Reales Dinámicos (Load Testing con k6)
+Las pruebas de carga se ejecutan mediante scripts de **Grafana k6** contra los contenedores reales levantados con `docker compose up -d`. Los scripts son dinámicos: en la fase `setup()` crean automáticamente 50 actividades en MongoDB con el token del usuario y fechas válidas en los próximos 15 días, las consultan concurrentemente y en `teardown()` las limpian:
 ```bash
-# Definir variables obligatorias
-export ACTIVIDAD_ID="6adfab58e9f1720175168335"
+# Definir variable obligatoria (JWT institucional del usuario)
 export AUTH_TOKEN="<TU_TOKEN_JWT>"
 
-# Escenario 1: Servicio legacy activo (evalúa latencias y caché en memoria)
-k6 run -e ACTIVIDAD_ID=$ACTIVIDAD_ID -e AUTH_TOKEN=$AUTH_TOKEN load-tests/scenario-1-healthy.js
+# Escenario 1: Servicio legacy activo (evalúa latencias y caché en memoria bajo 50 actividades concurrentes)
+k6 run -e AUTH_TOKEN=$AUTH_TOKEN load-tests/scenario-1-healthy.js
 
 # Simular caída / degradación del servicio legacy
 docker compose stop legacy-weather
 
 # Escenario 2: Servicio legacy caído (evalúa 100% de 200 OK mediante Fallback y Circuit Breaker OPEN)
-k6 run -e ACTIVIDAD_ID=$ACTIVIDAD_ID -e AUTH_TOKEN=$AUTH_TOKEN load-tests/scenario-2-outage.js
+k6 run -e AUTH_TOKEN=$AUTH_TOKEN load-tests/scenario-2-outage.js
+
+# Restaurar el servicio legacy
+docker compose start legacy-weather
 
 # O alternativamente mediante la imagen de Docker de k6 (sin instalación local):
-docker run --rm -i --network=host grafana/k6 run -e ACTIVIDAD_ID=$ACTIVIDAD_ID -e AUTH_TOKEN=$AUTH_TOKEN - < load-tests/scenario-1-healthy.js
+docker run --rm -i --network=host grafana/k6 run -e AUTH_TOKEN=$AUTH_TOKEN - < load-tests/scenario-1-healthy.js
 ```
 Para más detalles de configuración de umbrales y métricas, ver [`load-tests/README.md`](../load-tests/README.md).

@@ -1,17 +1,20 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Counter, Rate } from 'k6/metrics';
+import { crearActividadesEnLote, limpiarActividadesEnLote } from './helpers/activity-generator.js';
 
 /**
- * Escenario 1: Servicio Legacy Activo y Saludable
+ * Escenario 1: Servicio Legacy Activo y Saludable (Dinámico)
  *
- * Evalúa la disponibilidad, latencia y aciertos de caché del backend
- * cuando el contenedor 'legacy-weather' está activo y respondiendo.
+ * 1. setup(): Crea 50 actividades en MongoDB con el token del usuario y fechas válidas.
+ * 2. default(data): VUs concurrentes consultan en paralelo el clima de las actividades creadas.
+ * 3. teardown(data): Elimina las 50 actividades de prueba al finalizar.
  *
- * Ejecución:
- *   k6 run load-tests/scenario-1-healthy.js
- *   O con Docker:
- *   docker run --rm -i --network=host grafana/k6 run - < load-tests/scenario-1-healthy.js
+ * Ejecución con k6 local:
+ *   k6 run -e AUTH_TOKEN="<TU_TOKEN_JWT>" load-tests/scenario-1-healthy.js
+ *
+ * O con Docker:
+ *   docker run --rm -i --network=host grafana/k6 run -e AUTH_TOKEN="<TU_TOKEN_JWT>" - < load-tests/scenario-1-healthy.js
  */
 
 export const options = {
@@ -38,23 +41,42 @@ export const options = {
 const successRate = new Rate('successful_requests');
 const cacheHitGuess = new Counter('fast_responses_cache');
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const ACTIVIDAD_ID = __ENV.ACTIVIDAD_ID || '';
-const TOKEN = __ENV.AUTH_TOKEN || '';
+export function setup() {
+  const baseUrl = __ENV.BASE_URL || 'http://localhost:3000';
+  const token = __ENV.AUTH_TOKEN || '';
+  const count = parseInt(__ENV.ACTIVITY_COUNT || '50', 10);
 
-if (!TOKEN || !ACTIVIDAD_ID) {
-  console.warn('⚠️ AVISO: Se requiere definir ACTIVIDAD_ID y AUTH_TOKEN (JWT de usuario) para ejecutar las pruebas de carga contra /api/actividades/:id/clima.');
-}
-
-export default function () {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  if (TOKEN) {
-    headers['Authorization'] = `Bearer ${TOKEN}`;
+  if (!token) {
+    throw new Error('❌ Se requiere la variable AUTH_TOKEN con el JWT de usuario para ejecutar la prueba.');
   }
 
-  const res = http.get(`${BASE_URL}/api/actividades/${ACTIVIDAD_ID}/clima`, { headers });
+  const ids = crearActividadesEnLote(baseUrl, token, count);
+  if (ids.length === 0) {
+    throw new Error('❌ No se pudo crear ninguna actividad de prueba. Verifica el backend y el token.');
+  }
+
+  return {
+    baseUrl,
+    token,
+    actividadesIds: ids,
+  };
+}
+
+export default function (data) {
+  if (!data || !data.actividadesIds || data.actividadesIds.length === 0) {
+    return;
+  }
+
+  // Selección aleatoria para simular tráfico concurrente distribuido sobre múltiples actividades
+  const idx = Math.floor(Math.random() * data.actividadesIds.length);
+  const actividadId = data.actividadesIds[idx];
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${data.token}`,
+  };
+
+  const res = http.get(`${data.baseUrl}/api/actividades/${actividadId}/clima`, { headers });
 
   const isOk = check(res, {
     'status es 200 OK': (r) => r.status === 200,
@@ -70,10 +92,19 @@ export default function () {
 
   successRate.add(isOk);
 
-  // Si respondió en < 50ms, casi con seguridad fue atendida por la caché en memoria del backend
+  // Si respondió en < 50ms, fue atendida por la caché en memoria del backend
   if (res.timings.duration < 50) {
     cacheHitGuess.add(1);
   }
 
   sleep(0.2); // Pequeña pausa entre iteraciones de cada VU
+}
+
+export function teardown(data) {
+  const keep = __ENV.KEEP_ACTIVITIES === 'true';
+  if (!keep && data && data.actividadesIds) {
+    limpiarActividadesEnLote(data.baseUrl, data.token, data.actividadesIds);
+  } else if (keep) {
+    console.log(`[teardown] KEEP_ACTIVITIES=true: Se conservan las ${data.actividadesIds?.length} actividades en la base.`);
+  }
 }

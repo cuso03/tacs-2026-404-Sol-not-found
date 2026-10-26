@@ -1,20 +1,25 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Counter, Rate } from 'k6/metrics';
+import { crearActividadesEnLote, limpiarActividadesEnLote } from './helpers/activity-generator.js';
 
 /**
- * Escenario 2: Servicio Legacy Caído (Outage / Degradado)
+ * Escenario 2: Servicio Legacy Caído (Outage / Degradado - Dinámico)
  *
- * Evalúa la tolerancia a fallos del sistema cuando el contenedor 'legacy-weather'
- * está detenido (`docker compose stop legacy-weather`) o arrojando fallos 503 (`rollDice`).
+ * 1. setup(): Crea 50 actividades en MongoDB con el token del usuario.
+ * 2. default(data): VUs concurrentes consultan el clima mientras 'legacy-weather' está detenido
+ *    o degradado. Se valida que el Circuit Breaker actúe y conmute a Fallback (HTTP 200 OK).
+ * 3. teardown(data): Elimina las 50 actividades de prueba al finalizar.
  *
- * La aplicación debe mantener alta disponibilidad (100% de respuestas 200 OK)
- * activando transparentemente el Circuit Breaker y conmutando a Fallback (Visual Crossing).
+ * Ejecución con k6 local:
+ *   # 1. Simular caída del legacy:
+ *   docker compose stop legacy-weather
  *
- * Ejecución:
- *   k6 run load-tests/scenario-2-outage.js
- *   O con Docker:
- *   docker run --rm -i --network=host grafana/k6 run - < load-tests/scenario-2-outage.js
+ *   # 2. Ejecutar la prueba:
+ *   k6 run -e AUTH_TOKEN="<TU_TOKEN_JWT>" load-tests/scenario-2-outage.js
+ *
+ *   # 3. Restaurar el contenedor:
+ *   docker compose start legacy-weather
  */
 
 export const options = {
@@ -41,23 +46,42 @@ export const options = {
 const fallbackCounter = new Counter('fallbacks_triggered');
 const successRate = new Rate('successful_requests');
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
-const ACTIVIDAD_ID = __ENV.ACTIVIDAD_ID || '';
-const TOKEN = __ENV.AUTH_TOKEN || '';
+export function setup() {
+  const baseUrl = __ENV.BASE_URL || 'http://localhost:3000';
+  const token = __ENV.AUTH_TOKEN || '';
+  const count = parseInt(__ENV.ACTIVITY_COUNT || '50', 10);
 
-if (!TOKEN || !ACTIVIDAD_ID) {
-  console.warn('⚠️ AVISO: Se requiere definir ACTIVIDAD_ID y AUTH_TOKEN (JWT de usuario) para ejecutar las pruebas de carga contra /api/actividades/:id/clima.');
-}
-
-export default function () {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  if (TOKEN) {
-    headers['Authorization'] = `Bearer ${TOKEN}`;
+  if (!token) {
+    throw new Error('❌ Se requiere la variable AUTH_TOKEN con el JWT de usuario para ejecutar la prueba.');
   }
 
-  const res = http.get(`${BASE_URL}/api/actividades/${ACTIVIDAD_ID}/clima`, { headers });
+  const ids = crearActividadesEnLote(baseUrl, token, count);
+  if (ids.length === 0) {
+    throw new Error('❌ No se pudo crear ninguna actividad de prueba. Verifica el backend y el token.');
+  }
+
+  return {
+    baseUrl,
+    token,
+    actividadesIds: ids,
+  };
+}
+
+export default function (data) {
+  if (!data || !data.actividadesIds || data.actividadesIds.length === 0) {
+    return;
+  }
+
+  // Selección aleatoria para simular tráfico concurrente distribuido sobre múltiples actividades
+  const idx = Math.floor(Math.random() * data.actividadesIds.length);
+  const actividadId = data.actividadesIds[idx];
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${data.token}`,
+  };
+
+  const res = http.get(`${data.baseUrl}/api/actividades/${actividadId}/clima`, { headers });
 
   const isOk = check(res, {
     'status es 200 OK (disponibilidad preservada)': (r) => r.status === 200,
@@ -91,4 +115,13 @@ export default function () {
   }
 
   sleep(0.2);
+}
+
+export function teardown(data) {
+  const keep = __ENV.KEEP_ACTIVITIES === 'true';
+  if (!keep && data && data.actividadesIds) {
+    limpiarActividadesEnLote(data.baseUrl, data.token, data.actividadesIds);
+  } else if (keep) {
+    console.log(`[teardown] KEEP_ACTIVITIES=true: Se conservan las ${data.actividadesIds?.length} actividades en la base.`);
+  }
 }
