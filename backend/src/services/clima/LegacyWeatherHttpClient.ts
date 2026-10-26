@@ -55,7 +55,7 @@ export class LegacyWeatherHttpClient implements ILegacyWeatherHttpClient {
 
   constructor(options: LegacyWeatherHttpClientOptions = {}) {
     this.baseUrl = options.baseUrl ?? (process.env.LEGACY_WEATHER_URL?.trim() || 'http://localhost:8080');
-    this.token = options.token ?? '';
+    this.token = options.token ?? (process.env.LEGACY_WEATHER_TOKEN?.trim() || process.env.SESSION_TOKEN?.trim() || '');
     this.timeoutMs = options.timeoutMs ?? 3000;
     this.statsStore = options.statsStore;
   }
