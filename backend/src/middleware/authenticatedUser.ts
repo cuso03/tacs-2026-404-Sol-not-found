@@ -107,6 +107,31 @@ export async function requireAuthenticatedUser(req: Request, res: Response, next
 }
 
 /**
+ * Si se envía token de autenticación, lo valida y setea `req.userId`.
+ * Si no se envía o es inválido, continúa sin identidad de usuario (opcional).
+ */
+export async function optionalAuthenticatedUser(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  const header = req.header('authorization')?.trim() ?? '';
+  const match = /^Bearer\s+(\S+)$/i.exec(header);
+  if (!match) {
+    return next();
+  }
+
+  try {
+    const expectedIssuer = issuer();
+    const expectedAudience = audience();
+    const payload = await verifyToken(match[1], expectedIssuer, expectedAudience);
+    if (payload.sub) {
+      req.auth = payload;
+      req.userId = payload.sub;
+    }
+  } catch {
+    // Continuar sin usuario
+  }
+  next();
+}
+
+/**
  * Exige el rol admin dentro del claim de roles del token ya verificado.
  * El rol nunca se acepta desde un header del cliente.
  */

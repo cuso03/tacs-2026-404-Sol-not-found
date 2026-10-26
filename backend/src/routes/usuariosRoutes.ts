@@ -6,16 +6,15 @@ import { UsuarioMongoRepository } from '../repositories/usuarioMongoRepository';
 
 export function createUsuariosRoutes(
   service: ActividadesService, 
-  usuarioRepo: UsuarioMongoRepository // 1. Recibimos el repo
+  usuarioRepo: UsuarioMongoRepository
 ): Router {
   const router = Router();
-  
-  // 2. Se lo pasamos al controlador
   const controller = createUsuariosController(service, usuarioRepo);
 
   router.get('/me/actividades', requireAuthenticatedUser, controller.getDashboard);
-  // PATCH (no GET): el upsert escribe, y un GET debe ser seguro.
   router.patch('/me', requireAuthenticatedUser, controller.syncPerfil);
+  router.get('/me/preferencias', requireAuthenticatedUser, controller.getPreferencias);
+  router.patch('/me/preferencias', requireAuthenticatedUser, controller.actualizarPreferencia);
 
   return router;
 }

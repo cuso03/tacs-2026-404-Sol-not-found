@@ -11,7 +11,7 @@ export function createClimaController(service: ClimaService) {
       return;
     }
 
-    const result = await service.consultarClima(actividadId);
+    const result = await service.consultarClima(actividadId, req.userId);
     if (result.status === 'not_found') {
       res.status(404).json({ error: 'Actividad no encontrada' });
       return;

@@ -2,6 +2,7 @@ import { WeatherError, WeatherErrorCode, weatherErrorMessages } from '../utils/w
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { ClimaResponseDto, climaResponseSchema } from '../dtos/climaDto';
 import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
+import { ResilientWeatherRouter } from './clima/ResilientWeatherRouter';
 
 /** Resultado de la consulta de clima para una actividad. */
 export type ConsultarClimaResult =
@@ -11,7 +12,6 @@ export type ConsultarClimaResult =
 
 /**
  * Consulta de clima para una actividad — verifica que exista y obtiene clima actual y pronóstico.
- * Por ahora la búsqueda es solo por ID de actividad.
  */
 export class ClimaService {
   constructor(
@@ -19,21 +19,35 @@ export class ClimaService {
     private readonly weatherProvider: IWeatherProvider,
   ) {}
 
-  async consultarClima(actividadId: string): Promise<ConsultarClimaResult> {
+  async consultarClima(actividadId: string, userId?: string): Promise<ConsultarClimaResult> {
     const actividad = await this.repository.findById(actividadId);
     if (!actividad) return { status: 'not_found' };
 
     try {
-      const raw = await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
+      // Priorizar el usuario consultante, o el creador de la actividad (User Story 2)
+      const targetUser = userId || actividad.creadorId;
+
+      let raw: ClimaResponseDto;
+      if (this.weatherProvider instanceof ResilientWeatherRouter) {
+        raw = await this.weatherProvider.getClimaForUser(
+          actividad.ubicacion,
+          actividad.fecha_horario,
+          targetUser,
+        );
+      } else {
+        raw = await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
+      }
+
       const parsed = climaResponseSchema.safeParse(raw);
-      if (!parsed.success) throw new WeatherError('WEATHER_INVALID_RESPONSE', 'La respuesta no cumple el contrato de clima');
+      if (!parsed.success) {
+        throw new WeatherError('WEATHER_INVALID_RESPONSE', 'La respuesta no cumple el contrato de clima');
+      }
       return { status: 'ok', data: parsed.data };
     } catch (error) {
       const code: WeatherErrorCode = error instanceof WeatherError ? error.code
         : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'WEATHER_TIMEOUT'
         : 'WEATHER_PROVIDER_UNAVAILABLE';
       const cause = error instanceof Error ? error.cause as { code?: string } | undefined : undefined;
-      // No registrar tokens, URLs completas ni cuerpos del proveedor.
       console.error('[ClimaService] Consulta fallida', {
         actividadId, code,
         upstreamStatus: error instanceof WeatherError ? error.upstreamStatus : undefined,

@@ -5,6 +5,7 @@ import { pronosticoEsAdecuado } from '../../domain/clima';
 import { IEstadisticasStore } from "../../utils/IEstadisticasStore";
 import { VotacionService } from '../votacionService';
 import { NotificacionMongoRepository } from '../../repositories/notificacionMongoRepository';
+import { ResilientWeatherRouter } from './ResilientWeatherRouter';
 
 export class ClimaMonitorService {
   constructor(
@@ -12,7 +13,7 @@ export class ClimaMonitorService {
     private notifier: INotifier,
     private statsStore: IEstadisticasStore,
     private votacionService?: VotacionService,
-    private notificacionRepo?: NotificacionMongoRepository // Añadido aquí
+    private notificacionRepo?: NotificacionMongoRepository
   ) {}
 
   async checkActividadWeather(actividad: Actividad): Promise<void> {
@@ -23,7 +24,11 @@ export class ClimaMonitorService {
       if (horasHastaLaActividad <= 0) return;
       if (horasHastaLaActividad > actividad.reglasClima.horas_anticipacion) return;
 
-      const pronostico = await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
+      // Respetar el proveedor preferido por el creador de la actividad (User Story 2)
+      const pronostico = this.weatherProvider instanceof ResilientWeatherRouter
+        ? await this.weatherProvider.getClimaForUser(actividad.ubicacion, actividad.fecha_horario, actividad.creadorId)
+        : await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
+
       await this.statsStore.incrementar('consultas_clima');
 
       const climaFavorable = pronosticoEsAdecuado(pronostico.pronostico_actividad, actividad.reglasClima);

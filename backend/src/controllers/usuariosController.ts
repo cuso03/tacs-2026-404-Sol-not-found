@@ -3,10 +3,15 @@ import { ActividadesService } from '../services/actividadesService';
 import { paginacionSchema } from '../dtos/busquedaDto';
 import { UsuarioMongoRepository } from '../repositories/usuarioMongoRepository';
 import { rolesDelToken } from '../middleware/authenticatedUser';
+import { z } from 'zod';
+
+const preferenciaClimaSchema = z.object({
+  proveedorClima: z.enum(['default', 'legacy']),
+});
 
 export function createUsuariosController(
   service: ActividadesService, 
-  usuarioRepo: UsuarioMongoRepository // 1. Recibimos el repo inyectado
+  usuarioRepo: UsuarioMongoRepository
 ) {
   async function getDashboard(req: Request, res: Response): Promise<void> {
     const parsed = paginacionSchema.safeParse(req.query);
@@ -28,14 +33,10 @@ export function createUsuariosController(
     });
   }
 
-  // 2. Agregamos la palabra clave 'async function'
   /**
    * Sincroniza el perfil del usuario autenticado (upsert). `email` y `nombre`
    * salen del access token ya verificado, nunca del body: el cliente no decide
-   * qué se persiste. El `sub` es la unica identidad aceptada.
-   *
-   * Es PATCH y no GET porque escribe: un GET debe ser seguro y repeatable sin
-   * efectos, y un prefetch o crawler no debe poder disparar la escritura.
+   * qué se persiste. El `sub` es la única identidad aceptada.
    */
   async function syncPerfil(req: Request, res: Response): Promise<void> {
     const email = typeof req.auth?.email === 'string' ? req.auth.email : undefined;
@@ -51,6 +52,33 @@ export function createUsuariosController(
     });
   }
 
-  // 3. Exportamos ambas funciones para que el router las vea
-  return { getDashboard, syncPerfil };
+  /**
+   * Obtiene la preferencia de proveedor de clima del usuario autenticado ('default' | 'legacy').
+   */
+  async function getPreferencias(req: Request, res: Response): Promise<void> {
+    const proveedorClima = await usuarioRepo.obtenerProveedorClima(req.userId!);
+    res.status(200).json({
+      sub: req.userId,
+      proveedorClima,
+    });
+  }
+
+  /**
+   * Permite cambiar la preferencia de proveedor de clima ('default' | 'legacy').
+   */
+  async function actualizarPreferencia(req: Request, res: Response): Promise<void> {
+    const parsed = preferenciaClimaSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: 'Preferencia inválida. Debe ser "default" o "legacy"', details: parsed.error.issues });
+      return;
+    }
+
+    await usuarioRepo.actualizarProveedorClima(req.userId!, parsed.data.proveedorClima);
+    res.status(200).json({
+      sub: req.userId,
+      proveedorClima: parsed.data.proveedorClima,
+    });
+  }
+
+  return { getDashboard, syncPerfil, getPreferencias, actualizarPreferencia };
 }
