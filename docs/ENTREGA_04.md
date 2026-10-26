@@ -29,10 +29,10 @@ Esto levantará los siguientes servicios en una red interna compartida:
 
 ### Autenticación del Servicio Legacy
 
-El binario legacy requiere un token Google OIDC para validar pertenencia a la organización `@frba.utn.edu.ar`.
-1. Al iniciarse, el binario busca la sesión en `~/.tacs/session.token`.
-2. Para desarrollo local o inicialización, se puede ejecutar el binario en local o pasar la variable `LEGACY_WEATHER_TOKEN=<token>` en `backend/.env`.
-3. Una vez generado el archivo `session.token`, se mantiene persistido en el contenedor o se inyecta mediante variable de entorno sin comitearse en Git.
+El binario legacy gestiona internamente su autenticación mediante Google OIDC para validar pertenencia a la organización `@frba.utn.edu.ar`.
+1. Al iniciarse, el binario busca y administra de forma autónoma su sesión en `~/.tacs/session.token`.
+2. El propio binario se encarga de crear su directorio y resolver el ciclo de vida del token sin requerir configuración manual en el backend.
+3. El archivo `session.token` se mantiene persistido localmente por el binario dentro del contenedor y se encuentra debidamente ignorado en Git.
 
 ---
 

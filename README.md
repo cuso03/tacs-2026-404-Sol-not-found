@@ -27,7 +27,6 @@ cp backend/.env.example backend/.env
 | `AUTH0_ROLES_CLAIM` | Claim de roles del JWT (default: `https://solnotfound.app/roles`) | No |
 | `AUTH0_JWKS_URI` | Override de la URI del JWKS; solo para tests/proxies, no usar en produccion | No |
 | `LEGACY_WEATHER_URL` | URL del servicio legacy (default en docker: `http://legacy-weather:8080`) | No |
-| `LEGACY_WEATHER_TOKEN` | Token OIDC para autenticar requests hacia el servicio legacy | No |
 
 Para el build del frontend, `docker-compose.yml` inyecta además (definelas en un
 archivo `.env` en la raiz, ver `.env.example`):

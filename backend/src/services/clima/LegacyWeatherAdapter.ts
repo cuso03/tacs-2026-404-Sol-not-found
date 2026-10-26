@@ -73,7 +73,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
 
   constructor(options: LegacyWeatherOptions = {}) {
     this.baseUrl = options.baseUrl ?? (process.env.LEGACY_WEATHER_URL?.trim() || 'http://localhost:8080');
-    this.token = options.token ?? (process.env.LEGACY_WEATHER_TOKEN?.trim() || '');
+    this.token = options.token ?? '';
     this.timeoutMs = options.timeoutMs ?? 3000;
     this.maxRetries = options.maxRetries ?? 2;
     this.cacheTtlMs = options.cacheTtlMs ?? 10 * 60 * 1000; // 10 minutos
