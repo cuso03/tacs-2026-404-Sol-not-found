@@ -92,7 +92,7 @@ export function createApp(
   }
 
   const actividadesService = new ActividadesService(actividadesRepository, estadisticas);
-  const estadisticasStoreService = new EstadisticasStoreService(estadisticas)
+  const estadisticasStoreService = new EstadisticasStoreService(estadisticas);
 
   if (process.env.NODE_ENV !== 'test') { // si ejecutamos tests, no usamos ni cron ni nos conectamos con telegram.
     const notificationWorker = new NotificationWorker(telegramService);
@@ -119,7 +119,9 @@ export function createApp(
   app.use('/api/actividades', createActividadesRoutes(actividadesRepository, actividadesService, votacionService, effectiveWeatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
  // app.use('/api/notificaciones', notificacionesRoutes);
-  app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService))
+  
+  const resilientRouter = effectiveWeatherProvider instanceof ResilientWeatherRouter ? effectiveWeatherProvider : undefined;
+  app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService, resilientRouter));
 
   if (swaggerEnabled()) {
     app.get('/openapi.json', (_req, res) => res.json(openApiDocument));

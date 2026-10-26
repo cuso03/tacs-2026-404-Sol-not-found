@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { Compass, Gauge, LogOut, Plus, ShieldCheck, SunMedium, UserRound } from 'lucide-react';
+import { CloudSun, Compass, Gauge, LogOut, Plus, ShieldCheck, SunMedium, UserRound } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import useIsAdmin from '../auth/useIsAdmin';
 import CreateActivityModal from './CreateActivityModal';
 import { Button } from './ui/Button';
+import { usePreferencias, useActualizarPreferenciaClima } from '../hooks/useUsuarios';
+import type { ProveedorClima } from '../types/api';
 
 const navigation = [
   { to: '/', label: 'Descubrir', icon: Compass, end: true },
@@ -18,9 +20,13 @@ export default function Layout() {
   const { user, logout } = useAuth0();
   const isAdmin = useIsAdmin();
 
+  const { data: preferencias } = usePreferencias();
+  const actualizarPreferencia = useActualizarPreferenciaClima();
+
   const nombreUsuario = user?.name ?? user?.email ?? 'Sesión';
-  // La pestaña de administración solo se muestra si el token tiene el rol.
   const navigationVisible = navigation.filter((item) => item.to !== '/admin' || isAdmin);
+
+  const proveedorActual: ProveedorClima = preferencias?.proveedorClima ?? 'default';
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
@@ -41,6 +47,22 @@ export default function Layout() {
               </NavLink>
             ))}
           </nav>
+
+          {/* Selector de Proveedor de Clima (User Story 1) */}
+          <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700" title="Selecciona qué proveedor de clima utilizar">
+            <CloudSun className="size-3.5 text-blue-600" />
+            <span className="hidden xl:inline text-slate-500">Clima:</span>
+            <select
+              aria-label="Proveedor de clima"
+              value={proveedorActual}
+              disabled={actualizarPreferencia.isPending}
+              onChange={(e) => actualizarPreferencia.mutate(e.target.value as ProveedorClima)}
+              className="bg-transparent font-semibold text-slate-800 outline-none cursor-pointer"
+            >
+              <option value="default">Visual Crossing</option>
+              <option value="legacy">Legacy (Humedad & Datos)</option>
+            </select>
+          </div>
 
           <div className="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 lg:flex" title={user?.email}>
             <UserRound className="size-3.5" />

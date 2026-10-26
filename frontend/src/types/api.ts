@@ -2,6 +2,8 @@ export type EstadoActividad = 'PROPUESTA' | 'EN_VOTACION' | 'CONFIRMADA' | 'REPR
 export type TipoActividad = 'aire_libre' | 'techada' | 'mixta';
 export type EstadoVotacion = 'ABIERTA' | 'CERRADA';
 export type CondicionClima = 'SOLEADO' | 'NUBLADO' | 'PARCIALMENTE_NUBLADO' | 'LLUVIA' | 'TORMENTA';
+export type ProveedorClima = 'default' | 'legacy';
+export type EstadoCircuitBreaker = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 export interface UbicacionCiudad {
   tipo: 'ciudad';
@@ -93,6 +95,8 @@ export interface ClimaActividad {
   fecha_horario: string;
   clima_actual: CondicionesActuales;
   pronostico_actividad: PronosticoActividad;
+  proveedor?: ProveedorClima;
+  fallback?: boolean;
 }
 
 export interface ResultadosVotacion {
@@ -116,4 +120,36 @@ export type Estadisticas = Record<string, number>;
 export interface SimulacionMonitoreoResponse {
   mensaje: string;
   actividadEvaluada: string;
+}
+
+export interface TelemetriaClima {
+  proveedores: {
+    default: {
+      nombre: string;
+      estado: string;
+    };
+    legacy: {
+      nombre: string;
+      estado: 'OK' | 'DEGRADED' | 'OUTAGE';
+      circuitBreaker: {
+        estado: EstadoCircuitBreaker;
+        fallosConsecutivos: number;
+        ultimoFallo: string | null;
+      };
+      cache: {
+        hits: number;
+        misses: number;
+        hitRatioPct: number;
+      };
+      metricas: {
+        consultasTotales: number;
+        consultasExitosas: number;
+        consultasFallidas: number;
+        fallbacksEjecutados: number;
+        erroresTimeout: number;
+        erroresValidacion: number;
+        erroresCircuitOpen: number;
+      };
+    };
+  };
 }
