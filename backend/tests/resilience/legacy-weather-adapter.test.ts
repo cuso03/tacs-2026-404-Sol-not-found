@@ -84,6 +84,26 @@ describe('LegacyWeatherAdapter (Resilience Unit Tests)', () => {
     expect(metrics['legacy_cache_misses']).toBe(1);
   });
 
+  it('limita el tamaño máximo de la caché en memoria para prevenir memory leaks', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => mockForecastSuccess,
+    } as unknown as Response);
+
+    const maxCacheSize = 5;
+    const adapter = new LegacyWeatherAdapter({ maxCacheSize, statsStore: stats });
+
+    // Insertamos 15 pronósticos de horas distintas
+    for (let i = 0; i < 15; i++) {
+      const ts = `2026-11-14T${String(i).padStart(2, '0')}:00:00Z`;
+      await adapter.getForecast(-34.6037, -58.3816, ts);
+    }
+
+    // El tamaño de la caché debe ser exactamente <= maxCacheSize
+    expect(adapter.getCacheSize()).toBeLessThanOrEqual(maxCacheSize);
+  });
+
   it('aplica reintentos con backoff cuando el servicio responde con 500 transitorio', async () => {
     let callCount = 0;
     global.fetch = vi.fn().mockImplementation(async () => {

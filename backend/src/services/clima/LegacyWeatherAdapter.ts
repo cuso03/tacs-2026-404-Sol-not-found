@@ -17,6 +17,7 @@ export interface LegacyWeatherOptions {
   rateLimiter?: TokenBucketRateLimiter;
   statsStore?: IEstadisticasStore;
   cacheTtlMs?: number;
+  maxCacheSize?: number;
 }
 
 const legacyForecastResultSchema = z.object({
@@ -58,10 +59,13 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
   private readonly cacheTtlMs: number;
+  private readonly maxCacheSize: number;
+  private readonly maxCityCoordsSize = 100;
   public readonly circuitBreaker: CircuitBreaker;
   public readonly rateLimiter: TokenBucketRateLimiter;
   private readonly statsStore?: IEstadisticasStore;
 
+  // Colecciones acotadas con límite máximo y expulsión para prevenir memory leaks
   private readonly cache = new Map<string, CachedForecast>();
   private readonly cityCoords = new Map<string, { lat: number; lon: number }>();
 
@@ -71,6 +75,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     this.timeoutMs = options.timeoutMs ?? 3000;
     this.maxRetries = options.maxRetries ?? 2;
     this.cacheTtlMs = options.cacheTtlMs ?? 10 * 60 * 1000; // 10 minutos
+    this.maxCacheSize = options.maxCacheSize ?? 200; // Máximo 200 pronósticos en memoria
     this.statsStore = options.statsStore;
 
     this.circuitBreaker = options.circuitBreaker ?? new CircuitBreaker({
@@ -130,13 +135,15 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     }
 
     const coords = await this.resolveCoordinates(ubicacion);
-    const end = start + dias * 86400000;
     const now = Date.now();
 
-    // Generar franjas horarias a consultar (cada hora o franja principal)
+    // Acotar el horizonte máximo a 16 días para prevenir generación de arreglos infinitos en memoria
+    const maxHorizonDays = Math.min(dias, 16);
+    const end = start + maxHorizonDays * 86400000;
+
+    // Generar franjas horarias a consultar
     const timestamps: string[] = [];
     let current = Math.max(start, now);
-    // Redondear a la hora en punto
     current = Math.floor(current / 3600000) * 3600000;
 
     while (current < end) {
@@ -192,8 +199,13 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
       return await this.executeWithRetries(lat, lon, timestamp);
     });
 
-    // 3. Guardar en Caché
+    // 3. Guardar en Caché con expulsión controlada (previene memory leaks)
     this.cleanExpiredCache();
+    while (this.cache.size >= this.maxCacheSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (!oldestKey) break;
+      this.cache.delete(oldestKey);
+    }
     this.cache.set(cacheKey, {
       data: result,
       expiresAt: Date.now() + this.cacheTtlMs,
@@ -367,7 +379,6 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     const cached = this.cityCoords.get(key);
     if (cached) return cached;
 
-    // Coordenadas default comunes si falla o resolución offline
     const defaults: Record<string, { lat: number; lon: number }> = {
       'buenos aires|argentina': { lat: -34.6037, lon: -58.3816 },
       'cordoba|argentina': { lat: -31.4201, lon: -64.1888 },
@@ -376,7 +387,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     };
 
     if (defaults[key]) {
-      this.cityCoords.set(key, defaults[key]);
+      this.cacheCityCoords(key, defaults[key]);
       return defaults[key];
     }
 
@@ -387,7 +398,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
         const data = await res.json() as { results?: Array<{ latitude: number; longitude: number }> };
         if (data.results && data.results.length > 0) {
           const coords = { lat: data.results[0].latitude, lon: data.results[0].longitude };
-          this.cityCoords.set(key, coords);
+          this.cacheCityCoords(key, coords);
           return coords;
         }
       }
@@ -395,10 +406,18 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
       // ignore
     }
 
-    // Default general a Buenos Aires si no resuelve
     const fallbackCoords = { lat: -34.6037, lon: -58.3816 };
-    this.cityCoords.set(key, fallbackCoords);
+    this.cacheCityCoords(key, fallbackCoords);
     return fallbackCoords;
+  }
+
+  private cacheCityCoords(key: string, coords: { lat: number; lon: number }): void {
+    while (this.cityCoords.size >= this.maxCityCoordsSize) {
+      const oldestKey = this.cityCoords.keys().next().value;
+      if (!oldestKey) break;
+      this.cityCoords.delete(oldestKey);
+    }
+    this.cityCoords.set(key, coords);
   }
 
   private roundToHourIso(timestamp: string): string {
@@ -418,5 +437,9 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
 
   public clearCache(): void {
     this.cache.clear();
+  }
+
+  public getCacheSize(): number {
+    return this.cache.size;
   }
 }

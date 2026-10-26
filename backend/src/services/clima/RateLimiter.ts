@@ -68,23 +68,59 @@ export class TokenBucketRateLimiter {
 }
 
 /**
- * Limitador de tasa por usuario utilizando buckets independientes en memoria.
+ * Limitador de tasa por usuario utilizando buckets acotados con expulsión LRU
+ * para prevenir fugas de memoria (memory leaks).
  */
 export class UserRateLimiter {
-  private readonly buckets = new Map<string, TokenBucketRateLimiter>();
+  private readonly buckets = new Map<string, { limiter: TokenBucketRateLimiter; lastAccess: number }>();
   private readonly options: RateLimiterOptions;
+  private readonly maxBuckets: number;
 
-  constructor(options: RateLimiterOptions = { tokensPerInterval: 30, intervalMs: 60000, maxTokens: 30 }) {
+  constructor(
+    options: RateLimiterOptions = { tokensPerInterval: 30, intervalMs: 60000, maxTokens: 30 },
+    maxBuckets = 1000,
+  ) {
     this.options = options;
+    this.maxBuckets = maxBuckets;
   }
 
   public check(userId: string): boolean {
-    let bucket = this.buckets.get(userId);
-    if (!bucket) {
-      bucket = new TokenBucketRateLimiter(this.options);
-      this.buckets.set(userId, bucket);
+    const now = Date.now();
+    this.pruneStaleBuckets(now);
+
+    let entry = this.buckets.get(userId);
+    if (!entry) {
+      // Si se alcanza la capacidad máxima, expulsar el bucket más antiguo (FIFO / LRU)
+      if (this.buckets.size >= this.maxBuckets) {
+        const oldestKey = this.buckets.keys().next().value;
+        if (oldestKey) this.buckets.delete(oldestKey);
+      }
+      entry = {
+        limiter: new TokenBucketRateLimiter(this.options),
+        lastAccess: now,
+      };
+      this.buckets.set(userId, entry);
+    } else {
+      entry.lastAccess = now;
     }
-    return bucket.tryConsume(1);
+
+    return entry.limiter.tryConsume(1);
+  }
+
+  /**
+   * Expulsa buckets que no registran actividad desde hace más del doble del intervalo.
+   */
+  private pruneStaleBuckets(now: number): void {
+    const maxIdleMs = this.options.intervalMs * 2;
+    for (const [userId, entry] of this.buckets.entries()) {
+      if (now - entry.lastAccess > maxIdleMs) {
+        this.buckets.delete(userId);
+      }
+    }
+  }
+
+  public size(): number {
+    return this.buckets.size;
   }
 
   public reset(): void {
