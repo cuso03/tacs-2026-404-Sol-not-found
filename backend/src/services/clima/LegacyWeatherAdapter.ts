@@ -78,7 +78,6 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
       name: 'LegacyWeatherCircuitBreaker',
       failureThreshold: 5,
       resetTimeoutMs: 30000,
-      halfOpenSuccessThreshold: 2,
     });
 
     this.rateLimiter = options.rateLimiter ?? new TokenBucketRateLimiter({

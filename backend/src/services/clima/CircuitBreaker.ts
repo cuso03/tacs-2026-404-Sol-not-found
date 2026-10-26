@@ -5,6 +5,7 @@ export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 export interface CircuitBreakerOptions {
   failureThreshold?: number;     // Cantidad de fallos para abrir el circuito (default 5)
   resetTimeoutMs?: number;       // Tiempo de cooldown antes de pasar a HALF_OPEN (default 30000ms)
+  halfOpenSuccessThreshold?: number; // Retrocompatibilidad
   name?: string;
   onStateChange?: (from: CircuitState, to: CircuitState) => void;
 }
@@ -23,6 +24,7 @@ export class CircuitBreakerOpenError extends Error {
 export class CircuitBreaker {
   public readonly breaker: OpossumBreaker;
   private lastFailureTime = 0;
+  private consecutiveFailures = 0;
   private currentState: CircuitState = 'CLOSED';
 
   constructor(options: CircuitBreakerOptions = {}) {
@@ -39,6 +41,15 @@ export class CircuitBreaker {
       timeout: false,
     });
 
+    this.breaker.on('failure', () => {
+      this.consecutiveFailures++;
+      this.lastFailureTime = Date.now();
+    });
+
+    this.breaker.on('success', () => {
+      this.consecutiveFailures = 0;
+    });
+
     this.breaker.on('open', () => {
       this.lastFailureTime = Date.now();
       const prev = this.currentState;
@@ -53,6 +64,7 @@ export class CircuitBreaker {
     });
 
     this.breaker.on('close', () => {
+      this.consecutiveFailures = 0;
       const prev = this.currentState;
       this.currentState = 'CLOSED';
       options.onStateChange?.(prev, 'CLOSED');
@@ -85,7 +97,7 @@ export class CircuitBreaker {
 
   public async execute<T>(action: () => Promise<T>): Promise<T> {
     try {
-      return await this.breaker.fire(action);
+      return (await this.breaker.fire(action)) as T;
     } catch (error: any) {
       if (error?.code === 'EOPENBREAKER') {
         throw new CircuitBreakerOpenError();
@@ -106,10 +118,10 @@ export class CircuitBreaker {
   public getStats() {
     return {
       state: this.getState(),
-      consecutiveFailures: this.breaker.stats.failures,
+      consecutiveFailures: this.consecutiveFailures,
       lastFailureTime: this.lastFailureTime,
-      failureThreshold: (this.breaker as any).options.volumeThreshold,
-      resetTimeoutMs: (this.breaker as any).options.resetTimeout,
+      failureThreshold: this.failureThreshold,
+      resetTimeoutMs: this.resetTimeoutMs,
       opossumStats: this.breaker.stats,
     };
   }
@@ -117,7 +129,7 @@ export class CircuitBreaker {
   public getMetrics() {
     return {
       state: this.getState(),
-      consecutiveFailures: this.breaker.stats.failures,
+      consecutiveFailures: this.consecutiveFailures,
       lastFailureTime: this.lastFailureTime,
     };
   }
