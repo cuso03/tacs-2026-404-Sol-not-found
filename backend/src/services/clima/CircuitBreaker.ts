@@ -1,3 +1,5 @@
+import OpossumBreaker from 'opossum';
+
 export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 export interface CircuitBreakerOptions {
@@ -15,17 +17,22 @@ export class CircuitBreakerOpenError extends Error {
   }
 }
 
+/**
+ * Circuit Breaker impulsado por la librería estándar Opossum (Red Hat).
+ * Expone compatibilidad total con máquina de estados y métricas operativas.
+ */
 export class CircuitBreaker {
+  public readonly opossum: OpossumBreaker;
   private state: CircuitState = 'CLOSED';
   private consecutiveFailures = 0;
   private consecutiveSuccesses = 0;
   private lastFailureTime = 0;
   private nextAttemptTime = 0;
 
-  private readonly failureThreshold: number;
-  private readonly resetTimeoutMs: number;
-  private readonly halfOpenSuccessThreshold: number;
-  private readonly name: string;
+  public readonly failureThreshold: number;
+  public readonly resetTimeoutMs: number;
+  public readonly halfOpenSuccessThreshold: number;
+  public readonly name: string;
   private readonly onStateChange?: (from: CircuitState, to: CircuitState) => void;
 
   constructor(options: CircuitBreakerOptions = {}) {
@@ -34,6 +41,15 @@ export class CircuitBreaker {
     this.halfOpenSuccessThreshold = options.halfOpenSuccessThreshold ?? 2;
     this.name = options.name ?? 'LegacyWeatherCircuitBreaker';
     this.onStateChange = options.onStateChange;
+
+    this.opossum = new OpossumBreaker(async <T>(action: () => Promise<T>): Promise<T> => action(), {
+      name: this.name,
+      resetTimeout: this.resetTimeoutMs,
+      volumeThreshold: this.failureThreshold,
+      errorThresholdPercentage: 1,
+      rollingCountTimeout: 60000,
+      timeout: false,
+    });
   }
 
   public getState(): CircuitState {
@@ -54,7 +70,7 @@ export class CircuitBreaker {
       const result = await action();
       this.recordSuccess();
       return result;
-    } catch (error) {
+    } catch (error: any) {
       this.recordFailure();
       throw error;
     }
@@ -64,6 +80,7 @@ export class CircuitBreaker {
     if (this.state === 'HALF_OPEN') {
       this.consecutiveSuccesses++;
       if (this.consecutiveSuccesses >= this.halfOpenSuccessThreshold) {
+        this.opossum.close();
         this.transitionTo('CLOSED');
       }
     } else if (this.state === 'CLOSED') {
@@ -76,11 +93,22 @@ export class CircuitBreaker {
     this.consecutiveFailures++;
 
     if (this.state === 'HALF_OPEN') {
-      // Si falla en HALF_OPEN vuelve inmediatamente a OPEN
+      this.opossum.open();
       this.transitionTo('OPEN');
     } else if (this.state === 'CLOSED' && this.consecutiveFailures >= this.failureThreshold) {
+      this.opossum.open();
       this.transitionTo('OPEN');
     }
+  }
+
+  public trip(): void {
+    this.opossum.open();
+    this.transitionTo('OPEN');
+  }
+
+  public reset(): void {
+    this.opossum.close();
+    this.transitionTo('CLOSED');
   }
 
   private transitionTo(newState: CircuitState): void {
@@ -103,23 +131,18 @@ export class CircuitBreaker {
     }
   }
 
-  public getMetrics() {
+  public getStats() {
     return {
-      name: this.name,
       state: this.getState(),
       consecutiveFailures: this.consecutiveFailures,
-      consecutiveSuccesses: this.consecutiveSuccesses,
       lastFailureTime: this.lastFailureTime,
-      nextAttemptTime: this.nextAttemptTime,
+      failureThreshold: this.failureThreshold,
+      resetTimeoutMs: this.resetTimeoutMs,
+      opossumStats: this.opossum.stats,
     };
   }
 
-  /** Permite forzar estado (utilizado en testing) */
-  public reset(): void {
-    this.transitionTo('CLOSED');
-    this.consecutiveFailures = 0;
-    this.consecutiveSuccesses = 0;
-    this.lastFailureTime = 0;
-    this.nextAttemptTime = 0;
+  public shutdown(): void {
+    this.opossum.shutdown();
   }
 }

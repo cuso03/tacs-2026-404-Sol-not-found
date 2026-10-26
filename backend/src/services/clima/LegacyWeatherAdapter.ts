@@ -6,6 +6,7 @@ import { WeatherError } from '../../utils/weatherError';
 import { CircuitBreaker, CircuitBreakerOpenError } from './CircuitBreaker';
 import { TokenBucketRateLimiter, UserRateLimiter } from './RateLimiter';
 import { IEstadisticasStore } from '../../utils/IEstadisticasStore';
+import { LRUCache } from 'lru-cache';
 import {
   ILegacyWeatherHttpClient,
   LegacyWeatherHttpClient,
@@ -36,11 +37,6 @@ export interface LegacyWeatherOptions {
   httpClient?: ILegacyWeatherHttpClient;
 }
 
-interface CachedForecast {
-  data: LegacyForecastResult;
-  expiresAt: number;
-}
-
 export class LegacyWeatherAdapter implements IWeatherProvider {
   public readonly httpClient: ILegacyWeatherHttpClient;
   private readonly maxRetries: number;
@@ -52,9 +48,9 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
   public readonly userRateLimiter?: UserRateLimiter;
   private readonly statsStore?: IEstadisticasStore;
 
-  // Colecciones acotadas con límite máximo y expulsión para prevenir memory leaks
-  private readonly cache = new Map<string, CachedForecast>();
-  private readonly cityCoords = new Map<string, { lat: number; lon: number }>();
+  // Cachés gestionadas por lru-cache (estándar de la industria) para prevención estricta de memory leaks
+  private readonly cache: LRUCache<string, LegacyForecastResult>;
+  private readonly cityCoords: LRUCache<string, { lat: number; lon: number }>;
 
   constructor(options: LegacyWeatherOptions = {}) {
     this.httpClient = options.httpClient ?? new LegacyWeatherHttpClient({
@@ -68,6 +64,15 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     this.cacheTtlMs = options.cacheTtlMs ?? 10 * 60 * 1000; // 10 minutos
     this.maxCacheSize = options.maxCacheSize ?? 200; // Máximo 200 pronósticos en memoria
     this.statsStore = options.statsStore;
+
+    this.cache = new LRUCache<string, LegacyForecastResult>({
+      max: this.maxCacheSize,
+      ttl: this.cacheTtlMs,
+    });
+
+    this.cityCoords = new LRUCache<string, { lat: number; lon: number }>({
+      max: this.maxCityCoordsSize,
+    });
 
     this.circuitBreaker = options.circuitBreaker ?? new CircuitBreaker({
       name: 'LegacyWeatherCircuitBreaker',
@@ -168,11 +173,11 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
   }
 
   /**
-   * Realiza la consulta protegida con Caché, Circuit Breaker, Rate Limiter, Retries y Timeouts.
+   * Realiza la consulta protegida con LRUCache, Circuit Breaker (Opossum), Rate Limiter (Bottleneck), Retries y Timeouts.
    */
   public async getForecast(lat: number, lon: number, timestamp: string, userId?: string): Promise<LegacyForecastResult> {
     if (userId && this.userRateLimiter) {
-      const allowed = await this.userRateLimiter.consume(userId, 500);
+      const allowed = this.userRateLimiter.check(userId);
       if (!allowed) {
         throw new WeatherError('WEATHER_RATE_LIMITED', `Límite de tasa por usuario excedido para ${userId}`);
       }
@@ -181,35 +186,26 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     const roundedHour = this.roundToHourIso(timestamp);
     const cacheKey = `${lat.toFixed(3)}_${lon.toFixed(3)}_${roundedHour}`;
 
-    // 1. Revisar Caché
+    // 1. Revisar Caché (lru-cache)
     const cached = this.cache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
+    if (cached) {
       if (this.statsStore) {
         await this.statsStore.incrementar('legacy_cache_hits').catch(() => {});
       }
-      return cached.data;
+      return cached;
     }
 
     if (this.statsStore) {
       await this.statsStore.incrementar('legacy_cache_misses').catch(() => {});
     }
 
-    // 2. Ejecutar a través de Circuit Breaker
+    // 2. Ejecutar a través de Circuit Breaker (Opossum)
     const result = await this.circuitBreaker.execute(async () => {
       return await this.executeWithRetries(lat, lon, timestamp);
     });
 
-    // 3. Guardar en Caché con expulsión controlada (previene memory leaks)
-    this.cleanExpiredCache();
-    while (this.cache.size >= this.maxCacheSize) {
-      const oldestKey = this.cache.keys().next().value;
-      if (!oldestKey) break;
-      this.cache.delete(oldestKey);
-    }
-    this.cache.set(cacheKey, {
-      data: result,
-      expiresAt: Date.now() + this.cacheTtlMs,
-    });
+    // 3. Guardar en Caché LRU (desalojo automático y límites garantizados)
+    this.cache.set(cacheKey, result);
 
     return result;
   }
@@ -287,7 +283,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     };
 
     if (defaults[key]) {
-      this.cacheCityCoords(key, defaults[key]);
+      this.cityCoords.set(key, defaults[key]);
       return defaults[key];
     }
 
@@ -298,7 +294,7 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
         const data = await res.json() as { results?: Array<{ latitude: number; longitude: number }> };
         if (data.results && data.results.length > 0) {
           const coords = { lat: data.results[0].latitude, lon: data.results[0].longitude };
-          this.cacheCityCoords(key, coords);
+          this.cityCoords.set(key, coords);
           return coords;
         }
       }
@@ -307,32 +303,14 @@ export class LegacyWeatherAdapter implements IWeatherProvider {
     }
 
     const fallbackCoords = { lat: -34.6037, lon: -58.3816 };
-    this.cacheCityCoords(key, fallbackCoords);
+    this.cityCoords.set(key, fallbackCoords);
     return fallbackCoords;
-  }
-
-  private cacheCityCoords(key: string, coords: { lat: number; lon: number }): void {
-    while (this.cityCoords.size >= this.maxCityCoordsSize) {
-      const oldestKey = this.cityCoords.keys().next().value;
-      if (!oldestKey) break;
-      this.cityCoords.delete(oldestKey);
-    }
-    this.cityCoords.set(key, coords);
   }
 
   private roundToHourIso(timestamp: string): string {
     const d = new Date(timestamp);
     d.setMinutes(0, 0, 0);
     return d.toISOString();
-  }
-
-  private cleanExpiredCache(): void {
-    const now = Date.now();
-    for (const [key, value] of this.cache.entries()) {
-      if (value.expiresAt <= now) {
-        this.cache.delete(key);
-      }
-    }
   }
 
   public clearCache(): void {
