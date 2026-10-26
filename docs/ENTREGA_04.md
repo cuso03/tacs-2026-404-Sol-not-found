@@ -128,10 +128,19 @@ npm --prefix backend test tests/resilience/
 ```
 Verifica unitariamente el Circuit Breaker, Retries con Jitter, Timeouts, Caché en memoria y Fallback sin requerir el binario real.
 
-### Tests de Carga (Load Test)
+### Tests de Carga Reales (Load Testing con k6)
+Las pruebas de carga se ejecutan mediante scripts de **Grafana k6** contra los contenedores reales levantados con `docker compose up -d`:
 ```bash
-npm --prefix backend run test:load
+# Escenario 1: Servicio legacy activo (evalúa latencias y caché en memoria)
+k6 run load-tests/scenario-1-healthy.js
+
+# Simular caída / degradación del servicio legacy
+docker compose stop legacy-weather
+
+# Escenario 2: Servicio legacy caído (evalúa 100% de 200 OK mediante Fallback y Circuit Breaker OPEN)
+k6 run load-tests/scenario-2-outage.js
+
+# O alternativamente mediante la imagen de Docker de k6 (sin instalación local):
+docker run --rm -i --network=host grafana/k6 run - < load-tests/scenario-1-healthy.js
 ```
-Evalúa concurrentemente 50 peticiones en los dos escenarios exigidos:
-1. **Servicio legacy activo:** Mide latencias y verifica aciertos de caché (`legacy_cache_hits`).
-2. **Servicio legacy caído:** Mide tolerancia a fallos, confirmando que el 100% de las respuestas son 200 OK mediante fallback y el Circuit Breaker transiciona a `OPEN`.
+Para más detalles de configuración de umbrales y métricas, ver [`load-tests/README.md`](../load-tests/README.md).

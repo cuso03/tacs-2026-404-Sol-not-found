@@ -159,8 +159,9 @@ npm --prefix backend test
 # Tests de resiliencia con stubs
 npm --prefix backend test tests/resilience/
 
-# Tests de carga (load test) con escenarios de servicio activo y servicio caído
-npm --prefix backend run test:load
+# Tests de carga reales contra el stack (k6 en load-tests/)
+k6 run load-tests/scenario-1-healthy.js
+k6 run load-tests/scenario-2-outage.js
 
 # Tests de la SPA frontend
 npm --prefix frontend test
