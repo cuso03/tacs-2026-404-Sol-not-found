@@ -3,9 +3,8 @@ import OpossumBreaker from 'opossum';
 export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN';
 
 export interface CircuitBreakerOptions {
-  failureThreshold?: number;     // Cantidad de fallos consecutivos para abrir el circuito (default 5)
-  resetTimeoutMs?: number;       // Tiempo que permanece OPEN antes de pasar a HALF_OPEN (default 30000ms)
-  halfOpenSuccessThreshold?: number; // Éxitos necesarios en HALF_OPEN para volver a CLOSED (default 2)
+  failureThreshold?: number;     // Cantidad de fallos para abrir el circuito (default 5)
+  resetTimeoutMs?: number;       // Tiempo de cooldown antes de pasar a HALF_OPEN (default 30000ms)
   name?: string;
   onStateChange?: (from: CircuitState, to: CircuitState) => void;
 }
@@ -19,130 +18,111 @@ export class CircuitBreakerOpenError extends Error {
 
 /**
  * Circuit Breaker impulsado por la librería estándar Opossum (Red Hat).
- * Expone compatibilidad total con máquina de estados y métricas operativas.
+ * Delega en Opossum el control de volumen, fallos, transiciones y métricas nativas.
  */
 export class CircuitBreaker {
-  public readonly opossum: OpossumBreaker;
-  private state: CircuitState = 'CLOSED';
-  private consecutiveFailures = 0;
-  private consecutiveSuccesses = 0;
+  public readonly breaker: OpossumBreaker;
   private lastFailureTime = 0;
-  private nextAttemptTime = 0;
-
-  public readonly failureThreshold: number;
-  public readonly resetTimeoutMs: number;
-  public readonly halfOpenSuccessThreshold: number;
-  public readonly name: string;
-  private readonly onStateChange?: (from: CircuitState, to: CircuitState) => void;
+  private currentState: CircuitState = 'CLOSED';
 
   constructor(options: CircuitBreakerOptions = {}) {
-    this.failureThreshold = options.failureThreshold ?? 5;
-    this.resetTimeoutMs = options.resetTimeoutMs ?? 30000;
-    this.halfOpenSuccessThreshold = options.halfOpenSuccessThreshold ?? 2;
-    this.name = options.name ?? 'LegacyWeatherCircuitBreaker';
-    this.onStateChange = options.onStateChange;
+    const failureThreshold = options.failureThreshold ?? 5;
+    const resetTimeout = options.resetTimeoutMs ?? 30000;
+    const name = options.name ?? 'LegacyWeatherCircuitBreaker';
 
-    this.opossum = new OpossumBreaker(async <T>(action: () => Promise<T>): Promise<T> => action(), {
-      name: this.name,
-      resetTimeout: this.resetTimeoutMs,
-      volumeThreshold: this.failureThreshold,
-      errorThresholdPercentage: 1,
+    this.breaker = new OpossumBreaker(async <T>(action: () => Promise<T>): Promise<T> => action(), {
+      name,
+      resetTimeout,
+      volumeThreshold: failureThreshold,
+      errorThresholdPercentage: 1, // abre tan pronto como se alcanza el volumen de fallos
       rollingCountTimeout: 60000,
       timeout: false,
     });
+
+    this.breaker.on('open', () => {
+      this.lastFailureTime = Date.now();
+      const prev = this.currentState;
+      this.currentState = 'OPEN';
+      options.onStateChange?.(prev, 'OPEN');
+    });
+
+    this.breaker.on('halfOpen', () => {
+      const prev = this.currentState;
+      this.currentState = 'HALF_OPEN';
+      options.onStateChange?.(prev, 'HALF_OPEN');
+    });
+
+    this.breaker.on('close', () => {
+      const prev = this.currentState;
+      this.currentState = 'CLOSED';
+      options.onStateChange?.(prev, 'CLOSED');
+    });
+  }
+
+  public get failureThreshold(): number {
+    return (this.breaker as any).volumeThreshold;
+  }
+  public set failureThreshold(val: number) {
+    (this.breaker as any).options.volumeThreshold = val;
+    const sym = Object.getOwnPropertySymbols(this.breaker).find((s) => s.description === 'volume-threshold');
+    if (sym) {
+      (this.breaker as any)[sym] = val;
+    }
+  }
+
+  public get resetTimeoutMs(): number {
+    return (this.breaker as any).options.resetTimeout;
+  }
+  public set resetTimeoutMs(val: number) {
+    (this.breaker as any).options.resetTimeout = val;
   }
 
   public getState(): CircuitState {
-    if (this.state === 'OPEN' && Date.now() >= this.nextAttemptTime) {
-      this.transitionTo('HALF_OPEN');
-    }
-    return this.state;
+    if (this.breaker.halfOpen) return 'HALF_OPEN';
+    if (this.breaker.opened) return 'OPEN';
+    return 'CLOSED';
   }
 
   public async execute<T>(action: () => Promise<T>): Promise<T> {
-    const currentState = this.getState();
-
-    if (currentState === 'OPEN') {
-      throw new CircuitBreakerOpenError();
-    }
-
     try {
-      const result = await action();
-      this.recordSuccess();
-      return result;
+      return await this.breaker.fire(action);
     } catch (error: any) {
-      this.recordFailure();
+      if (error?.code === 'EOPENBREAKER') {
+        throw new CircuitBreakerOpenError();
+      }
+      this.lastFailureTime = Date.now();
       throw error;
     }
   }
 
-  public recordSuccess(): void {
-    if (this.state === 'HALF_OPEN') {
-      this.consecutiveSuccesses++;
-      if (this.consecutiveSuccesses >= this.halfOpenSuccessThreshold) {
-        this.opossum.close();
-        this.transitionTo('CLOSED');
-      }
-    } else if (this.state === 'CLOSED') {
-      this.consecutiveFailures = 0;
-    }
-  }
-
-  public recordFailure(): void {
-    this.lastFailureTime = Date.now();
-    this.consecutiveFailures++;
-
-    if (this.state === 'HALF_OPEN') {
-      this.opossum.open();
-      this.transitionTo('OPEN');
-    } else if (this.state === 'CLOSED' && this.consecutiveFailures >= this.failureThreshold) {
-      this.opossum.open();
-      this.transitionTo('OPEN');
-    }
-  }
-
   public trip(): void {
-    this.opossum.open();
-    this.transitionTo('OPEN');
+    this.breaker.open();
   }
 
   public reset(): void {
-    this.opossum.close();
-    this.transitionTo('CLOSED');
-  }
-
-  private transitionTo(newState: CircuitState): void {
-    const oldState = this.state;
-    if (oldState === newState) return;
-
-    this.state = newState;
-    if (newState === 'OPEN') {
-      this.nextAttemptTime = Date.now() + this.resetTimeoutMs;
-      this.consecutiveSuccesses = 0;
-    } else if (newState === 'HALF_OPEN') {
-      this.consecutiveSuccesses = 0;
-    } else if (newState === 'CLOSED') {
-      this.consecutiveFailures = 0;
-      this.consecutiveSuccesses = 0;
-    }
-
-    if (this.onStateChange) {
-      this.onStateChange(oldState, newState);
-    }
+    this.breaker.close();
   }
 
   public getStats() {
     return {
       state: this.getState(),
-      consecutiveFailures: this.consecutiveFailures,
+      consecutiveFailures: this.breaker.stats.failures,
       lastFailureTime: this.lastFailureTime,
-      failureThreshold: this.failureThreshold,
-      resetTimeoutMs: this.resetTimeoutMs,
-      opossumStats: this.opossum.stats,
+      failureThreshold: (this.breaker as any).options.volumeThreshold,
+      resetTimeoutMs: (this.breaker as any).options.resetTimeout,
+      opossumStats: this.breaker.stats,
+    };
+  }
+
+  public getMetrics() {
+    return {
+      state: this.getState(),
+      consecutiveFailures: this.breaker.stats.failures,
+      lastFailureTime: this.lastFailureTime,
     };
   }
 
   public shutdown(): void {
-    this.opossum.shutdown();
+    this.breaker.shutdown();
   }
 }

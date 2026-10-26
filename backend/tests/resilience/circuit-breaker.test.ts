@@ -83,13 +83,12 @@ describe('CircuitBreaker', () => {
     }
   });
 
-  it('en HALF_OPEN se cierra tras alcanzar el umbral de éxitos requerido', async () => {
+  it('en HALF_OPEN se cierra tras una llamada exitosa de prueba', async () => {
     vi.useFakeTimers();
     try {
       const cb = new CircuitBreaker({
         failureThreshold: 2,
         resetTimeoutMs: 1000,
-        halfOpenSuccessThreshold: 2,
       });
 
       await expect(cb.execute(async () => { throw new Error('1'); })).rejects.toThrow();
@@ -99,12 +98,8 @@ describe('CircuitBreaker', () => {
       vi.advanceTimersByTime(1100);
       expect(cb.getState()).toBe('HALF_OPEN');
 
-      // Primer éxito: aún en HALF_OPEN
-      await cb.execute(async () => 'OK 1');
-      expect(cb.getState()).toBe('HALF_OPEN');
-
-      // Segundo éxito: pasa a CLOSED
-      await cb.execute(async () => 'OK 2');
+      // Éxito de prueba: Opossum restablece el circuito a CLOSED
+      await cb.execute(async () => 'OK');
       expect(cb.getState()).toBe('CLOSED');
     } finally {
       vi.useRealTimers();
