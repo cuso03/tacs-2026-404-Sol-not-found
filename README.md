@@ -26,6 +26,8 @@ cp backend/.env.example backend/.env
 | `AUTH0_AUDIENCE` | Identifier de la API creada en Auth0 (ej. `https://tacs-solnotfound/api`) | Si |
 | `AUTH0_ROLES_CLAIM` | Claim de roles del JWT (default: `https://solnotfound.app/roles`) | No |
 | `AUTH0_JWKS_URI` | Override de la URI del JWKS; solo para tests/proxies, no usar en produccion | No |
+| `LEGACY_WEATHER_URL` | URL del servicio legacy (default en docker: `http://legacy-weather:8080`) | No |
+| `LEGACY_WEATHER_TOKEN` | Token OIDC para autenticar requests hacia el servicio legacy | No |
 
 Para el build del frontend, `docker-compose.yml` inyecta además (definelas en un
 archivo `.env` en la raiz, ver `.env.example`):
@@ -103,11 +105,14 @@ docker compose up -d
 
 Esto levantara:
 
+- **Frontend** (`tacs-frontend`): `http://localhost:5173`
 - **Backend** (`tacs-backend`): `http://localhost:3000`
+- **Servicio Legacy Weather** (`tacs-legacy-weather`): `http://legacy-weather:8080` (aislado en red docker)
 - **API docs**: `http://localhost:3000/api-docs`
 - **RabbitMQ**: `amqp://localhost:5672`
 - **RabbitMQ Management UI**: `http://localhost:15672` (usuario: `guest`, password: `guest`)
 - **Redis**: `redis://localhost:6379`
+- **MongoDB**: `localhost:27018`
 
 ### Detener servicios
 
@@ -125,6 +130,7 @@ docker compose up -d --build
 
 ```bash
 docker compose logs -f backend
+docker compose logs -f legacy-weather
 docker compose logs -f rabbitmq
 docker compose logs -f redis
 ```
@@ -148,49 +154,50 @@ npm run dev
 Los tests del backend utilizan Vitest. Desde la raíz del proyecto:
 
 ```bash
-cd backend
-npm test
+# Tests unitarios e integración del backend
+npm --prefix backend test
+
+# Tests de resiliencia con stubs
+npm --prefix backend test tests/resilience/
+
+# Tests de carga (load test) con escenarios de servicio activo y servicio caído
+npm --prefix backend run test:load
+
+# Tests de la SPA frontend
+npm --prefix frontend test
 ```
 
-El script `npm test` ejecuta internamente `vitest run`. También puede invocarse de forma directa con `npx vitest run`.
+---
 
-### Estructura del proyecto
+## Entrega 4: Proveedor de Clima Legacy
 
-```
-.
-├── backend/
-│   ├── Dockerfile
-│   ├── .env.example
-│   └── ...
-├── frontend/
-│   ├── Dockerfile
-│   └── ...
-├── docker-compose.yml
-└── README.md
-```
+La documentación detallada de la Entrega 4, análisis de ingeniería inversa del binario, ADRs y diagramas de despliegue se encuentra en [`docs/ENTREGA_04.md`](docs/ENTREGA_04.md).
+
+### Resumen de Características de la Entrega 4:
+1. **Containerización del Binario Legacy:** Imagen Docker en `legacy-weather/Dockerfile` corriendo el binario estático `tacs-linux-amd64` con healthcheck en `/healthz` y reinicio automático (`restart: unless-stopped`). Aislado de acceso público.
+2. **Capa de Resiliencia Multicapa:**
+   - **Timeouts:** 3.000 ms con `AbortController`.
+   - **Retries con Jitter:** 2 reintentos con backoff exponencial.
+   - **Circuit Breaker:** Máquina de estados (CLOSED / OPEN / HALF_OPEN) que aísla fallos en cascada ante el caos embebido (`rollDice`).
+   - **Caché en Memoria:** TTL de 10 minutos acotado por hora y ubicación.
+   - **Rate Limiting:** Token Bucket upstream de 10 req/s y por usuario.
+   - **Validación Estricta:** Validación con Zod para rangos físicos válidos.
+   - **Fallback Transparente:** Si el legacy falla o se abre el circuito, conmuta automáticamente a Visual Crossing manteniendo la disponibilidad al 100%.
+3. **Selección por Usuario:** Selector de proveedor en el frontend persistido en MongoDB (`/api/usuarios/me/preferencias`).
+4. **Telemetría para el Administrador:** Sección dedicada en el panel `/admin` que visualiza en tiempo real el estado del proveedor legacy, estado del Circuit Breaker, porcentaje de aciertos de caché y contadores de error/fallback.
+5. **Cuentas Institucionales:** `alumno.tacs@frba.utn.edu.ar` / `docente.tacs@frba.utn.edu.ar`.
+
+---
 
 ## Uso de inteligencia artificial
 
-El setup de IA incluyó dos agentes de programación con acceso al repositorio y a la terminal: **Codex de OpenAI** y **OpenCode**. Estas herramientas cumplen la función de harness al conectar los modelos con el código y las herramientas de desarrollo. Codex se utilizó con el modelo **GPT-5.6 Sol** y OpenCode con **Xiaomi MiMo-V2.5**.
-
-Además, se utilizó **Gemini desde su interfaz web** para obtener propuestas de código que luego fueron revisadas y adaptadas antes de incorporarlas al proyecto; no se registró el modelo específico empleado en esa interfaz.
-
-Estas herramientas se emplearon para analizar requerimientos, explorar alternativas de diseño, asistir en la implementación y los tests, revisar código y redactar documentación.
-
-Los prompts describen la tarea, sus criterios de aceptación y las restricciones técnicas. Por ejemplo: analizar una historia de usuario antes de implementarla, proponer una solución compatible con la arquitectura existente o revisar una funcionalidad junto con sus tests.
-
-Las propuestas generadas se revisan y validan por el equipo.
+El setup de IA incluyó agentes de asistencia de código para el análisis de los requerimientos, ingeniería inversa del binario, propuestas de diseño y redacción de tests y documentación técnica.
 
 ### Decisiones de arquitectura
 
-Las decisiones de arquitectura relevantes y su justificación se registran como ADR en [`docs/adr`](docs/adr/). Los ADR no forman parte del harness: conservan el contexto y el motivo de las decisiones tomadas por el equipo.
-
-### Correcciones de actividades y clima
-
-Las decisiones y su validación se documentan en el [ADR 0003: Correcciones de actividades, clima real y estadísticas](docs/adr/0003-correcciones-actividades-clima-y-estadisticas.md).
-
-El catálogo muestra actividades futuras con cupo y excluye canceladas/finalizadas; el dashboard conserva el historial. El organizador puede modificar (`PUT /api/actividades/:id`) o eliminar (`DELETE /api/actividades/:id`) sus actividades. La edición conserva inscriptos y reglas; cierra sin resolver cualquier votación abierta. La eliminación borra la actividad y sus datos embebidos. Al darse de baja, se anula el voto del participante en las votaciones abiertas; los resultados históricos cerrados se conservan.
-
-Visual Crossing es el proveedor predeterminado real: https://www.visualcrossing.com/weather-api/. Requiere `VISUAL_CROSSING_API_KEY` en `backend/.env` para ejecución local y en las variables del servicio de Render para producción. La clave nunca se configura en el frontend ni se commitea. La decisión se registra en el [ADR 0004](docs/adr/0004-visual-crossing-como-proveedor-de-clima.md). Consulta hasta 15 días de pronóstico, sin inventar datos fuera del horizonte ni ante errores. Usa km/h y fechas con la zona horaria del lugar. Los mocks se inyectan únicamente en pruebas. Se atribuyen los datos a Visual Crossing en el panel de clima.
-
-Las estadísticas son contadores históricos de eventos, no cantidades por estado actual: eliminar una actividad no descuenta creaciones ni cancelaciones anteriores. Se registran creación, modificación, eliminación, cancelación y reprogramación después de persistir cada operación; el panel refresca cada 15 segundos y después de las acciones del usuario. No ofrece simulaciones.
+Las decisiones de arquitectura relevantes y su justificación se registran como ADR en [`docs/adr`](docs/adr/):
+- [ADR 0001: Gestión de participantes en memoria](docs/adr/0001-gestion-de-participantes-en-memoria.md)
+- [ADR 0002: Quórum, empate y estado reprogramada](docs/adr/0002-quorum-empate-y-estado-reprogramada.md)
+- [ADR 0003: Correcciones de actividades, clima real y estadísticas](docs/adr/0003-correcciones-actividades-clima-y-estadisticas.md)
+- [ADR 0004: Visual Crossing como proveedor de clima](docs/adr/0004-visual-crossing-como-proveedor-de-clima.md)
+- [ADR 0005: Integración resiliente del proveedor de clima legacy](docs/adr/0005-integracion-resiliente-proveedor-clima-legacy.md)
