@@ -30,9 +30,14 @@ Esto levantará los siguientes servicios en una red interna compartida:
 ### Autenticación del Servicio Legacy
 
 El binario legacy gestiona su autenticación mediante Google OIDC para validar pertenencia a la organización `@frba.utn.edu.ar`.
-1. **Configuración por Variable de Entorno**: Se puede inyectar el token desde el host mediante la variable de entorno `SESSION_TOKEN` (o `LEGACY_WEATHER_TOKEN`) en el archivo `.env` o en `docker-compose.yml`. El script de arranque (`entrypoint.sh`) inicializa automáticamente `/root/.config/tacs/token.json` y `~/.tacs/session.token` con las credenciales provistas (ya sea como token plano o como JSON estructurado).
-2. **Flujo Interactivo / Autónomo**: Si no se inyecta una variable de entorno, el binario expone el enlace de login OIDC en consola y administra de forma autónoma su sesión.
-3. El archivo `session.token` y los tokens generados se encuentran debidamente ignorados en Git para evitar fugas de credenciales.
+1. **Configuración por Archivo y Volumen Docker**: Las credenciales de sesión se almacenan en formato JSON en el archivo `token.json` (ubicado por convención de Go en `/root/.config/tacs/token.json`). En `docker-compose.yml`, este archivo se monta directamente mediante un volumen hacia el contenedor:
+   ```yaml
+   volumes:
+     - ./legacy-weather/token.json:/root/.config/tacs/token.json
+   ```
+   Esto permite que el binario restaure de inmediato la sesión institucional de forma automática al iniciar (`✓ session restored · fnegri@frba.utn.edu.ar`).
+2. **Flujo Interactivo / Autónomo**: Si no se monta el archivo, el binario expone el enlace de login OIDC en consola y administra de forma autónoma su sesión.
+3. El archivo `token.json` y los tokens generados se encuentran debidamente ignorados en Git (`.gitignore` y `.dockerignore`) para prevenir cualquier fuga de credenciales.
 
 ---
 
@@ -87,7 +92,7 @@ flowchart TB
 
         subgraph LegacyBox["Contenedor Aislado (legacy-weather)"]
             LegacyBinary["Binario: tacs-linux-amd64<br>Puerto Interno: 8080 (No mapeado al host)"]
-            TokenVol["Sesión: /root/.tacs (No versionado)"]
+            TokenVol["Sesión: /root/.config/tacs/token.json (No versionado)"]
         end
     end
 
@@ -129,18 +134,22 @@ npm --prefix backend test tests/resilience/
 Verifica unitariamente el Circuit Breaker, Retries con Jitter, Timeouts, Caché en memoria y Fallback sin requerir el binario real.
 
 ### Tests de Carga Reales (Load Testing con k6)
-Las pruebas de carga se ejecutan mediante scripts de **Grafana k6** contra los contenedores reales levantados con `docker compose up -d`:
+Las pruebas de carga se ejecutan mediante scripts de **Grafana k6** contra los contenedores reales levantados con `docker compose up -d` (requieren pasar `ACTIVIDAD_ID` y `AUTH_TOKEN`):
 ```bash
+# Definir variables obligatorias
+export ACTIVIDAD_ID="6adfab58e9f1720175168335"
+export AUTH_TOKEN="<TU_TOKEN_JWT>"
+
 # Escenario 1: Servicio legacy activo (evalúa latencias y caché en memoria)
-k6 run load-tests/scenario-1-healthy.js
+k6 run -e ACTIVIDAD_ID=$ACTIVIDAD_ID -e AUTH_TOKEN=$AUTH_TOKEN load-tests/scenario-1-healthy.js
 
 # Simular caída / degradación del servicio legacy
 docker compose stop legacy-weather
 
 # Escenario 2: Servicio legacy caído (evalúa 100% de 200 OK mediante Fallback y Circuit Breaker OPEN)
-k6 run load-tests/scenario-2-outage.js
+k6 run -e ACTIVIDAD_ID=$ACTIVIDAD_ID -e AUTH_TOKEN=$AUTH_TOKEN load-tests/scenario-2-outage.js
 
 # O alternativamente mediante la imagen de Docker de k6 (sin instalación local):
-docker run --rm -i --network=host grafana/k6 run - < load-tests/scenario-1-healthy.js
+docker run --rm -i --network=host grafana/k6 run -e ACTIVIDAD_ID=$ACTIVIDAD_ID -e AUTH_TOKEN=$AUTH_TOKEN - < load-tests/scenario-1-healthy.js
 ```
 Para más detalles de configuración de umbrales y métricas, ver [`load-tests/README.md`](../load-tests/README.md).
