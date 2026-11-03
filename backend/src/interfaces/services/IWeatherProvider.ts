@@ -10,14 +10,18 @@ import { ClimaResponseDto } from '../../dtos/climaDto';
 export interface IWeatherProvider {
   /**
    * Retorna clima actual y pronóstico para la ubicación y fecha de la actividad.
+   * @param ubicacion Ubicación de la actividad.
+   * @param fecha_horario Fecha y hora de la actividad (ISO 8601).
+   * @param userId ID opcional del usuario para resolver preferencias de proveedor y rate limits.
    */
-  getClima(ubicacion: Ubicacion, fecha_horario: string): Promise<ClimaResponseDto>;
+  getClima(ubicacion: Ubicacion, fecha_horario: string, userId?: string): Promise<ClimaResponseDto>;
 
   /**
    * Obtiene el pronóstico hora a hora para los días solicitados.
    * @param ubicacion Ubicación de la actividad.
    * @param fechaDesde Fecha de inicio del pronóstico (inclusive, ISO 8601).
    * @param dias Cantidad de días a pronosticar a partir de fechaDesde.
+   * @param userId ID opcional del usuario para resolver preferencias de proveedor y rate limits.
    */
-  obtenerPronostico(ubicacion: Ubicacion, fechaDesde: string, dias: number): Promise<PronosticoHora[]>;
+  obtenerPronostico(ubicacion: Ubicacion, fechaDesde: string, dias: number, userId?: string): Promise<PronosticoHora[]>;
 }

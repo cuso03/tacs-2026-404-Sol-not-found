@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createActividadesController } from '../controllers/actividadesController';
 import { createVotacionesController } from '../controllers/votacionesController';
 import { createClimaController } from '../controllers/climaController';
-import { requireAuthenticatedUser } from '../middleware/authenticatedUser';
+import { requireAuthenticatedUser, optionalAuthenticatedUser } from '../middleware/authenticatedUser';
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { IWeatherProvider } from '../interfaces/services/IWeatherProvider';
 import { ActividadesService } from '../services/actividadesService';
@@ -28,7 +28,7 @@ export function createActividadesRoutes(
   router.delete('/:id', requireAuthenticatedUser, controller.remove);
   router.post('/', requireAuthenticatedUser, controller.create);
   router.put('/:id/reglas', requireAuthenticatedUser, controller.configureRules);
-  router.get('/:id/clima', climaController.getClima);
+  router.get('/:id/clima', optionalAuthenticatedUser, climaController.getClima);
   router.post('/:id/participantes', requireAuthenticatedUser, controller.addParticipant);
   router.delete('/:id/participantes/me', requireAuthenticatedUser, controller.removeParticipant);
 

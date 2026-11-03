@@ -12,7 +12,7 @@ export class ClimaMonitorService {
     private notifier: INotifier,
     private statsStore: IEstadisticasStore,
     private votacionService?: VotacionService,
-    private notificacionRepo?: NotificacionMongoRepository // Añadido aquí
+    private notificacionRepo?: NotificacionMongoRepository
   ) {}
 
   async checkActividadWeather(actividad: Actividad): Promise<void> {
@@ -23,7 +23,13 @@ export class ClimaMonitorService {
       if (horasHastaLaActividad <= 0) return;
       if (horasHastaLaActividad > actividad.reglasClima.horas_anticipacion) return;
 
-      const pronostico = await this.weatherProvider.getClima(actividad.ubicacion, actividad.fecha_horario);
+      // Respetar el proveedor preferido por el creador de la actividad (User Story 2)
+      const pronostico = await this.weatherProvider.getClima(
+        actividad.ubicacion,
+        actividad.fecha_horario,
+        actividad.creadorId,
+      );
+
       await this.statsStore.incrementar('consultas_clima');
 
       const climaFavorable = pronosticoEsAdecuado(pronostico.pronostico_actividad, actividad.reglasClima);

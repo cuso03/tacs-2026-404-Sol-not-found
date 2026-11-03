@@ -1,9 +1,9 @@
 import type { ComponentType } from 'react';
-import { Cloud, CloudLightning, CloudRain, CloudSun, Droplets, RefreshCw, Sun, Thermometer, Wind } from 'lucide-react';
+import { AlertTriangle, Cloud, CloudLightning, CloudRain, CloudSun, Droplets, RefreshCw, Sun, Thermometer, Wind } from 'lucide-react';
 import { useClimaActividad } from '../hooks/useClima';
 import { getApiErrorMessage } from '../services/api';
 import type { Actividad, CondicionClima } from '../types/api';
-import { Alert, AlertDescription } from './ui/alert';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { Badge } from './ui/badge';
 import { Button } from './ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -47,13 +47,35 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
       && weather.pronostico_actividad.viento <= rules.viento_max
     : undefined;
 
+  const nombreProveedor = weather.proveedor === 'legacy'
+    ? 'Humedad, Datos y Pronósticos S.A. (Legacy)'
+    : 'Visual Crossing';
+
   return (
     <Card className="rounded-2xl">
       <CardHeader className="flex-row items-start justify-between space-y-0 p-6 pb-4">
-        <div><CardTitle className="text-lg">Clima de la actividad</CardTitle><p className="mt-1 text-xs text-slate-500">Datos actuales y pronóstico para el horario programado, hasta 15 días.</p></div>
+        <div>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg">Clima de la actividad</CardTitle>
+            <Badge variant="outline" className="text-[11px] font-normal">
+              {nombreProveedor}
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">Datos actuales y pronóstico para el horario programado, hasta 15 días.</p>
+        </div>
         <Button variant="ghost" size="icon" aria-label="Actualizar clima" disabled={weatherQuery.isFetching} onClick={() => void weatherQuery.refetch()}><RefreshCw className={`size-4 ${weatherQuery.isFetching ? 'animate-spin' : ''}`} /></Button>
       </CardHeader>
       <CardContent className="space-y-4 px-6 pb-6">
+        {weather.fallback && (
+          <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+            <AlertTriangle className="size-4 text-amber-600" />
+            <AlertTitle className="text-xs font-bold text-amber-800">Proveedor legacy degradado o no disponible</AlertTitle>
+            <AlertDescription className="text-xs text-amber-700">
+              El servicio legacy no pudo responder a tiempo o se encuentra en falla simulada. La aplicación aplicó <strong>fallback automático</strong> al proveedor principal para asegurar la disponibilidad.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid gap-4 sm:grid-cols-2">
           <WeatherBlock title="Ahora" icon={CurrentIcon} condition={weatherLabels[weather.clima_actual.condicion]} metrics={[
             { icon: Thermometer, label: `${weather.clima_actual.temperatura} °C` },
@@ -67,7 +89,7 @@ export default function WeatherPanel({ activity }: { activity: Actividad }) {
           ]} />
         </div>
         {suitable !== undefined && <div className={`flex items-center justify-between rounded-xl border p-3 ${suitable ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}><div><p className="text-sm font-semibold">{suitable ? 'Pronóstico dentro de las reglas' : 'Pronóstico fuera de las reglas'}</p><p className="mt-0.5 text-xs text-slate-600">Comparado con los límites definidos por el organizador.</p></div><Badge variant={suitable ? 'success' : 'warning'}>{suitable ? 'Favorable' : 'Revisar'}</Badge></div>}
-        <p className="text-xs text-slate-500">Datos meteorológicos de <a href="https://www.visualcrossing.com/" target="_blank" rel="noreferrer" className="underline">Visual Crossing</a>.</p>
+        <p className="text-xs text-slate-500">Datos meteorológicos vía {nombreProveedor}.</p>
       </CardContent>
     </Card>
   );

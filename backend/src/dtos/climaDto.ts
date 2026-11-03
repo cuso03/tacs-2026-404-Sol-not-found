@@ -30,6 +30,8 @@ export const climaResponseSchema = z
     fecha_horario: z.string().trim().min(1),
     clima_actual: climaActualSchema,
     pronostico_actividad: pronosticoActividadSchema,
+    proveedor: z.string().optional(),
+    fallback: z.boolean().optional(),
   })
   .strict();
 

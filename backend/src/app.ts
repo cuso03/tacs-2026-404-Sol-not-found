@@ -30,6 +30,8 @@ import { ActividadRepository } from './interfaces/repositories/actividadReposito
 import { IEstadisticasStore } from './utils/IEstadisticasStore';
 import { NotificacionMongoRepository } from './repositories/notificacionMongoRepository';
 import { UsuarioMongoRepository } from './repositories/usuarioMongoRepository';
+import { LegacyWeatherAdapter } from './services/clima/LegacyWeatherAdapter';
+import { ResilientWeatherRouter } from './services/clima/ResilientWeatherRouter';
 
 function createJobQueue(): IVotingJobQueue {
   const useBullMq = process.env.USE_BULLMQ === 'true' && process.env.NODE_ENV !== 'test';
@@ -57,7 +59,7 @@ function swaggerEnabled(): boolean {
 }
 
 export function createApp(
-  weatherProvider: IWeatherProvider = new VisualCrossingAdapter(),
+  weatherProvider?: IWeatherProvider,
   jobQueue: IVotingJobQueue = createJobQueue(),
   estadisticas: IEstadisticasStore = new EstadisticasMongoStore(),
 ) {
@@ -72,17 +74,25 @@ export function createApp(
   const notificacionRepo = new NotificacionMongoRepository();
   const usuarioRepo = new UsuarioMongoRepository();
 
+  // Si no se proveyó un proveedor específico, orquestar ResilientWeatherRouter
+  const effectiveWeatherProvider = weatherProvider ?? new ResilientWeatherRouter(
+    new VisualCrossingAdapter(),
+    new LegacyWeatherAdapter({ statsStore: estadisticas }),
+    usuarioRepo,
+    estadisticas,
+  );
+
   const eventNotifier = new ActividadEventNotifier(baseNotifier, notificacionRepo);
   // 2. Instanciar VotacionService inyectando el Notificador
-  const votacionService = new VotacionService(actividadesRepository, weatherProvider, jobQueue, eventNotifier, estadisticas);
-  const climaMonitor = new ClimaMonitorService(weatherProvider, baseNotifier, estadisticas, votacionService, notificacionRepo);
+  const votacionService = new VotacionService(actividadesRepository, effectiveWeatherProvider, jobQueue, eventNotifier, estadisticas);
+  const climaMonitor = new ClimaMonitorService(effectiveWeatherProvider, baseNotifier, estadisticas, votacionService, notificacionRepo);
 
   if (jobQueue instanceof InMemoryVotingJobQueue) {
     jobQueue.setVotacionService(votacionService);
   }
 
   const actividadesService = new ActividadesService(actividadesRepository, estadisticas);
-  const estadisticasStoreService = new EstadisticasStoreService(estadisticas)
+  const estadisticasStoreService = new EstadisticasStoreService(estadisticas);
 
   if (process.env.NODE_ENV !== 'test') { // si ejecutamos tests, no usamos ni cron ni nos conectamos con telegram.
     const notificationWorker = new NotificationWorker(telegramService);
@@ -106,10 +116,12 @@ export function createApp(
   app.use(express.json({ limit: '100kb' }));
 
   // 4. Configurar Rutas
-  app.use('/api/actividades', createActividadesRoutes(actividadesRepository, actividadesService, votacionService, weatherProvider));
+  app.use('/api/actividades', createActividadesRoutes(actividadesRepository, actividadesService, votacionService, effectiveWeatherProvider));
   app.use('/api/usuarios', createUsuariosRoutes(actividadesService, usuarioRepo));
  // app.use('/api/notificaciones', notificacionesRoutes);
-  app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService))
+  
+  const resilientRouter = effectiveWeatherProvider instanceof ResilientWeatherRouter ? effectiveWeatherProvider : undefined;
+  app.use('/api/admin/estadisticas', createEstadisticasRouter(estadisticasStoreService, resilientRouter));
 
   if (swaggerEnabled()) {
     app.get('/openapi.json', (_req, res) => res.json(openApiDocument));
