@@ -1,0 +1,235 @@
+{
+  "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+  "spans": [
+    {
+      "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+      "spanID": "b2d9c95750d135a3",
+      "operationName": "actividades.db.count",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+          "spanID": "2a98ea4a33a6ab84"
+        }
+      ],
+      "startTime": 1794438809079000,
+      "duration": 15105787,
+      "tags": [
+        {
+          "key": "db.collection.name",
+          "type": "string",
+          "value": "actividades"
+        },
+        {
+          "key": "db.operation.name",
+          "type": "string",
+          "value": "count"
+        },
+        {
+          "key": "db.system.name",
+          "type": "string",
+          "value": "mongodb"
+        },
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "sol-search"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "client"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": null
+    },
+    {
+      "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+      "spanID": "eaa8f29a06d2dfaf",
+      "operationName": "actividades.db.find",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+          "spanID": "2a98ea4a33a6ab84"
+        }
+      ],
+      "startTime": 1794438824185000,
+      "duration": 402244,
+      "tags": [
+        {
+          "key": "db.collection.name",
+          "type": "string",
+          "value": "actividades"
+        },
+        {
+          "key": "db.operation.name",
+          "type": "string",
+          "value": "find"
+        },
+        {
+          "key": "db.system.name",
+          "type": "string",
+          "value": "mongodb"
+        },
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "sol-search"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "client"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": null
+    },
+    {
+      "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+      "spanID": "2a98ea4a33a6ab84",
+      "operationName": "actividades.buscar",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+          "spanID": "d497d2aedb5f83ee"
+        }
+      ],
+      "startTime": 1794438809079000,
+      "duration": 15509840,
+      "tags": [
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "sol-search"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "internal"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": null
+    },
+    {
+      "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+      "spanID": "d497d2aedb5f83ee",
+      "operationName": "GET",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "f01f2caa479e43c492ab2e010777a0f8",
+          "spanID": "fc9bc258218c5810"
+        }
+      ],
+      "startTime": 1794438809078000,
+      "duration": 14290744,
+      "tags": [
+        {
+          "key": "http.flavor",
+          "type": "string",
+          "value": "1.1"
+        },
+        {
+          "key": "http.host",
+          "type": "string",
+          "value": "127.0.0.1:3002"
+        },
+        {
+          "key": "http.method",
+          "type": "string",
+          "value": "GET"
+        },
+        {
+          "key": "http.scheme",
+          "type": "string",
+          "value": "http"
+        },
+        {
+          "key": "http.status_code",
+          "type": "int64",
+          "value": 200
+        },
+        {
+          "key": "http.status_text",
+          "type": "string",
+          "value": ""
+        },
+        {
+          "key": "http.target",
+          "type": "string",
+          "value": "/api/actividades"
+        },
+        {
+          "key": "http.url",
+          "type": "string",
+          "value": "/api/actividades"
+        },
+        {
+          "key": "http.user_agent",
+          "type": "string",
+          "value": "node"
+        },
+        {
+          "key": "net.host.name",
+          "type": "string",
+          "value": "127.0.0.1"
+        },
+        {
+          "key": "net.peer.ip",
+          "type": "string",
+          "value": "::ffff:127.0.0.1"
+        },
+        {
+          "key": "net.peer.port",
+          "type": "int64",
+          "value": 35224
+        },
+        {
+          "key": "net.transport",
+          "type": "string",
+          "value": "ip_tcp"
+        },
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "@opentelemetry/instrumentation-http"
+        },
+        {
+          "key": "otel.scope.version",
+          "type": "string",
+          "value": "0.200.0"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "server"
+        },
+        {
+          "key": "url.full",
+          "type": "string",
+          "value": "/api/actividades"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": [
+        "invalid parent span IDs=fc9bc258218c5810; skipping clock skew adjustment"
+      ]
+    }
+  ],
+  "processes": {
+    "p1": {
+      "serviceName": "sol-backend-pruebas",
+      "tags": []
+    }
+  },
+  "warnings": null
+}

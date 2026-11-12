@@ -5,6 +5,12 @@
   },
   "devDependencies": {
     "@types/node": "^26.5.1",
-    "@types/node-cron": "^3.0.11"
+    "@types/node-cron": "^3.0.11",
+    "playwright": "1.65.0"
+  },
+  "scripts": {
+    "observability:run": "node scripts/observability/run.mjs",
+    "observability:test": "node --test scripts/observability/*.test.mjs",
+    "observability:report": "node scripts/observability/open-report.mjs"
   }
 }

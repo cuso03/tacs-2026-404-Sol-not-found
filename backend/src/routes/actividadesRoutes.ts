@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { searchHttpMetrics } from '../observability/searchTelemetry';
 import { createActividadesController } from '../controllers/actividadesController';
 import { createVotacionesController } from '../controllers/votacionesController';
 import { createClimaController } from '../controllers/climaController';
@@ -22,7 +23,7 @@ export function createActividadesRoutes(
   const votacionController = createVotacionesController(votacionService);
   const climaController = createClimaController(new ClimaService(repository, weatherProvider));
 
-  router.get('/', controller.search);
+  router.get('/', searchHttpMetrics, controller.search);
   router.get('/:id', requireAuthenticatedUser, controller.getById);
   router.put('/:id', requireAuthenticatedUser, controller.update);
   router.delete('/:id', requireAuthenticatedUser, controller.remove);

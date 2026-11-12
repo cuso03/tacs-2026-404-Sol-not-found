@@ -2,6 +2,7 @@ import { Actividad, NuevaActividad, ReglasClima, DatosCreacionActividad } from '
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { BuscarActividadesDto, PaginacionDto } from '../dtos/busquedaDto';
 import {IEstadisticasStore} from "../utils/IEstadisticasStore";
+import { traceSearch } from '../observability/searchTelemetry';
 
 export type ConfigurarReglasResult =
   | { status: 'not_found' }
@@ -38,7 +39,7 @@ export class ActividadesService {
 
   // Ahora retorna directamente la promesa con { data, total }
   async buscarActividades(filtros: BuscarActividadesDto): Promise<{ data: Actividad[], total: number }> {
-    return this.repository.findAll(filtros);
+    return traceSearch(() => this.repository.findAll(filtros));
   }
 
   /** Recupera una actividad por su id, incluso si está llena y no figura en la búsqueda. */

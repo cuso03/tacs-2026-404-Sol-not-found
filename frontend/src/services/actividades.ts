@@ -1,10 +1,10 @@
 import api from './api';
+import { tracedSearch } from './searchTelemetry';
 import type { Actividad, CrearActividadPayload, PaginatedResponse, ReglasClimaPayload } from '../types/api';
 
 /** Busca actividades del catálogo público con filtros y paginación. */
 export async function searchActividades(params: Record<string, string | number>): Promise<PaginatedResponse<Actividad>> {
-  const { data } = await api.get<PaginatedResponse<Actividad>>('/actividades', { params });
-  return data;
+  return tracedSearch(params);
 }
 
 /** Obtiene el detalle completo de una actividad. */

@@ -1,0 +1,97 @@
+{
+  "machine": {
+    "platform": "linux 7.0.0-42-generic",
+    "cpus": 12,
+    "cpuModel": "12th Gen Intel(R) Core(TM) i7-1255U",
+    "totalMemoryGiB": 15.34383773803711,
+    "node": "v22.17.0",
+    "browser": "158.0.8127.18"
+  },
+  "config": {
+    "users": [
+      2,
+      10,
+      30
+    ],
+    "durationSeconds": 120,
+    "warmupSeconds": 30,
+    "count": 2000,
+    "pauseMs": 250,
+    "backendPort": 3002,
+    "browserPort": 5180,
+    "telemetryDrainSeconds": 15
+  },
+  "dataset": {
+    "count": 2000,
+    "sha256": "d37cb9d895b159905b742304da3ffd457f60e9c10b378d306144cdb0ca4946d6",
+    "activityDate": "2026-11-18T22:34:34.262Z"
+  },
+  "containers": [
+    {
+      "name": "/tacs-2026-404-sol-not-found-grafana-1",
+      "image": "grafana/grafana:11.6.0",
+      "memoryLimitBytes": 0,
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "cpuset": ""
+    },
+    {
+      "name": "/tacs-2026-404-sol-not-found-jaeger-1",
+      "image": "jaegertracing/all-in-one:1.67.0",
+      "memoryLimitBytes": 0,
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "cpuset": ""
+    },
+    {
+      "name": "/tacs-2026-404-sol-not-found-otel-collector-1",
+      "image": "otel/opentelemetry-collector-contrib:0.123.0",
+      "memoryLimitBytes": 0,
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "cpuset": ""
+    },
+    {
+      "name": "/tacs-2026-404-sol-not-found-prometheus-1",
+      "image": "prom/prometheus:v3.2.1",
+      "memoryLimitBytes": 0,
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "cpuset": ""
+    },
+    {
+      "name": "/tacs-2026-404-sol-not-found-rabbitmq-1",
+      "image": "rabbitmq:3-management-alpine",
+      "memoryLimitBytes": 0,
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "cpuset": ""
+    },
+    {
+      "name": "/tacs-2026-404-sol-not-found-redis-1",
+      "image": "redis:8.10.1-alpine",
+      "memoryLimitBytes": 0,
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "cpuset": ""
+    },
+    {
+      "name": "/tacs-mongo",
+      "image": "mongo:8",
+      "memoryLimitBytes": 0,
+      "nanoCpus": 0,
+      "cpuQuota": 0,
+      "cpuPeriod": 0,
+      "cpuset": ""
+    }
+  ],
+  "mongoHost": "127.0.0.1:27018",
+  "mongoCompatibilityOption": "glibc.pthread.rseq=1",
+  "sampling": "1/10 HTTP load; all browser requests"
+}

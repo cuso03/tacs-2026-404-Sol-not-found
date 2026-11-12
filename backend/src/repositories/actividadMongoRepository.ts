@@ -3,6 +3,7 @@ import { Actividad, NuevaActividad } from '../interfaces/models/actividad';
 import { ActividadRepository } from '../interfaces/repositories/actividadRepository';
 import { BuscarActividadesDto, PaginacionDto } from '../dtos/busquedaDto';
 import { ActividadModel, toActividad } from '../infrastructure/mongo/actividadModel';
+import { traceSearchDb } from '../observability/searchTelemetry';
 
 export class ActividadMongoRepository implements ActividadRepository {
   async create(actividad: NuevaActividad): Promise<Actividad> {
@@ -94,9 +95,9 @@ export class ActividadMongoRepository implements ActividadRepository {
       query.$expr = { $and: exprConditions };
     }
 
-    const total = await ActividadModel.countDocuments(query);
+    const total = await traceSearchDb('count', () => ActividadModel.countDocuments(query).exec());
     const skip = (filtros.page - 1) * filtros.limit;
-    const docs = await ActividadModel.find(query).skip(skip).limit(filtros.limit);
+    const docs = await traceSearchDb('find', () => ActividadModel.find(query).skip(skip).limit(filtros.limit).exec());
 
     return {
       data: docs.map(toActividad),

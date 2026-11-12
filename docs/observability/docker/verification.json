@@ -1,0 +1,82 @@
+{
+  "timestamp": "2026-11-12T00:05:30.894Z",
+  "branch": "feat/entrega-5-observabilidad",
+  "baseCommit": "330fed801ff674be0922bab78190b9cdb4613c07",
+  "scope": "Frontend nginx, backend, MongoDB and observability in Docker. Real Discover component additionally exercised in a Docker frontend test server. Playwright runs on the host. Auth0 login is not automated.",
+  "checks": {
+    "tacs-frontend": {
+      "image": "sha256:9833794a056ba57995c777c5ee369e40a29ab5011038b86963a02d7ccc946568",
+      "running": true
+    },
+    "tacs-backend": {
+      "image": "sha256:1da3a5ec245b39bb9f51352361e4dbe9a03a05235d8cabf647843b372637afaa",
+      "running": true
+    },
+    "tacs-mongo": {
+      "image": "sha256:ce3c05e42ae98526e12527140f6b935293148f84e76126375818d4f672bd6f94",
+      "running": true
+    },
+    "tacs-frontend-observability-check": {
+      "image": "sha256:c98bb67690cfeb3202b7efd17b714c03a26a88d9d5da513d03d88b6a8aff191a",
+      "running": true
+    },
+    "frontend": 200,
+    "backend_search": 200,
+    "nginx_api_proxy": 200,
+    "invalid_parameters": 400,
+    "productionAssets": [
+      "/assets/index-DyT6DvXd.js",
+      "/assets/index-F-wOc8_L.css"
+    ],
+    "productionAuth0Redirect": true,
+    "browser_search_filters": {
+      "passed": true,
+      "traceIds": [
+        "edf976c669c07f7f343301c4c4acfb7c",
+        "6f0e1af71b85c090a2b9cbffa9c2b256"
+      ]
+    },
+    "browser_error_handling": {
+      "passed": true,
+      "traceIds": [
+        "1cc81e60d67b59929f251d2cd6c1319c",
+        "d4af4e870b21ebf2aea5340ed4795557"
+      ]
+    },
+    "prometheusBackendRequests": "10",
+    "grafanaPanels": 9
+  },
+  "traces": [
+    {
+      "id": "6f0e1af71b85c090a2b9cbffa9c2b256",
+      "spans": 6,
+      "services": [
+        "sol-frontend-pruebas",
+        "sol-backend"
+      ],
+      "kind": "success",
+      "link": "http://localhost:16686/trace/6f0e1af71b85c090a2b9cbffa9c2b256"
+    },
+    {
+      "id": "d4af4e870b21ebf2aea5340ed4795557",
+      "spans": 3,
+      "services": [
+        "sol-backend",
+        "sol-frontend-pruebas"
+      ],
+      "kind": "validation_error",
+      "link": "http://localhost:16686/trace/d4af4e870b21ebf2aea5340ed4795557"
+    }
+  ],
+  "legacyWeather": {
+    "imageBuilt": true,
+    "authenticatedRuntimeVerified": false,
+    "reason": "Institutional OAuth token.json not available in the configured paths.",
+    "missingSessionCheck": {
+      "exitCode": 1,
+      "message": "ERROR: Falta token.json. Gener\u00e1 una sesi\u00f3n institucional y montala en /root/.config/tacs/token.json."
+    },
+    "entrypointFix": "Accept Compose-mounted OAuth session or Render secret; expose default RPC proxy on 8080."
+  },
+  "status": "passed-for-application-and-observability"
+}
