@@ -1,0 +1,306 @@
+{
+  "runId": "2026-11-11T22-34-33-686Z",
+  "quick": false,
+  "status": "completed",
+  "config": {
+    "users": [
+      2,
+      10,
+      30
+    ],
+    "durationSeconds": 120,
+    "warmupSeconds": 30,
+    "count": 2000,
+    "pauseMs": 250,
+    "backendPort": 3002,
+    "browserPort": 5180,
+    "telemetryDrainSeconds": 15
+  },
+  "machine": {
+    "platform": "linux 7.0.0-42-generic",
+    "cpus": 12,
+    "cpuModel": "12th Gen Intel(R) Core(TM) i7-1255U",
+    "totalMemoryGiB": 15.34383773803711,
+    "node": "v22.17.0",
+    "browser": "158.0.8127.18"
+  },
+  "scenarios": [
+    {
+      "start": 1794436543633,
+      "end": 1794436663668,
+      "users": 2,
+      "durationSeconds": 120,
+      "elapsedSeconds": 120.035,
+      "requests": 861,
+      "errors": 0,
+      "errorPercent": 0,
+      "requestsPerSecond": 7.172907901861957,
+      "p50Ms": 27.623091999994358,
+      "p95Ms": 37.96841400000267,
+      "p99Ms": 44.818207000003895,
+      "name": "escenario-1-2-usuarios",
+      "browser": {
+        "name": "escenario-1-2-usuarios",
+        "ok": true,
+        "expectedFailure": false,
+        "readyMs": 1488.3805750000029,
+        "filterToDomMs": 483.12161699999706,
+        "traceIds": [
+          "22576ff65de294735935cca1a4cbc26e",
+          "3d8cd368416a21e3bc594538c70117c9",
+          "7bb38af30de37b4c61b908fffd4c93ce"
+        ],
+        "screenshot": "escenario-1-2-usuarios.png"
+      },
+      "representativeTraceIds": [
+        "156e24c317949a8e11d34f61aa2f7965",
+        "283f617a58a5123575f73c3abbaae404"
+      ],
+      "observationEnd": 1794436678674,
+      "grafanaUrl": "http://127.0.0.1:3001/d/sol-search?from=1794436543633&to=1794436678674&var-service=sol-backend-pruebas",
+      "metricsVerified": true
+    },
+    {
+      "start": 1794436683982,
+      "end": 1794436804010,
+      "users": 10,
+      "durationSeconds": 120,
+      "elapsedSeconds": 120.028,
+      "requests": 4314,
+      "errors": 0,
+      "errorPercent": 0,
+      "requestsPerSecond": 35.941613623487854,
+      "p50Ms": 26.48602700000629,
+      "p95Ms": 39.039577999996254,
+      "p99Ms": 49.07716399995843,
+      "name": "escenario-2-10-usuarios",
+      "browser": {
+        "name": "escenario-2-10-usuarios",
+        "ok": true,
+        "expectedFailure": false,
+        "readyMs": 1472.5569430000032,
+        "filterToDomMs": 558.4617779999971,
+        "traceIds": [
+          "fa53c0a3163735c518ee76f3c7fe97b2",
+          "f9e2d56e0da0b9df089f939633bf4702",
+          "6b3e83aefc1fecaca005f4dd060c817b"
+        ],
+        "screenshot": "escenario-2-10-usuarios.png"
+      },
+      "representativeTraceIds": [
+        "1e82b978f02023b78d2f657e7b9dcdd9",
+        "20670657834e7bb5bfc3db3db0278e97"
+      ],
+      "observationEnd": 1794436819028,
+      "grafanaUrl": "http://127.0.0.1:3001/d/sol-search?from=1794436683982&to=1794436819028&var-service=sol-backend-pruebas",
+      "metricsVerified": true
+    },
+    {
+      "start": 1794436824510,
+      "end": 1794436944552,
+      "users": 30,
+      "durationSeconds": 120,
+      "elapsedSeconds": 120.042,
+      "requests": 12510,
+      "errors": 0,
+      "errorPercent": 0,
+      "requestsPerSecond": 104.21352526615685,
+      "p50Ms": 35.437429999990854,
+      "p95Ms": 57.41025399998762,
+      "p99Ms": 90.04738000000361,
+      "name": "escenario-3-30-usuarios",
+      "browser": {
+        "name": "escenario-3-30-usuarios",
+        "ok": true,
+        "expectedFailure": false,
+        "readyMs": 1741.4272609999753,
+        "filterToDomMs": 588.279692000011,
+        "traceIds": [
+          "5895e72d1632b1bcb77d7b6aa75f9fa3",
+          "129a68ed3fe9dc41165c4ffaed6ca309",
+          "4ba781260c15a530b147c3be4707e1f7"
+        ],
+        "screenshot": "escenario-3-30-usuarios.png"
+      },
+      "representativeTraceIds": [
+        "93b912d8ae4687a1a04f74c73b523ada",
+        "085f46f6b756c8d51bc94dd3b539023a"
+      ],
+      "observationEnd": 1794436959583,
+      "grafanaUrl": "http://127.0.0.1:3001/d/sol-search?from=1794436824510&to=1794436959583&var-service=sol-backend-pruebas",
+      "metricsVerified": true
+    }
+  ],
+  "browser": [
+    {
+      "name": "frontend-correcto",
+      "ok": true,
+      "expectedFailure": false,
+      "readyMs": 3000.3401489999987,
+      "filterToDomMs": 518.9980290000003,
+      "traceIds": [
+        "a09c1a21d753579b0bc9695ee4720e3b",
+        "0e03a602b32ec9e5275597adcd8566bd",
+        "1a16ed2c1acbaf310319201917534a91"
+      ],
+      "screenshot": "frontend-correcto.png"
+    },
+    {
+      "name": "frontend-error",
+      "ok": true,
+      "expectedFailure": true,
+      "readyMs": 2064.8565080000008,
+      "filterToDomMs": null,
+      "traceIds": [
+        "f1e254ed9460c51e403c168ed3609b47",
+        "ee2ed8b8705344e033b4333cfeb39a63"
+      ],
+      "screenshot": "frontend-error.png"
+    },
+    {
+      "name": "escenario-1-2-usuarios",
+      "ok": true,
+      "expectedFailure": false,
+      "readyMs": 1488.3805750000029,
+      "filterToDomMs": 483.12161699999706,
+      "traceIds": [
+        "22576ff65de294735935cca1a4cbc26e",
+        "3d8cd368416a21e3bc594538c70117c9",
+        "7bb38af30de37b4c61b908fffd4c93ce"
+      ],
+      "screenshot": "escenario-1-2-usuarios.png"
+    },
+    {
+      "name": "escenario-2-10-usuarios",
+      "ok": true,
+      "expectedFailure": false,
+      "readyMs": 1472.5569430000032,
+      "filterToDomMs": 558.4617779999971,
+      "traceIds": [
+        "fa53c0a3163735c518ee76f3c7fe97b2",
+        "f9e2d56e0da0b9df089f939633bf4702",
+        "6b3e83aefc1fecaca005f4dd060c817b"
+      ],
+      "screenshot": "escenario-2-10-usuarios.png"
+    },
+    {
+      "name": "escenario-3-30-usuarios",
+      "ok": true,
+      "expectedFailure": false,
+      "readyMs": 1741.4272609999753,
+      "filterToDomMs": 588.279692000011,
+      "traceIds": [
+        "5895e72d1632b1bcb77d7b6aa75f9fa3",
+        "129a68ed3fe9dc41165c4ffaed6ca309",
+        "4ba781260c15a530b147c3be4707e1f7"
+      ],
+      "screenshot": "escenario-3-30-usuarios.png"
+    }
+  ],
+  "traces": [
+    {
+      "id": "1a16ed2c1acbaf310319201917534a91",
+      "label": "Frontend correcto",
+      "url": "http://127.0.0.1:16686/trace/1a16ed2c1acbaf310319201917534a91",
+      "verified": true,
+      "spans": 6,
+      "databaseMs": 31.492,
+      "businessMs": 32.728
+    },
+    {
+      "id": "ee2ed8b8705344e033b4333cfeb39a63",
+      "label": "Frontend con error de validación",
+      "url": "http://127.0.0.1:16686/trace/ee2ed8b8705344e033b4333cfeb39a63",
+      "verified": true,
+      "spans": 3,
+      "databaseMs": 0,
+      "businessMs": null
+    },
+    {
+      "id": "156e24c317949a8e11d34f61aa2f7965",
+      "label": "escenario-1-2-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/156e24c317949a8e11d34f61aa2f7965",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 37.452,
+      "businessMs": 38.235
+    },
+    {
+      "id": "283f617a58a5123575f73c3abbaae404",
+      "label": "escenario-1-2-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/283f617a58a5123575f73c3abbaae404",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 39.413000000000004,
+      "businessMs": 40.329
+    },
+    {
+      "id": "7bb38af30de37b4c61b908fffd4c93ce",
+      "label": "escenario-1-2-usuarios: frontend durante carga",
+      "url": "http://127.0.0.1:16686/trace/7bb38af30de37b4c61b908fffd4c93ce",
+      "verified": true,
+      "spans": 6,
+      "databaseMs": 17.855,
+      "businessMs": 18.583
+    },
+    {
+      "id": "1e82b978f02023b78d2f657e7b9dcdd9",
+      "label": "escenario-2-10-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/1e82b978f02023b78d2f657e7b9dcdd9",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 98.059,
+      "businessMs": 98.527
+    },
+    {
+      "id": "20670657834e7bb5bfc3db3db0278e97",
+      "label": "escenario-2-10-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/20670657834e7bb5bfc3db3db0278e97",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 101.179,
+      "businessMs": 101.757
+    },
+    {
+      "id": "6b3e83aefc1fecaca005f4dd060c817b",
+      "label": "escenario-2-10-usuarios: frontend durante carga",
+      "url": "http://127.0.0.1:16686/trace/6b3e83aefc1fecaca005f4dd060c817b",
+      "verified": true,
+      "spans": 6,
+      "databaseMs": 24.401,
+      "businessMs": 25.01
+    },
+    {
+      "id": "93b912d8ae4687a1a04f74c73b523ada",
+      "label": "escenario-3-30-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/93b912d8ae4687a1a04f74c73b523ada",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 267.112,
+      "businessMs": 267.553
+    },
+    {
+      "id": "085f46f6b756c8d51bc94dd3b539023a",
+      "label": "escenario-3-30-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/085f46f6b756c8d51bc94dd3b539023a",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 262.072,
+      "businessMs": 262.527
+    },
+    {
+      "id": "4ba781260c15a530b147c3be4707e1f7",
+      "label": "escenario-3-30-usuarios: frontend durante carga",
+      "url": "http://127.0.0.1:16686/trace/4ba781260c15a530b147c3be4707e1f7",
+      "verified": true,
+      "spans": 6,
+      "databaseMs": 18.7,
+      "businessMs": 19.168
+    }
+  ],
+  "dataset": {
+    "count": 2000,
+    "sha256": "d37cb9d895b159905b742304da3ffd457f60e9c10b378d306144cdb0ca4946d6",
+    "activityDate": "2026-11-18T22:34:34.262Z"
+  }
+}

@@ -1,0 +1,230 @@
+{
+  "runId": "2026-11-11T23-11-00-731Z",
+  "quick": false,
+  "status": "failed",
+  "config": {
+    "users": [
+      50,
+      100
+    ],
+    "durationSeconds": 60,
+    "warmupSeconds": 10,
+    "count": 50000,
+    "pauseMs": 0,
+    "backendPort": 3002,
+    "browserPort": 5180,
+    "telemetryDrainSeconds": 15
+  },
+  "machine": {
+    "platform": "linux 7.0.0-42-generic",
+    "cpus": 12,
+    "cpuModel": "12th Gen Intel(R) Core(TM) i7-1255U",
+    "totalMemoryGiB": 15.34383773803711,
+    "node": "v22.17.0",
+    "browser": "158.0.8127.18"
+  },
+  "scenarios": [
+    {
+      "start": 1794438723392,
+      "end": 1794438786358,
+      "users": 50,
+      "durationSeconds": 60,
+      "elapsedSeconds": 62.966,
+      "requests": 598,
+      "errors": 5,
+      "errorPercent": 0.8361204013377926,
+      "requestsPerSecond": 9.497188959120795,
+      "p50Ms": 4856.648533,
+      "p95Ms": 10742.239742999998,
+      "p99Ms": 14190.73068400001,
+      "name": "escenario-1-50-usuarios",
+      "browser": {
+        "name": "escenario-1-50-usuarios",
+        "ok": true,
+        "expectedFailure": false,
+        "readyMs": 17807.25758199999,
+        "filterToDomMs": 2196.3180100000027,
+        "traceIds": [
+          "d5d6a348fd430b20eb9e7407740edfd1",
+          "605d76b0d9310e34ed1dd8fb516f0f74",
+          "bb41b6ade8615ecba985f62e4d7f1a38"
+        ],
+        "screenshot": "escenario-1-50-usuarios.png"
+      },
+      "representativeTraceIds": [
+        "e0b7eeffead1092ca540481ce1cf3b97",
+        "97cc722f3e5cc78503b6326380f44dd3"
+      ],
+      "observationEnd": 1794438801369,
+      "grafanaUrl": "http://127.0.0.1:3001/d/sol-search?from=1794438723392&to=1794438801369&var-service=sol-backend-pruebas",
+      "metricsVerified": true
+    },
+    {
+      "start": 1794438808327,
+      "end": 1794438872937,
+      "users": 100,
+      "durationSeconds": 60,
+      "elapsedSeconds": 64.61,
+      "requests": 712,
+      "errors": 47,
+      "errorPercent": 6.601123595505618,
+      "requestsPerSecond": 11.019965949543414,
+      "p50Ms": 8810.837430000014,
+      "p95Ms": 15001.423572,
+      "p99Ms": 15006.478418999992,
+      "name": "escenario-2-100-usuarios",
+      "browser": {
+        "name": "escenario-2-100-usuarios",
+        "ok": false,
+        "expectedFailure": false,
+        "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Observabilidad 00000', { exact: true }) to be visible\u001b[22m\n",
+        "javascriptErrors": [],
+        "networkErrors": [
+          {
+            "path": "/api/actividades",
+            "error": "net::ERR_ABORTED"
+          }
+        ],
+        "traceIds": [
+          "d18f2d4940ba54540360ebe3323ec88e"
+        ],
+        "screenshot": "escenario-2-100-usuarios-failure.png"
+      },
+      "representativeTraceIds": [
+        "f01f2caa479e43c492ab2e010777a0f8",
+        "8fcdcea3accda1210d5a31191b52591f"
+      ],
+      "observationEnd": 1794438887945,
+      "grafanaUrl": "http://127.0.0.1:3001/d/sol-search?from=1794438808327&to=1794438887945&var-service=sol-backend-pruebas",
+      "metricsVerified": true
+    }
+  ],
+  "browser": [
+    {
+      "name": "frontend-correcto",
+      "ok": true,
+      "expectedFailure": false,
+      "readyMs": 5213.452878,
+      "filterToDomMs": 861.9505850000023,
+      "traceIds": [
+        "4d33252d973370cabd0e229baa042048",
+        "b404cf27a49b1d33011d937a699fb06e",
+        "e9b0e522b5bbdae8246f067e4d09764c"
+      ],
+      "screenshot": "frontend-correcto.png"
+    },
+    {
+      "name": "frontend-error",
+      "ok": true,
+      "expectedFailure": true,
+      "readyMs": 2295.062919,
+      "filterToDomMs": null,
+      "traceIds": [
+        "5aa67630289ec9997fb25d4f8014dd44",
+        "9ecd98bb625fb358c4b5ff67da06b14c"
+      ],
+      "screenshot": "frontend-error.png"
+    },
+    {
+      "name": "escenario-1-50-usuarios",
+      "ok": true,
+      "expectedFailure": false,
+      "readyMs": 17807.25758199999,
+      "filterToDomMs": 2196.3180100000027,
+      "traceIds": [
+        "d5d6a348fd430b20eb9e7407740edfd1",
+        "605d76b0d9310e34ed1dd8fb516f0f74",
+        "bb41b6ade8615ecba985f62e4d7f1a38"
+      ],
+      "screenshot": "escenario-1-50-usuarios.png"
+    },
+    {
+      "name": "escenario-2-100-usuarios",
+      "ok": false,
+      "expectedFailure": false,
+      "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Observabilidad 00000', { exact: true }) to be visible\u001b[22m\n",
+      "javascriptErrors": [],
+      "networkErrors": [
+        {
+          "path": "/api/actividades",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "traceIds": [
+        "d18f2d4940ba54540360ebe3323ec88e"
+      ],
+      "screenshot": "escenario-2-100-usuarios-failure.png"
+    }
+  ],
+  "traces": [
+    {
+      "id": "e9b0e522b5bbdae8246f067e4d09764c",
+      "label": "Frontend correcto",
+      "url": "http://127.0.0.1:16686/trace/e9b0e522b5bbdae8246f067e4d09764c",
+      "verified": true,
+      "spans": 6,
+      "databaseMs": 208.392,
+      "businessMs": 209.497
+    },
+    {
+      "id": "9ecd98bb625fb358c4b5ff67da06b14c",
+      "label": "Frontend con error de validación",
+      "url": "http://127.0.0.1:16686/trace/9ecd98bb625fb358c4b5ff67da06b14c",
+      "verified": true,
+      "spans": 3,
+      "databaseMs": 0,
+      "businessMs": null
+    },
+    {
+      "id": "e0b7eeffead1092ca540481ce1cf3b97",
+      "label": "escenario-1-50-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/e0b7eeffead1092ca540481ce1cf3b97",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 14936.686,
+      "businessMs": 14937.313
+    },
+    {
+      "id": "97cc722f3e5cc78503b6326380f44dd3",
+      "label": "escenario-1-50-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/97cc722f3e5cc78503b6326380f44dd3",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 15438.874,
+      "businessMs": 15439.727
+    },
+    {
+      "id": "bb41b6ade8615ecba985f62e4d7f1a38",
+      "label": "escenario-1-50-usuarios: frontend durante carga",
+      "url": "http://127.0.0.1:16686/trace/bb41b6ade8615ecba985f62e4d7f1a38",
+      "verified": true,
+      "spans": 6,
+      "databaseMs": 1196.653,
+      "businessMs": 1204.334
+    },
+    {
+      "id": "f01f2caa479e43c492ab2e010777a0f8",
+      "label": "escenario-2-100-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/f01f2caa479e43c492ab2e010777a0f8",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 15508.031,
+      "businessMs": 15509.84
+    },
+    {
+      "id": "8fcdcea3accda1210d5a31191b52591f",
+      "label": "escenario-2-100-usuarios: solicitud lenta muestreada",
+      "url": "http://127.0.0.1:16686/trace/8fcdcea3accda1210d5a31191b52591f",
+      "verified": true,
+      "spans": 4,
+      "databaseMs": 13736.398000000001,
+      "businessMs": 13737.016
+    }
+  ],
+  "dataset": {
+    "count": 50000,
+    "sha256": "de9569ca3a814181a2e7c9fb4cfcd2ef30a82e214100381fcdf63e7352867fa1",
+    "activityDate": "2026-11-18T23:11:01.967Z"
+  },
+  "error": "La pantalla falló durante escenario-2-100-usuarios: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Observabilidad 00000', { exact: true }) to be visible\u001b[22m\n"
+}

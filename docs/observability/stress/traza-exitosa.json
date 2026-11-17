@@ -1,0 +1,460 @@
+{
+  "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+  "spans": [
+    {
+      "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+      "spanID": "c5125c85dad6c9aa",
+      "operationName": "actividades.db.find",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+          "spanID": "cf6672ef9ade91ef"
+        }
+      ],
+      "startTime": 1794438682503000,
+      "duration": 9741,
+      "tags": [
+        {
+          "key": "db.collection.name",
+          "type": "string",
+          "value": "actividades"
+        },
+        {
+          "key": "db.operation.name",
+          "type": "string",
+          "value": "find"
+        },
+        {
+          "key": "db.system.name",
+          "type": "string",
+          "value": "mongodb"
+        },
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "sol-search"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "client"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": null
+    },
+    {
+      "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+      "spanID": "cf6672ef9ade91ef",
+      "operationName": "actividades.buscar",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+          "spanID": "1ae5e66aa203d303"
+        }
+      ],
+      "startTime": 1794438682304000,
+      "duration": 209497,
+      "tags": [
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "sol-search"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "internal"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": null
+    },
+    {
+      "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+      "spanID": "1ae5e66aa203d303",
+      "operationName": "GET",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+          "spanID": "b9517d77bfbe20f1"
+        }
+      ],
+      "startTime": 1794438682302000,
+      "duration": 212885,
+      "tags": [
+        {
+          "key": "http.flavor",
+          "type": "string",
+          "value": "1.1"
+        },
+        {
+          "key": "http.host",
+          "type": "string",
+          "value": "127.0.0.1:3002"
+        },
+        {
+          "key": "http.method",
+          "type": "string",
+          "value": "GET"
+        },
+        {
+          "key": "http.scheme",
+          "type": "string",
+          "value": "http"
+        },
+        {
+          "key": "http.status_code",
+          "type": "int64",
+          "value": 200
+        },
+        {
+          "key": "http.status_text",
+          "type": "string",
+          "value": "OK"
+        },
+        {
+          "key": "http.target",
+          "type": "string",
+          "value": "/api/actividades"
+        },
+        {
+          "key": "http.url",
+          "type": "string",
+          "value": "/api/actividades"
+        },
+        {
+          "key": "http.user_agent",
+          "type": "string",
+          "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.8127.18 Safari/537.36"
+        },
+        {
+          "key": "net.host.ip",
+          "type": "string",
+          "value": "::ffff:127.0.0.1"
+        },
+        {
+          "key": "net.host.name",
+          "type": "string",
+          "value": "127.0.0.1"
+        },
+        {
+          "key": "net.host.port",
+          "type": "int64",
+          "value": 3002
+        },
+        {
+          "key": "net.peer.ip",
+          "type": "string",
+          "value": "::ffff:127.0.0.1"
+        },
+        {
+          "key": "net.peer.port",
+          "type": "int64",
+          "value": 40408
+        },
+        {
+          "key": "net.transport",
+          "type": "string",
+          "value": "ip_tcp"
+        },
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "@opentelemetry/instrumentation-http"
+        },
+        {
+          "key": "otel.scope.version",
+          "type": "string",
+          "value": "0.200.0"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "server"
+        },
+        {
+          "key": "url.full",
+          "type": "string",
+          "value": "/api/actividades"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": null
+    },
+    {
+      "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+      "spanID": "24ffaa998c465c80",
+      "operationName": "actividades.buscar.ui",
+      "references": [],
+      "startTime": 1794438682291000,
+      "duration": 226900,
+      "tags": [
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "sol-search-ui"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "internal"
+        }
+      ],
+      "logs": [],
+      "processID": "p2",
+      "warnings": null
+    },
+    {
+      "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+      "spanID": "b9517d77bfbe20f1",
+      "operationName": "GET",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+          "spanID": "24ffaa998c465c80"
+        }
+      ],
+      "startTime": 1794438682293000,
+      "duration": 224000,
+      "tags": [
+        {
+          "key": "http.host",
+          "type": "string",
+          "value": "127.0.0.1:5180"
+        },
+        {
+          "key": "http.method",
+          "type": "string",
+          "value": "GET"
+        },
+        {
+          "key": "http.response_content_length",
+          "type": "int64",
+          "value": 4136
+        },
+        {
+          "key": "http.scheme",
+          "type": "string",
+          "value": "http"
+        },
+        {
+          "key": "http.status_code",
+          "type": "int64",
+          "value": 200
+        },
+        {
+          "key": "http.status_text",
+          "type": "string",
+          "value": "OK"
+        },
+        {
+          "key": "http.url",
+          "type": "string",
+          "value": "http://127.0.0.1:5180/api/actividades"
+        },
+        {
+          "key": "http.user_agent",
+          "type": "string",
+          "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.8127.18 Safari/537.36"
+        },
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "@opentelemetry/instrumentation-xml-http-request"
+        },
+        {
+          "key": "otel.scope.version",
+          "type": "string",
+          "value": "0.200.0"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "client"
+        },
+        {
+          "key": "url.full",
+          "type": "string",
+          "value": "http://127.0.0.1:5180/api/actividades"
+        }
+      ],
+      "logs": [
+        {
+          "timestamp": 1794438682293000,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "open"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682293300,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "send"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682294200,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "fetchStart"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682294200,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "domainLookupStart"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682294200,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "domainLookupEnd"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682294200,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "connectStart"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682294200,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "connectEnd"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682295800,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "requestStart"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682515600,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "responseStart"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682516700,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "responseEnd"
+            }
+          ]
+        },
+        {
+          "timestamp": 1794438682517000,
+          "fields": [
+            {
+              "key": "event",
+              "type": "string",
+              "value": "loaded"
+            }
+          ]
+        }
+      ],
+      "processID": "p2",
+      "warnings": null
+    },
+    {
+      "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+      "spanID": "4d66f831ca9f2e3a",
+      "operationName": "actividades.db.count",
+      "references": [
+        {
+          "refType": "CHILD_OF",
+          "traceID": "e9b0e522b5bbdae8246f067e4d09764c",
+          "spanID": "cf6672ef9ade91ef"
+        }
+      ],
+      "startTime": 1794438682304000,
+      "duration": 198651,
+      "tags": [
+        {
+          "key": "db.collection.name",
+          "type": "string",
+          "value": "actividades"
+        },
+        {
+          "key": "db.operation.name",
+          "type": "string",
+          "value": "count"
+        },
+        {
+          "key": "db.system.name",
+          "type": "string",
+          "value": "mongodb"
+        },
+        {
+          "key": "otel.scope.name",
+          "type": "string",
+          "value": "sol-search"
+        },
+        {
+          "key": "span.kind",
+          "type": "string",
+          "value": "client"
+        }
+      ],
+      "logs": [],
+      "processID": "p1",
+      "warnings": null
+    }
+  ],
+  "processes": {
+    "p1": {
+      "serviceName": "sol-backend-pruebas",
+      "tags": []
+    },
+    "p2": {
+      "serviceName": "sol-frontend-pruebas",
+      "tags": []
+    }
+  },
+  "warnings": null
+}

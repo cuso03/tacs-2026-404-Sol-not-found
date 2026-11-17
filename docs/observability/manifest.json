@@ -1,0 +1,99 @@
+{
+  "experiments": {
+    "baseline": "2026-11-11T22-34-33-686Z",
+    "stress": "2026-11-11T23-11-00-731Z"
+  },
+  "files": [
+    {
+      "path": "baseline/summary.json",
+      "source": "observability-results/2026-11-11T22-34-33-686Z/summary.json",
+      "sha256": "51b4f233d991a996ff271c8b0c22b2409ab29636a07b61b3993208f74cf62875"
+    },
+    {
+      "path": "baseline/environment.json",
+      "source": "observability-results/2026-11-11T22-34-33-686Z/environment.json",
+      "sha256": "07bbac2cc82ce7c03fcf071b13f21dc99746248952c87f5d86c30864bdab71b6"
+    },
+    {
+      "path": "baseline/requests.csv",
+      "source": "observability-results/2026-11-11T22-34-33-686Z/requests.csv",
+      "sha256": "1f7219b9d63971196ade7be6a8413742fcb7d185499343dc2a223ff146246098"
+    },
+    {
+      "path": "baseline/grafana-2.png",
+      "source": "observability-results/2026-11-11T22-34-33-686Z/escenario-1-2-usuarios-grafana.png",
+      "sha256": "6eefcf2af547a4143633c56c95d473a61f084ecb704f6ed672d4d4afc3f5e3b2"
+    },
+    {
+      "path": "baseline/grafana-30.png",
+      "source": "observability-results/2026-11-11T22-34-33-686Z/escenario-3-30-usuarios-grafana.png",
+      "sha256": "b3487b9594bc0d5c444702f9f511bace0b850199234656b2d4c6be339cafd684"
+    },
+    {
+      "path": "stress/summary.json",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/summary.json",
+      "sha256": "8c7dd4a804bf079edbaca0740e3730ae478390fe692f88ae12e92c02a538652b"
+    },
+    {
+      "path": "stress/environment.json",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/environment.json",
+      "sha256": "a1d244e56a1ca2a43b2ba3c135fe1294c3b909d78212cbd7ee6b28aa0f30ffdd"
+    },
+    {
+      "path": "stress/requests.csv",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/requests.csv",
+      "sha256": "caaf90b60cca9716e9e9b3ff058cef57a9f5eb585eea3be994e9db3b5a9e27e4"
+    },
+    {
+      "path": "stress/grafana-50.png",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/escenario-1-50-usuarios-grafana.png",
+      "sha256": "38cd6e3c80dbd8d6f6cc3be91014ee25bcc2e356489d30e6ef6ee81910601a39"
+    },
+    {
+      "path": "stress/grafana-100.png",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/escenario-2-100-usuarios-grafana.png",
+      "sha256": "b2e6730123811884676bc6f98d17d99ebabdc7babb8ea9803de0f861145bcd50"
+    },
+    {
+      "path": "stress/frontend-100-timeout.png",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/escenario-2-100-usuarios-failure.png",
+      "sha256": "9c80246c6237035ddced0c8c02ee77962fc42d849bc2a58bf4e8b073cd264af5"
+    },
+    {
+      "path": "stress/traza-exitosa.json",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/trace-e9b0e522b5bbdae8246f067e4d09764c.json",
+      "sha256": "cab5cca0908dc616a191c5a34c6128f8a18b8b49166576e965206b0791029c43"
+    },
+    {
+      "path": "stress/traza-validacion-400.json",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/trace-9ecd98bb625fb358c4b5ff67da06b14c.json",
+      "sha256": "8f0a91e8e5428e9e91fae23bd10b2b9e4267de03cf75366e14a6ac386ab36b04"
+    },
+    {
+      "path": "stress/traza-lenta-50.json",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/trace-97cc722f3e5cc78503b6326380f44dd3.json",
+      "sha256": "9e2b3a920567a7be2881acd5a6225a74f12e83b85e7a6ded80d596b7847e0c5b"
+    },
+    {
+      "path": "stress/traza-lenta-100.json",
+      "source": "observability-results/2026-11-11T23-11-00-731Z/trace-f01f2caa479e43c492ab2e010777a0f8.json",
+      "sha256": "d539c59b44431f61e4ad0f03ef910d865184b213b3ec331746c498b67f6739cf"
+    },
+    {
+      "path": "docker/verification.json",
+      "source": "Docker/Jaeger verification 2026-11-12T00:05:30.894Z",
+      "sha256": "bd89bc841fc7014e0b11cfe7fc6533906bf8d80fec16b7eab3cfff8795bd87a1"
+    },
+    {
+      "path": "docker/trace-success.json",
+      "source": "Docker/Jaeger verification 2026-11-12T00:05:30.894Z",
+      "sha256": "cf49690349a14d065121cd5ef4aeb0086dde185e8c0ea26618cad4eca37f3bc2"
+    },
+    {
+      "path": "docker/trace-error.json",
+      "source": "Docker/Jaeger verification 2026-11-12T00:05:30.894Z",
+      "sha256": "629e95e0a3967802c52002607147b6d087a53f5bd1fbe434493c8f11f237d0e6"
+    }
+  ],
+  "dockerVerification": "2026-11-12T00:05:30.894Z"
+}
