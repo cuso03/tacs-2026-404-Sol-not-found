@@ -2,14 +2,19 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, 'feature/**']
+    branches-ignore: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   test:
     name: Build and test backend
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
@@ -20,7 +25,6 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      # Se usa install hasta regenerar el lockfile con las nuevas dependencias.
-      - run: npm install
+      - run: npm ci
       - run: npm run build
       - run: npm test

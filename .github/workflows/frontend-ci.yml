@@ -2,14 +2,19 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, dev, 'feature/**']
+    branches-ignore: [main, dev]
   pull_request:
     branches: [main, dev]
+  workflow_call:
+
+permissions:
+  contents: read
 
 jobs:
   test:
     name: Build and test frontend
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
@@ -21,6 +26,6 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run build
       - run: pnpm test

@@ -1,0 +1,79 @@
+name: Validate and deploy frontend
+
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tacs-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  target:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: target
+        name: Select environment from branch
+        env:
+          SOURCE_REF: ${{ github.ref }}
+        run: |
+          target=$(bash scripts/deployment-target.sh "$SOURCE_REF")
+          echo "environment=$target" >> "$GITHUB_OUTPUT"
+      - name: Report deployment activation
+        env:
+          DEPLOY_ENABLED: ${{ vars.TACS_PAGES_DEPLOY_ENABLED }}
+        run: |
+          if [ "$DEPLOY_ENABLED" != true ]; then
+            echo 'Pages deployment is disabled; CI still runs.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  backend:
+    needs: target
+    uses: ./.github/workflows/backend-ci.yml
+
+  frontend:
+    needs: target
+    uses: ./.github/workflows/frontend-ci.yml
+
+  deploy:
+    name: Publish frontend to Pages
+    needs: [target, backend, frontend]
+    if: vars.TACS_PAGES_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ needs.target.outputs.environment }}
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_AUTH0_DOMAIN: ${{ vars.VITE_AUTH0_DOMAIN }}
+      VITE_AUTH0_CLIENT_ID: ${{ vars.VITE_AUTH0_CLIENT_ID }}
+      VITE_AUTH0_AUDIENCE: ${{ vars.VITE_AUTH0_AUDIENCE }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Validate public configuration
+        run: node scripts/check-pages-config.mjs
+      - run: pnpm install --frozen-lockfile
+        working-directory: frontend
+      - run: pnpm run build
+        working-directory: frontend
+      - name: Deploy tested revision
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch=${{ github.ref_name }}
